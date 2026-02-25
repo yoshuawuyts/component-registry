@@ -50,8 +50,11 @@ impl Opts {
         let start_time = std::time::Instant::now();
 
         // Print initial installing message
-        let tag_display = self.reference.tag().unwrap_or("latest").to_string();
-        println!("Installing {} [{}]", self.reference.whole(), tag_display);
+        println!(
+            "{:>12} {}",
+            console::style("Installing").green().bold(),
+            self.reference.whole(),
+        );
 
         // Install the package with progress reporting
         let result = if offline {
@@ -128,7 +131,11 @@ impl Opts {
 
         // Print completion message with elapsed time
         let elapsed = start_time.elapsed();
-        println!("Finished installation in {:.1}s", elapsed.as_secs_f64());
+        println!(
+            "\n{:>12} installation in {:.1}s",
+            console::style("Finished").green().bold(),
+            elapsed.as_secs_f64()
+        );
 
         Ok(())
     }
@@ -150,15 +157,13 @@ async fn run_progress_bars(
     .progress_chars("━━┄");
 
     // In-progress spinner style (unknown size)
-    let bar_style_spinner =
-        ProgressStyle::with_template("{prefix} {spinner:.yellow} {bytes:.yellow}")
-            .expect("valid progress bar template");
+    let bar_style_spinner = ProgressStyle::with_template("{prefix} {spinner:.yellow} {bytes}")
+        .expect("valid progress bar template");
 
     // Completed style: green filled bar + green bytes
-    let bar_style_done =
-        ProgressStyle::with_template("{prefix} {bar:12.green} {total_bytes:.green}")
-            .expect("valid progress bar template")
-            .progress_chars("━━━");
+    let bar_style_done = ProgressStyle::with_template("{prefix} {bar:12.green} {total_bytes}")
+        .expect("valid progress bar template")
+        .progress_chars("━━━");
 
     while let Some(event) = rx.recv().await {
         match event {
@@ -191,14 +196,17 @@ async fn run_progress_bars(
                 let label = title.as_deref().unwrap_or(media_type);
                 let prefix = format!("{tree_glyph} [{short_digest}] {label}");
 
-                let pb = if let Some(total) = total_bytes {
-                    let pb = multi.add(ProgressBar::new(total));
-                    pb.set_style(bar_style_progress.clone());
-                    pb
-                } else {
-                    let pb = multi.add(ProgressBar::new_spinner());
-                    pb.set_style(bar_style_spinner.clone());
-                    pb
+                let pb = match total_bytes {
+                    Some(total) => {
+                        let pb = multi.add(ProgressBar::new(total));
+                        pb.set_style(bar_style_progress.clone());
+                        pb
+                    }
+                    None => {
+                        let pb = multi.add(ProgressBar::new_spinner());
+                        pb.set_style(bar_style_spinner.clone());
+                        pb
+                    }
                 };
                 pb.set_prefix(prefix);
 
