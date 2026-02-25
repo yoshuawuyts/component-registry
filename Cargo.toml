@@ -6,7 +6,7 @@ members = [
     "crates/manifest",
     "crates/package-manager",
     "crates/wasm-detector",
-    "xtask",
+    "crates/xtask",
 ]
 
 [workspace.package]
