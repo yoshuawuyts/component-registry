@@ -50,10 +50,13 @@ impl Opts {
         let result = manager.install(self.reference.clone(), &vendor_dir).await?;
 
         // Use the package name from WIT metadata if available,
-        // otherwise fall back to the full OCI path (registry/repository)
+        // otherwise fall back to the full OCI path (registry/repository).
+        // Strip the version suffix (e.g., "@0.2.10") from the package name
+        // so that "wasi:http@0.2.10" becomes "wasi:http" in wasm.toml.
         let dep_name = result
             .package_name
-            .clone()
+            .as_deref()
+            .map(|name| name.split('@').next().unwrap_or(name).to_string())
             .unwrap_or_else(|| format!("{}/{}", result.registry, result.repository));
 
         // Determine the version from the tag
