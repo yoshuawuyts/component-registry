@@ -38,6 +38,7 @@ wasmtime-wasi = { workspace = true }
 
 [dev-dependencies]
 insta = { workspace = true }
+tempfile = { workspace = true }
 wasm-detector = { workspace = true, features = ["test-helpers"] }
 wasm-package-manager = { workspace = true, features = ["test-helpers"] }
 
