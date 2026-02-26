@@ -280,12 +280,8 @@ mod tests {
         let all: Vec<_> = lockfile.all_packages().collect();
         assert_eq!(all.len(), 2);
 
-        let has_component = all
-            .iter()
-            .any(|(_, pt)| *pt == PackageType::Component);
-        let has_interface = all
-            .iter()
-            .any(|(_, pt)| *pt == PackageType::Interface);
+        let has_component = all.iter().any(|(_, pt)| *pt == PackageType::Component);
+        let has_interface = all.iter().any(|(_, pt)| *pt == PackageType::Interface);
         assert!(has_component);
         assert!(has_interface);
     }

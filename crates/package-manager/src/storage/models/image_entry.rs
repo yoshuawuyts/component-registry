@@ -86,6 +86,7 @@ impl ImageEntry {
     /// Uses atomic `INSERT ... ON CONFLICT DO NOTHING` to prevent race conditions.
     /// Returns `(InsertResult::AlreadyExists, None)` if the entry already exists,
     /// or `(InsertResult::Inserted, Some(id))` if it was successfully inserted.
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn insert(
         conn: &Connection,
         ref_registry: &str,
@@ -262,7 +263,7 @@ mod tests {
             None,
             &test_manifest(),
             1024,
-        "component",
+            "component",
         )
         .unwrap();
 
@@ -283,7 +284,7 @@ mod tests {
             None,
             &test_manifest(),
             1024,
-        "component",
+            "component",
         )
         .unwrap();
         assert_eq!(result1.0, InsertResult::Inserted);
@@ -298,7 +299,7 @@ mod tests {
             None,
             &test_manifest(),
             1024,
-        "component",
+            "component",
         )
         .unwrap();
         assert_eq!(result2.0, InsertResult::AlreadyExists);
@@ -318,7 +319,7 @@ mod tests {
             None,
             &test_manifest(),
             1024,
-        "component",
+            "component",
         )
         .unwrap();
         assert_eq!(result1.0, InsertResult::Inserted);
@@ -333,7 +334,7 @@ mod tests {
             None,
             &test_manifest(),
             2048,
-        "component",
+            "component",
         )
         .unwrap();
         assert_eq!(result2.0, InsertResult::Inserted);
@@ -360,7 +361,7 @@ mod tests {
             None,
             &test_manifest(),
             1024,
-        "component",
+            "component",
         )
         .unwrap();
 
@@ -384,7 +385,7 @@ mod tests {
             Some("sha256:abc123"),
             &test_manifest(),
             1024,
-        "component",
+            "component",
         )
         .unwrap();
 
@@ -413,7 +414,7 @@ mod tests {
             Some("sha256:abc123"),
             &test_manifest(),
             1024,
-        "component",
+            "component",
         )
         .unwrap();
 
@@ -463,7 +464,7 @@ mod tests {
             None,
             &test_manifest(),
             1024,
-        "component",
+            "component",
         )
         .unwrap();
         ImageEntry::insert(
@@ -474,7 +475,7 @@ mod tests {
             None,
             &test_manifest(),
             2048,
-        "component",
+            "component",
         )
         .unwrap();
 
@@ -498,7 +499,7 @@ mod tests {
             None,
             &test_manifest(),
             1024,
-        "component",
+            "component",
         )
         .unwrap();
 
@@ -541,7 +542,7 @@ mod tests {
             Some("sha256:abc123"),
             &test_manifest(),
             1024,
-        "component",
+            "component",
         )
         .unwrap();
 
@@ -572,7 +573,7 @@ mod tests {
             None,
             &test_manifest(),
             1024,
-        "component",
+            "component",
         )
         .unwrap();
         ImageEntry::insert(
@@ -583,7 +584,7 @@ mod tests {
             None,
             &test_manifest(),
             2048,
-        "component",
+            "component",
         )
         .unwrap();
 
@@ -607,7 +608,7 @@ mod tests {
             None,
             &test_manifest(),
             1024,
-        "component",
+            "component",
         )
         .unwrap();
 
@@ -627,7 +628,7 @@ mod tests {
             Some("sha256:abc123"),
             &test_manifest(),
             1024,
-        "component",
+            "component",
         )
         .unwrap();
 
@@ -647,7 +648,7 @@ mod tests {
             None,
             &test_manifest(),
             1024,
-        "component",
+            "component",
         )
         .unwrap();
 
@@ -667,7 +668,7 @@ mod tests {
             None,
             &test_manifest(),
             12345678,
-        "component",
+            "component",
         )
         .unwrap();
 

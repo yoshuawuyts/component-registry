@@ -157,9 +157,7 @@ impl Opts {
                 .components
                 .iter()
                 .position(|p| p.name == dep_name && p.registry == registry_path);
-            if let Some(existing_pkg) =
-                existing.and_then(|idx| lockfile.components.get_mut(idx))
-            {
+            if let Some(existing_pkg) = existing.and_then(|idx| lockfile.components.get_mut(idx)) {
                 *existing_pkg = package;
             } else {
                 lockfile.components.push(package);
@@ -169,9 +167,7 @@ impl Opts {
                 .interfaces
                 .iter()
                 .position(|p| p.name == dep_name && p.registry == registry_path);
-            if let Some(existing_pkg) =
-                existing.and_then(|idx| lockfile.interfaces.get_mut(idx))
-            {
+            if let Some(existing_pkg) = existing.and_then(|idx| lockfile.interfaces.get_mut(idx)) {
                 *existing_pkg = package;
             } else {
                 lockfile.interfaces.push(package);
