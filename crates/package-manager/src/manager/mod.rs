@@ -316,6 +316,7 @@ impl Manager {
         vendor_dir: &Path,
     ) -> anyhow::Result<InstallResult> {
         use crate::storage::wit_parser::extract_wit_metadata;
+        use crate::utils::is_wit_package;
 
         let pull_result = self.pull(reference.clone()).await?;
 
@@ -350,13 +351,14 @@ impl Manager {
                     self.vendor(&layer.digest, &dest).await?;
                     vendored_files.push(dest);
 
-                    // Try to extract WIT package name from the layer data
+                    // Try to extract WIT package name and detect type from the layer data
                     if package_name.is_none()
                         && let Ok(data) = self.get(&layer.digest).await
-                        && let Some(metadata) = extract_wit_metadata(&data)
                     {
-                        package_name = metadata.package_name;
-                        is_component = metadata.is_component;
+                        is_component = !is_wit_package(&data);
+                        if let Some(metadata) = extract_wit_metadata(&data) {
+                            package_name = metadata.package_name;
+                        }
                     }
                 }
             }
@@ -388,6 +390,7 @@ impl Manager {
         progress_tx: &tokio::sync::mpsc::Sender<ProgressEvent>,
     ) -> anyhow::Result<InstallResult> {
         use crate::storage::wit_parser::extract_wit_metadata;
+        use crate::utils::is_wit_package;
 
         let pull_result = self
             .pull_with_progress(reference.clone(), progress_tx)
@@ -423,13 +426,14 @@ impl Manager {
                     self.vendor(&layer.digest, &dest).await?;
                     vendored_files.push(dest);
 
-                    // Try to extract WIT package name from the layer data
+                    // Try to extract WIT package name and detect type from the layer data
                     if package_name.is_none()
                         && let Ok(data) = self.get(&layer.digest).await
-                        && let Some(metadata) = extract_wit_metadata(&data)
                     {
-                        package_name = metadata.package_name;
-                        is_component = metadata.is_component;
+                        is_component = !is_wit_package(&data);
+                        if let Some(metadata) = extract_wit_metadata(&data) {
+                            package_name = metadata.package_name;
+                        }
                     }
                 }
             }

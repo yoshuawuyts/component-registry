@@ -85,6 +85,7 @@ cacache = { version = "13.1.0", features = [
 rusqlite = { version = "0.38.0", features = ["bundled"] }
 serde = "1.0.228"
 toml = "0.9"
+wasmparser = "0.230"
 wit-parser = "0.230"
 
 # detector dependencies

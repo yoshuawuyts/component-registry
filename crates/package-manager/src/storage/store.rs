@@ -189,10 +189,10 @@ impl Store {
         };
 
         // Update the image's package_type based on the detected type
-        let package_type = if metadata.is_component {
-            "component"
-        } else {
+        let package_type = if crate::utils::is_wit_package(wasm_bytes) {
             "interface"
+        } else {
+            "component"
         };
         if let Err(e) = self.conn.execute(
             "UPDATE image SET package_type = ?1 WHERE id = ?2",
