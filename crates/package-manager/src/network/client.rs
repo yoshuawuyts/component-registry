@@ -44,7 +44,7 @@ impl Client {
         &self,
         reference: &Reference,
     ) -> anyhow::Result<(OciImageManifest, String)> {
-        let auth = resolve_auth(reference)?;
+        let auth = resolve_auth(reference, &self.config)?;
         let (manifest, _config, digest) = self
             .inner
             .pull_manifest_and_config(reference, &auth)
@@ -61,7 +61,7 @@ impl Client {
         reference: &Reference,
         layer: &OciDescriptor,
     ) -> anyhow::Result<SizedStream> {
-        let auth = resolve_auth(reference)?;
+        let auth = resolve_auth(reference, &self.config)?;
         // Ensure auth is stored before calling pull_blob_stream
         self.inner
             .store_auth_if_needed(reference.resolve_registry(), &auth)

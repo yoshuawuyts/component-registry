@@ -15,8 +15,8 @@ keywords = { workspace = true }
 default = []
 # Enable test helpers for use in other crates' tests
 test-helpers = []
-# Enable serde::Serialize derives for types like KnownPackage
-serde = ["dep:serde"]
+# serde is always enabled (kept as a no-op feature for backward compatibility)
+serde = []
 
 [dependencies]
 anyhow = { workspace = true }
@@ -26,12 +26,11 @@ docker_credential = { workspace = true }
 futures-concurrency = { workspace = true }
 oci-client = { workspace = true }
 oci-wasm = { workspace = true }
-serde = { workspace = true, optional = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
 rusqlite = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
 toml = { workspace = true }
 wasmparser = { workspace = true }
 wit-parser = { workspace = true }
