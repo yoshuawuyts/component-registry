@@ -29,10 +29,10 @@ impl SyncOpts {
                 println!("Synced {count} packages from {url}");
             }
             SyncResult::NotModified => {
-                println!("Already up to date");
+                println!("Already up to date (verified with registry)");
             }
             SyncResult::Skipped => {
-                println!("Already up to date");
+                println!("Already up to date (synced recently)");
             }
             SyncResult::Degraded { error } => {
                 anyhow::bail!("Sync failed: {error}");

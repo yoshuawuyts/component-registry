@@ -32,10 +32,12 @@ pub(crate) struct RegistryClient {
 impl RegistryClient {
     /// Create a new registry client pointing at `base_url`.
     pub(crate) fn new(base_url: &str) -> Self {
+        // The builder only fails if a TLS backend cannot be initialized,
+        // which would indicate a broken system-level configuration.
         let http = reqwest::Client::builder()
             .timeout(Duration::from_secs(30))
             .build()
-            .expect("failed to build HTTP client");
+            .expect("TLS backend initialization failed");
         Self {
             base_url: base_url.trim_end_matches('/').to_string(),
             http,
@@ -47,11 +49,17 @@ impl RegistryClient {
     /// Sends `If-None-Match` when an ETag is available. Retries up to 3 times
     /// with exponential backoff on transient errors.
     ///
+    /// The `limit` controls the maximum number of packages to fetch per request.
+    ///
     /// # Errors
     ///
     /// Returns an error if all retry attempts fail.
-    pub(crate) async fn fetch_packages(&self, etag: Option<&str>) -> anyhow::Result<FetchResult> {
-        let url = format!("{}/v1/packages?limit=1000", self.base_url);
+    pub(crate) async fn fetch_packages(
+        &self,
+        etag: Option<&str>,
+        limit: u32,
+    ) -> anyhow::Result<FetchResult> {
+        let url = format!("{}/v1/packages?limit={limit}", self.base_url);
         let backoff = Backoff::new(3, Duration::from_millis(250), Duration::from_secs(5));
 
         let mut last_err: Option<anyhow::Error> = None;

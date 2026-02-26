@@ -34,7 +34,11 @@ impl RegistryConfig {
 }
 
 impl CliConfig {
-    /// Load configuration from `~/.config/wasm/config.toml`.
+    /// Load configuration from the platform-specific config directory.
+    ///
+    /// - Linux: `~/.config/wasm/config.toml`
+    /// - macOS: `~/Library/Application Support/wasm/config.toml`
+    /// - Windows: `%APPDATA%\wasm\config.toml`
     ///
     /// Returns the default config if the file does not exist.
     ///
@@ -42,7 +46,7 @@ impl CliConfig {
     ///
     /// Returns an error if the file exists but contains invalid TOML.
     pub(crate) fn load() -> anyhow::Result<Self> {
-        let Some(config_dir) = dirs::config_local_dir() else {
+        let Some(config_dir) = dirs::config_dir() else {
             return Ok(Self::default());
         };
 

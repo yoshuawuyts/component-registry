@@ -692,7 +692,7 @@ impl Manager {
             !existing.is_empty()
         };
 
-        match client.fetch_packages(etag.as_deref()).await {
+        match client.fetch_packages(etag.as_deref(), 1000).await {
             Ok(FetchResult::NotModified) => {
                 self.update_last_synced_at()?;
                 Ok(SyncResult::NotModified)
@@ -731,7 +731,7 @@ impl Manager {
                     })
                 } else {
                     Err(anyhow::anyhow!(
-                        "{e}. No local data available — run with --offline to skip the registry check, or run 'wasm package sync' once you're back online."
+                        "{e}. No local data available. Please check your network connection and run 'wasm package sync' to fetch the package index."
                     ))
                 }
             }
