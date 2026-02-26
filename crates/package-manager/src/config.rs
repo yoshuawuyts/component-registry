@@ -320,18 +320,25 @@ credential-helper.password = "/path/to/get-pass.sh"
 
     #[test]
     fn test_credential_cache() {
-        let temp_dir = TempDir::new().unwrap();
-        let config_dir = temp_dir.path().join("wasm");
-        fs::create_dir_all(&config_dir).unwrap();
+        // Build a cross-platform echo command
+        let json = r#"[{"id": "username", "value": "user"}, {"id": "password", "value": "pass"}]"#;
+        let echo_cmd = if cfg!(target_os = "windows") {
+            format!("echo {json}")
+        } else {
+            format!("echo '{json}'")
+        };
 
-        let config_path = config_dir.join("config.toml");
-        let toml_content = r#"
-[registries."test.io"]
-credential-helper = "echo '[{\"id\": \"username\", \"value\": \"user\"}, {\"id\": \"password\", \"value\": \"pass\"}]'"
-"#;
-        fs::write(&config_path, toml_content).unwrap();
-
-        let config = Config::load_from(Some(temp_dir.path().to_path_buf())).unwrap();
+        let mut registries = HashMap::new();
+        registries.insert(
+            "test.io".to_string(),
+            RegistryConfig {
+                credential_helper: Some(CredentialHelper::Json(echo_cmd)),
+            },
+        );
+        let config = Config {
+            registries,
+            ..Config::default()
+        };
 
         // First call should execute the helper
         let creds = config.get_credentials("test.io").unwrap();

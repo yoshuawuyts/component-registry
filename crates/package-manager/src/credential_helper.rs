@@ -138,12 +138,22 @@ fn execute_shell_command(cmd: &str) -> Result<String> {
 mod tests {
     use super::*;
 
+    /// Build a cross-platform echo command for a JSON string.
+    /// On Unix, `echo '...'` strips quotes. On Windows, `echo ...` is used directly.
+    fn echo_json_cmd(json: &str) -> String {
+        if cfg!(target_os = "windows") {
+            format!("echo {json}")
+        } else {
+            format!("echo '{json}'")
+        }
+    }
+
     #[test]
     fn test_execute_json_helper() {
         // Create a simple echo command that outputs valid JSON
         let json =
             r#"[{"id": "username", "value": "testuser"}, {"id": "password", "value": "testpass"}]"#;
-        let cmd = format!("echo '{}'", json);
+        let cmd = echo_json_cmd(json);
 
         let (username, password) = execute_json_helper(&cmd).unwrap();
         assert_eq!(username, "testuser");
@@ -161,7 +171,7 @@ mod tests {
     fn test_credential_helper_json_execute() {
         let json =
             r#"[{"id": "username", "value": "user1"}, {"id": "password", "value": "pass1"}]"#;
-        let helper = CredentialHelper::Json(format!("echo '{}'", json));
+        let helper = CredentialHelper::Json(echo_json_cmd(json));
         let (username, password) = helper.execute().unwrap();
         assert_eq!(username, "user1");
         assert_eq!(password, "pass1");
