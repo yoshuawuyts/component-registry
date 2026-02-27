@@ -418,8 +418,9 @@ fn run_sqlite3def_diff(sqlite3def: &Path, db_path: &Path, schema_sql: &str) -> R
     Ok(diff)
 }
 
-/// Regenerate `migration.rs` from the current set of numbered migration files.
-fn regenerate_migration_rs(root: &Path) -> Result<()> {
+/// Generate the expected contents of `migration.rs` from the current set of numbered
+/// migration files. Returns the full file content as a `String`.
+fn generate_migration_rs_content(root: &Path) -> Result<String> {
     let migrations_dir = root.join(MIGRATIONS_DIR);
     let migration_rs = root.join(MIGRATION_RS_PATH);
     let entries = numbered_migrations(&migrations_dir)?;
@@ -468,7 +469,14 @@ fn regenerate_migration_rs(root: &Path) -> Result<()> {
 
     buf.push_str(rest);
 
-    fs::write(&migration_rs, buf).context("writing migration.rs")?;
+    Ok(buf)
+}
+
+/// Regenerate `migration.rs` from the current set of numbered migration files.
+fn regenerate_migration_rs(root: &Path) -> Result<()> {
+    let migration_rs = root.join(MIGRATION_RS_PATH);
+    let content = generate_migration_rs_content(root)?;
+    fs::write(&migration_rs, content).context("writing migration.rs")?;
     Ok(())
 }
 
@@ -537,14 +545,25 @@ fn sql_check() -> Result<()> {
     // 2. Diff via sqlite3def --dry-run.
     let diff = run_sqlite3def_diff(&sqlite3def, clean_db.path(), &schema_sql)?;
 
-    if diff.is_empty() {
-        println!("✓ schema.sql is in sync with migrations.");
-        Ok(())
-    } else {
+    if !diff.is_empty() {
         eprintln!("schema.sql has changes not captured in migrations:\n");
         eprintln!("{diff}\n");
         anyhow::bail!(
             "schema.sql is out of sync. Run `cargo xtask sql migrate --name <description>` to generate a migration."
         );
     }
+
+    // 3. Verify migration.rs matches the current set of migration files.
+    let migration_rs = root.join(MIGRATION_RS_PATH);
+    let existing = fs::read_to_string(&migration_rs).context("reading migration.rs")?;
+    let expected = generate_migration_rs_content(&root)?;
+
+    if existing != expected {
+        anyhow::bail!(
+            "migration.rs is out of date. Run `cargo xtask sql migrate --name <description>` to regenerate it."
+        );
+    }
+
+    println!("✓ schema.sql and migration.rs are in sync with migrations.");
+    Ok(())
 }
