@@ -25,7 +25,9 @@ CREATE TABLE IF NOT EXISTS "oci_repository" (
 
 CREATE TRIGGER IF NOT EXISTS "trg_oci_repository_updated_at"
     AFTER UPDATE ON "oci_repository"
-    FOR EACH ROW BEGIN
+    FOR EACH ROW
+    WHEN OLD."updated_at" = NEW."updated_at"
+    BEGIN
         UPDATE "oci_repository"
         SET "updated_at" = datetime('now')
         WHERE "id" = OLD."id";
@@ -81,22 +83,22 @@ CREATE TABLE IF NOT EXISTS "oci_manifest_annotation" (
 
 -- Tags are mutable pointers to manifests within the SAME repository.
 --
--- INVARIANT: the manifest referenced by oci_manifest_id MUST belong
--- to the same oci_repository_id.  This is enforced via a composite
--- FK to oci_manifest(oci_repository_id, digest) so SQLite guarantees
--- the tag and manifest share the same repository.
+-- The composite FK on (oci_repository_id, manifest_digest) referencing
+-- oci_manifest(oci_repository_id, digest) guarantees that the tag and
+-- manifest share the same repository.  There is intentionally no
+-- separate oci_manifest_id column — join back to oci_manifest via
+-- (oci_repository_id, manifest_digest) to obtain the surrogate id
+-- when needed.
 CREATE TABLE IF NOT EXISTS "oci_tag" (
     "id"                INTEGER PRIMARY KEY,
     "oci_repository_id" INTEGER NOT NULL,
-    "oci_manifest_id"   INTEGER NOT NULL,
-    "manifest_digest"   TEXT    NOT NULL,                  -- denormalized for composite FK
+    "manifest_digest"   TEXT    NOT NULL,
     "tag"               TEXT    NOT NULL,
     "created_at"        TEXT    NOT NULL DEFAULT (datetime('now')),
     "updated_at"        TEXT    NOT NULL DEFAULT (datetime('now')),
     UNIQUE("oci_repository_id", "tag"),
     FOREIGN KEY ("oci_repository_id") REFERENCES "oci_repository"("id")
         ON UPDATE NO ACTION ON DELETE CASCADE,
-    -- Composite FK: guarantees the manifest belongs to this repository
     FOREIGN KEY ("oci_repository_id", "manifest_digest")
         REFERENCES "oci_manifest"("oci_repository_id", "digest")
         ON UPDATE NO ACTION ON DELETE CASCADE
@@ -104,7 +106,9 @@ CREATE TABLE IF NOT EXISTS "oci_tag" (
 
 CREATE TRIGGER IF NOT EXISTS "trg_oci_tag_updated_at"
     AFTER UPDATE ON "oci_tag"
-    FOR EACH ROW BEGIN
+    FOR EACH ROW
+    WHEN OLD."updated_at" = NEW."updated_at"
+    BEGIN
         UPDATE "oci_tag"
         SET "updated_at" = datetime('now')
         WHERE "id" = OLD."id";
@@ -316,13 +320,15 @@ CREATE UNIQUE INDEX IF NOT EXISTS "uq_component_target"
 
 -- ============================================================
 -- INDEXES
+--
+-- Indexes are only created where no existing UNIQUE constraint
+-- or UNIQUE INDEX already provides coverage via its leftmost
+-- column(s).  See inline notes for what each UNIQUE covers.
 -- ============================================================
 
--- OCI core
-CREATE INDEX IF NOT EXISTS "idx_oci_tag_repo"
-    ON "oci_tag"("oci_repository_id");
-CREATE INDEX IF NOT EXISTS "idx_oci_manifest_repo"
-    ON "oci_manifest"("oci_repository_id");
+-- oci_manifest: UNIQUE(oci_repository_id, digest) covers
+-- lookups by oci_repository_id.  Separate index on digest
+-- alone for cross-repo digest lookups.
 CREATE INDEX IF NOT EXISTS "idx_oci_manifest_digest"
     ON "oci_manifest"("digest");
 CREATE INDEX IF NOT EXISTS "idx_oci_manifest_artifact_type"
@@ -330,13 +336,20 @@ CREATE INDEX IF NOT EXISTS "idx_oci_manifest_artifact_type"
 CREATE INDEX IF NOT EXISTS "idx_oci_layer_manifest"
     ON "oci_layer"("oci_manifest_id", "position");
 
--- OCI annotations
-CREATE INDEX IF NOT EXISTS "idx_oci_manifest_annotation_manifest"
-    ON "oci_manifest_annotation"("oci_manifest_id");
+-- oci_tag: UNIQUE(oci_repository_id, tag) covers lookups by
+-- oci_repository_id.  Separate index on manifest_digest for
+-- reverse lookups ("which tags point to this digest?").
+CREATE INDEX IF NOT EXISTS "idx_oci_tag_digest"
+    ON "oci_tag"("manifest_digest");
+
+-- oci_manifest_annotation: UNIQUE(oci_manifest_id, key) covers
+-- lookups by oci_manifest_id.  Separate index on key alone for
+-- "find all manifests with annotation X" queries.
 CREATE INDEX IF NOT EXISTS "idx_oci_manifest_annotation_key"
     ON "oci_manifest_annotation"("key");
-CREATE INDEX IF NOT EXISTS "idx_oci_layer_annotation_layer"
-    ON "oci_layer_annotation"("oci_layer_id");
+
+-- oci_layer_annotation: UNIQUE(oci_layer_id, key) covers lookups
+-- by oci_layer_id.  Separate index on key alone.
 CREATE INDEX IF NOT EXISTS "idx_oci_layer_annotation_key"
     ON "oci_layer_annotation"("key");
 
@@ -348,23 +361,23 @@ CREATE INDEX IF NOT EXISTS "idx_oci_manifest_vendor"
 CREATE INDEX IF NOT EXISTS "idx_oci_manifest_licenses"
     ON "oci_manifest"("oci_licenses");
 
--- OCI referrers
-CREATE INDEX IF NOT EXISTS "idx_oci_referrer_subject"
-    ON "oci_referrer"("subject_manifest_id");
+-- oci_referrer: UNIQUE(subject_manifest_id, referrer_manifest_id)
+-- covers lookups by subject_manifest_id.  Compound index for
+-- filtering by (subject, artifact_type).
 CREATE INDEX IF NOT EXISTS "idx_oci_referrer_type"
     ON "oci_referrer"("subject_manifest_id", "artifact_type");
 
--- WIT interfaces
--- NOTE: idx_wit_iface_name is NOT needed — uq_wit_interface already
--- has package_name as its leftmost column and covers prefix scans.
+-- WIT interfaces: uq_wit_interface covers prefix scans on
+-- package_name.  Separate index on (package_name, version) for
+-- exact version lookups without COALESCE overhead.
 CREATE INDEX IF NOT EXISTS "idx_wit_iface_name_version"
     ON "wit_interface"("package_name", "version");
 CREATE INDEX IF NOT EXISTS "idx_wit_iface_provenance"
     ON "wit_interface"("oci_manifest_id");
 
--- WIT worlds
-CREATE INDEX IF NOT EXISTS "idx_wit_world_interface"
-    ON "wit_world"("wit_interface_id");
+-- wit_world: UNIQUE(wit_interface_id, name) covers lookups by
+-- wit_interface_id.  Separate index on name alone for cross-
+-- package world name searches.
 CREATE INDEX IF NOT EXISTS "idx_wit_world_name"
     ON "wit_world"("name");
 
@@ -384,15 +397,13 @@ CREATE INDEX IF NOT EXISTS "idx_wit_dep_declared"
 CREATE INDEX IF NOT EXISTS "idx_wit_dep_resolved"
     ON "wit_interface_dependency"("resolved_interface_id");
 
--- Wasm components
-CREATE INDEX IF NOT EXISTS "idx_wasm_component_manifest"
-    ON "wasm_component"("oci_manifest_id");
+-- wasm_component: uq_wasm_component covers lookups by
+-- oci_manifest_id.  Separate index on name for search.
 CREATE INDEX IF NOT EXISTS "idx_wasm_component_name"
     ON "wasm_component"("name");
 
--- Component targets
-CREATE INDEX IF NOT EXISTS "idx_target_component"
-    ON "component_target"("wasm_component_id");
+-- component_target: uq_component_target covers lookups by
+-- wasm_component_id.  Separate indexes for reverse lookups.
 CREATE INDEX IF NOT EXISTS "idx_target_declared"
     ON "component_target"("declared_package", "declared_world", "declared_version");
 CREATE INDEX IF NOT EXISTS "idx_target_resolved"
