@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS "oci_layer" (
     "size_bytes"      INTEGER,                            -- NULL = unknown
     "position"        INTEGER NOT NULL DEFAULT 0,
     UNIQUE("oci_manifest_id", "digest"),
+    UNIQUE("oci_manifest_id", "position"),
     FOREIGN KEY ("oci_manifest_id") REFERENCES "oci_manifest"("id")
         ON UPDATE NO ACTION ON DELETE CASCADE
 );
@@ -333,6 +334,11 @@ CREATE INDEX IF NOT EXISTS "idx_oci_manifest_digest"
     ON "oci_manifest"("digest");
 CREATE INDEX IF NOT EXISTS "idx_oci_manifest_artifact_type"
     ON "oci_manifest"("artifact_type");
+
+-- oci_layer: UNIQUE(oci_manifest_id, digest) covers lookups by
+-- oci_manifest_id.  UNIQUE(oci_manifest_id, position) provides
+-- ordered access.  idx_oci_layer_manifest kept for covering
+-- (oci_manifest_id, position) scans that skip the digest column.
 CREATE INDEX IF NOT EXISTS "idx_oci_layer_manifest"
     ON "oci_layer"("oci_manifest_id", "position");
 
@@ -362,10 +368,13 @@ CREATE INDEX IF NOT EXISTS "idx_oci_manifest_licenses"
     ON "oci_manifest"("oci_licenses");
 
 -- oci_referrer: UNIQUE(subject_manifest_id, referrer_manifest_id)
--- covers lookups by subject_manifest_id.  Compound index for
--- filtering by (subject, artifact_type).
+-- covers forward lookups by subject_manifest_id.  Compound index
+-- for filtering by (subject, artifact_type).  Reverse index on
+-- referrer_manifest_id for GC and graph traversal.
 CREATE INDEX IF NOT EXISTS "idx_oci_referrer_type"
     ON "oci_referrer"("subject_manifest_id", "artifact_type");
+CREATE INDEX IF NOT EXISTS "idx_oci_referrer_referrer"
+    ON "oci_referrer"("referrer_manifest_id");
 
 -- WIT interfaces: uq_wit_interface covers prefix scans on
 -- package_name.  Separate index on (package_name, version) for
