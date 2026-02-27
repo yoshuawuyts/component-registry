@@ -703,57 +703,52 @@ impl Manager {
             !existing.is_empty()
         };
 
-        let result = client
-            .fetch_packages(etag.as_deref(), 1000)
-            .await
-            .map_err(|e| {
-                if has_cached_data {
-                    e
-                } else {
-                    anyhow::anyhow!(
-                        "{e}. No local data available. Please check your network \
-                         connection and run 'wasm package sync' to fetch the package index."
-                    )
-                }
-            });
-
-        match result {
+        match client.fetch_packages(etag.as_deref(), 1000).await {
             Ok(FetchResult::NotModified) => {
                 self.update_last_synced_at()?;
                 Ok(SyncResult::NotModified)
             }
-            Ok(FetchResult::Updated { packages, etag }) => {
-                let count = packages.len();
-                // Bulk upsert all packages.
-                for pkg in &packages {
-                    let first_tag = pkg.tags.first().map(|s| s.as_str());
-                    self.store.add_known_package(
-                        &pkg.registry,
-                        &pkg.repository,
-                        first_tag,
-                        pkg.description.as_deref(),
-                    )?;
-                    // Also add remaining tags.
-                    for tag in pkg.tags.iter().skip(1) {
-                        self.store.add_known_package(
-                            &pkg.registry,
-                            &pkg.repository,
-                            Some(tag),
-                            pkg.description.as_deref(),
-                        )?;
-                    }
-                }
-                if let Some(etag_val) = etag {
-                    self.store.set_sync_meta("packages_etag", &etag_val)?;
-                }
-                self.update_last_synced_at()?;
-                Ok(SyncResult::Updated { count })
-            }
+            Ok(FetchResult::Updated { packages, etag }) => self.handle_update(packages, etag),
             Err(e) if has_cached_data => Ok(SyncResult::Degraded {
                 error: e.to_string(),
             }),
-            Err(e) => Err(e),
+            Err(e) => Err(anyhow::anyhow!(
+                "{e}. No local data available. Please check your network connection and run 'wasm package sync' to fetch the package index."
+            )),
         }
+    }
+
+    #[cfg(feature = "http-sync")]
+    fn handle_update(
+        &self,
+        packages: Vec<KnownPackage>,
+        etag: Option<String>,
+    ) -> anyhow::Result<SyncResult> {
+        let count = packages.len();
+        // Bulk upsert all packages.
+        for pkg in &packages {
+            let first_tag = pkg.tags.first().map(|s| s.as_str());
+            self.store.add_known_package(
+                &pkg.registry,
+                &pkg.repository,
+                first_tag,
+                pkg.description.as_deref(),
+            )?;
+            // Also add remaining tags.
+            for tag in pkg.tags.iter().skip(1) {
+                self.store.add_known_package(
+                    &pkg.registry,
+                    &pkg.repository,
+                    Some(tag),
+                    pkg.description.as_deref(),
+                )?;
+            }
+        }
+        if let Some(etag_val) = etag {
+            self.store.set_sync_meta("packages_etag", &etag_val)?;
+        }
+        self.update_last_synced_at()?;
+        Ok(SyncResult::Updated { count })
     }
 
     /// Update the `last_synced_at` timestamp in `_sync_meta`.
