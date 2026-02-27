@@ -45,6 +45,8 @@ enum SqlCommand {
     },
     /// Check that schema.sql is in sync with existing migrations (CI gate)
     Check,
+    /// Install sqlite3def for the current platform
+    Install,
 }
 
 fn main() -> Result<()> {
@@ -55,6 +57,7 @@ fn main() -> Result<()> {
         Xtask::Sql { command } => match command {
             SqlCommand::Migrate { name } => sql_migrate(&name)?,
             SqlCommand::Check => sql_check()?,
+            SqlCommand::Install => sql_install()?,
         },
     }
 
@@ -266,11 +269,109 @@ fn quote_reserved_column_names(ddl: &str) -> String {
     out
 }
 
+/// Locate the `sqlite3def` binary, checking `target/tools/` first, then PATH.
+fn find_sqlite3def(root: &Path) -> PathBuf {
+    let binary_name = if cfg!(windows) {
+        "sqlite3def.exe"
+    } else {
+        "sqlite3def"
+    };
+    let local_path = root.join("target").join("tools").join(binary_name);
+    if local_path.exists() {
+        local_path
+    } else {
+        PathBuf::from(binary_name) // Fall back to PATH
+    }
+}
+
+/// `cargo xtask sql install` — download sqlite3def for the current platform.
+fn sql_install() -> Result<()> {
+    let root = workspace_root()?;
+    let tools_dir = root.join("target").join("tools");
+    fs::create_dir_all(&tools_dir).context("creating target/tools directory")?;
+
+    let (os_name, arch_name, ext) = match (std::env::consts::OS, std::env::consts::ARCH) {
+        ("linux", "x86_64") => ("linux", "amd64", "tar.gz"),
+        ("macos", "x86_64") => ("darwin", "amd64", "tar.gz"),
+        ("macos", "aarch64") => ("darwin", "arm64", "tar.gz"),
+        ("windows", "x86_64") => ("windows", "amd64", "zip"),
+        (os, arch) => anyhow::bail!("unsupported platform: {os}/{arch}"),
+    };
+
+    let url = format!(
+        "https://github.com/sqldef/sqldef/releases/latest/download/sqlite3def_{os_name}_{arch_name}.{ext}"
+    );
+    let archive_path = tools_dir.join(format!("sqlite3def.{ext}"));
+
+    println!("Downloading sqlite3def from {url}...");
+
+    // Download with curl.
+    let status = Command::new("curl")
+        .args(["-sL", "-o"])
+        .arg(&archive_path)
+        .arg(&url)
+        .status()
+        .context("failed to run curl — is it installed?")?;
+    if !status.success() {
+        anyhow::bail!("curl failed to download sqlite3def");
+    }
+
+    // Extract the archive.
+    let status = if ext == "tar.gz" {
+        Command::new("tar")
+            .args(["xzf"])
+            .arg(&archive_path)
+            .arg("-C")
+            .arg(&tools_dir)
+            .status()
+            .context("failed to run tar")?
+    } else {
+        // .zip — use tar on Windows (available since Windows 10 1803).
+        Command::new("tar")
+            .args(["-xf"])
+            .arg(&archive_path)
+            .arg("-C")
+            .arg(&tools_dir)
+            .status()
+            .context("failed to extract zip archive")?
+    };
+    if !status.success() {
+        anyhow::bail!("failed to extract sqlite3def archive");
+    }
+
+    // Clean up the archive file.
+    let _ = fs::remove_file(&archive_path);
+
+    let binary_name = if cfg!(windows) {
+        "sqlite3def.exe"
+    } else {
+        "sqlite3def"
+    };
+    let installed_path = tools_dir.join(binary_name);
+
+    if installed_path.exists() {
+        println!(
+            "✓ Installed sqlite3def to {}",
+            installed_path
+                .strip_prefix(&root)
+                .unwrap_or(&installed_path)
+                .display()
+        );
+    } else {
+        anyhow::bail!(
+            "installation failed: {} not found after extraction",
+            installed_path.display()
+        );
+    }
+
+    Ok(())
+}
+
 /// Run `sqlite3def <db_path> --dry-run < schema.sql` and return the diff output.
 ///
 /// Returns an empty string when no changes are needed.
-fn run_sqlite3def_diff(db_path: &Path, schema_sql: &str) -> Result<String> {
-    let output = Command::new("sqlite3def")
+fn run_sqlite3def_diff(sqlite3def: &Path, db_path: &Path, schema_sql: &str) -> Result<String> {
+    let output = Command::new(sqlite3def)
         .arg(
             db_path
                 .to_str()
@@ -290,7 +391,7 @@ fn run_sqlite3def_diff(db_path: &Path, schema_sql: &str) -> Result<String> {
         })
         .context(
             "failed to run sqlite3def. Is it installed? \
-             See CONTRIBUTING.md for installation instructions.",
+             Run `cargo xtask sql install` to install it.",
         )?;
 
     if !output.status.success() {
@@ -380,6 +481,7 @@ fn sql_migrate(name: &str) -> Result<()> {
     let root = workspace_root()?;
     let migrations_dir = root.join(MIGRATIONS_DIR);
     let schema_path = root.join(SCHEMA_PATH);
+    let sqlite3def = find_sqlite3def(&root);
 
     let schema_sql = fs::read_to_string(&schema_path).context("reading schema.sql")?;
 
@@ -387,7 +489,7 @@ fn sql_migrate(name: &str) -> Result<()> {
     let clean_db = build_clean_migrations_db(&migrations_dir)?;
 
     // 2. Diff via sqlite3def --dry-run.
-    let diff = run_sqlite3def_diff(clean_db.path(), &schema_sql)?;
+    let diff = run_sqlite3def_diff(&sqlite3def, clean_db.path(), &schema_sql)?;
 
     if diff.is_empty() {
         println!("schema.sql is already in sync with migrations — nothing to generate.");
@@ -422,6 +524,7 @@ fn sql_check() -> Result<()> {
     let root = workspace_root()?;
     let migrations_dir = root.join(MIGRATIONS_DIR);
     let schema_path = root.join(SCHEMA_PATH);
+    let sqlite3def = find_sqlite3def(&root);
 
     let schema_sql = fs::read_to_string(&schema_path).context("reading schema.sql")?;
 
@@ -429,7 +532,7 @@ fn sql_check() -> Result<()> {
     let clean_db = build_clean_migrations_db(&migrations_dir)?;
 
     // 2. Diff via sqlite3def --dry-run.
-    let diff = run_sqlite3def_diff(clean_db.path(), &schema_sql)?;
+    let diff = run_sqlite3def_diff(&sqlite3def, clean_db.path(), &schema_sql)?;
 
     if diff.is_empty() {
         println!("✓ schema.sql is in sync with migrations.");

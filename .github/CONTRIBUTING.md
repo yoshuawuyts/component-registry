@@ -55,11 +55,15 @@ This check also runs automatically as part of `cargo xtask test`.
 #### Installing sqlite3def
 
 `sqlite3def` is only needed for *generating* migrations (development/CI), not
-for running the application.
+for running the application. To install it:
 
-- **macOS**: `curl -sL https://github.com/sqldef/sqldef/releases/latest/download/sqlite3def_darwin_arm64.tar.gz | tar xz && sudo mv sqlite3def /usr/local/bin/`
-- **Linux**: `curl -sL https://github.com/sqldef/sqldef/releases/latest/download/sqlite3def_linux_amd64.tar.gz | tar xz && sudo mv sqlite3def /usr/local/bin/`
-- **Windows**: Download from [GitHub releases](https://github.com/sqldef/sqldef/releases) and add to PATH.
+```sh
+cargo xtask sql install
+```
+
+This downloads the correct `sqlite3def` binary for your platform from
+[GitHub releases](https://github.com/sqldef/sqldef/releases) and places it in
+`target/tools/`.
 
 ## Code of Conduct
 The project has a [Code of Conduct](./CODE_OF_CONDUCT.md) that *all*
