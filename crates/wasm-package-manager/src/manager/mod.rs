@@ -12,7 +12,10 @@ use crate::storage::{
     ImageView, InsertResult, KnownPackage, KnownPackageView, StateInfo, Store, WitInterfaceView,
 };
 
-pub use logic::{filter_wasm_layers, should_sync, vendor_filename};
+pub use logic::{
+    TagKind, classify_tag, classify_tags, compute_orphaned_layers, filter_wasm_layers, should_sync,
+    vendor_filename,
+};
 
 /// Result of syncing the package index from a meta-registry.
 #[derive(Debug)]

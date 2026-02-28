@@ -147,3 +147,99 @@ impl From<WitInterface> for WitInterfaceView {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── ImageView ───────────────────────────────────────────────────────
+
+    #[test]
+    fn image_view_reference_with_tag() {
+        let view = ImageView {
+            ref_registry: "ghcr.io".into(),
+            ref_repository: "user/repo".into(),
+            ref_mirror_registry: None,
+            ref_tag: Some("v1.0".into()),
+            ref_digest: Some("sha256:abc123".into()),
+            manifest: OciImageManifest::default(),
+            size_on_disk: 0,
+        };
+        assert_eq!(view.reference(), "ghcr.io/user/repo:v1.0");
+    }
+
+    #[test]
+    fn image_view_reference_with_digest_only() {
+        let view = ImageView {
+            ref_registry: "docker.io".into(),
+            ref_repository: "library/nginx".into(),
+            ref_mirror_registry: None,
+            ref_tag: None,
+            ref_digest: Some("sha256:abc123".into()),
+            manifest: OciImageManifest::default(),
+            size_on_disk: 0,
+        };
+        assert_eq!(view.reference(), "docker.io/library/nginx@sha256:abc123");
+    }
+
+    #[test]
+    fn image_view_reference_no_tag_no_digest() {
+        let view = ImageView {
+            ref_registry: "ghcr.io".into(),
+            ref_repository: "user/repo".into(),
+            ref_mirror_registry: None,
+            ref_tag: None,
+            ref_digest: None,
+            manifest: OciImageManifest::default(),
+            size_on_disk: 0,
+        };
+        assert_eq!(view.reference(), "ghcr.io/user/repo");
+    }
+
+    // ── KnownPackageView ────────────────────────────────────────────────
+
+    #[test]
+    fn known_package_view_reference() {
+        let view = KnownPackageView {
+            registry: "ghcr.io".into(),
+            repository: "user/repo".into(),
+            description: None,
+            tags: vec![],
+            signature_tags: vec![],
+            attestation_tags: vec![],
+            last_seen_at: String::new(),
+            created_at: String::new(),
+        };
+        assert_eq!(view.reference(), "ghcr.io/user/repo");
+    }
+
+    #[test]
+    fn known_package_view_reference_with_tag() {
+        let view = KnownPackageView {
+            registry: "ghcr.io".into(),
+            repository: "user/repo".into(),
+            description: None,
+            tags: vec!["v1.0".into(), "latest".into()],
+            signature_tags: vec![],
+            attestation_tags: vec![],
+            last_seen_at: String::new(),
+            created_at: String::new(),
+        };
+        assert_eq!(view.reference_with_tag(), "ghcr.io/user/repo:v1.0");
+    }
+
+    #[test]
+    fn known_package_view_reference_with_tag_default() {
+        let view = KnownPackageView {
+            registry: "ghcr.io".into(),
+            repository: "user/repo".into(),
+            description: None,
+            tags: vec![],
+            signature_tags: vec![],
+            attestation_tags: vec![],
+            last_seen_at: String::new(),
+            created_at: String::new(),
+        };
+        assert_eq!(view.reference_with_tag(), "ghcr.io/user/repo:latest");
+    }
+}

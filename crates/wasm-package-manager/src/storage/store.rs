@@ -377,23 +377,22 @@ impl Store {
 
         // Find layers still needed by other manifests (ones NOT being deleted)
         let all_manifests = OciManifest::list_by_repository(&self.conn, repo_id)?;
-        let mut layers_still_needed: HashSet<String> = HashSet::new();
+        let mut retained_digests: HashSet<String> = HashSet::new();
         for other in &all_manifests {
             if manifest_ids.contains(&other.id()) {
                 continue;
             }
             if let Ok(other_layers) = OciLayer::list_by_manifest(&self.conn, other.id()) {
                 for l in other_layers {
-                    layers_still_needed.insert(l.digest);
+                    retained_digests.insert(l.digest);
                 }
             }
         }
 
         // Remove cached layers that are no longer needed
-        for layer_digest in &layer_digests {
-            if !layers_still_needed.contains(layer_digest) {
-                let _ = cacache::remove(self.state_info.store_dir(), layer_digest).await;
-            }
+        let orphaned = crate::manager::compute_orphaned_layers(&layer_digests, &retained_digests);
+        for layer_digest in &orphaned {
+            let _ = cacache::remove(self.state_info.store_dir(), layer_digest).await;
         }
 
         // Delete the manifests (FK cascade handles layers, tags, etc.)
