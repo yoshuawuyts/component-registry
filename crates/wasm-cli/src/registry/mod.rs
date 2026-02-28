@@ -226,6 +226,7 @@ mod tests {
 
         // Second image (no tag → dash)
         assert!(output.contains("ghcr.io/example/logger"));
+        assert!(output.contains("512 B"));
     }
 
     #[test]
