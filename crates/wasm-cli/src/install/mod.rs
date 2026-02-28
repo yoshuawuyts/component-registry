@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use anyhow::{Context, Result};
 use futures_concurrency::prelude::*;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
@@ -47,11 +45,11 @@ impl Opts {
         let mut lockfile: wasm_manifest::Lockfile = toml::from_str(&lockfile_str)?;
 
         // Open manager
-        let manager = Arc::new(if offline {
+        let manager = if offline {
             Manager::open_offline().await?
         } else {
             Manager::open().await?
-        });
+        };
 
         let start_time = std::time::Instant::now();
 
@@ -71,17 +69,20 @@ impl Opts {
         // Shared progress display for all concurrent installs.
         let multi = MultiProgress::new();
 
+        // `&Manager` is Copy, so each async-move block captures its own copy of
+        // the reference without requiring Arc or any synchronisation primitive.
+        let manager_ref: &Manager = &manager;
+
         // Run all installs concurrently.
         let results: Result<Vec<_>> = to_install
             .into_co_stream()
             .map(|(reference, update_manifest)| {
-                let manager = manager.clone();
                 let multi = multi.clone();
                 let vendor_dir = wasm_vendor_dir.clone();
                 let wit_vendor_dir = wit_vendor_dir.clone();
                 async move {
                     let result =
-                        install_one(&manager, multi, offline, &reference, &vendor_dir).await?;
+                        install_one(manager_ref, multi, offline, &reference, &vendor_dir).await?;
                     re_vendor_wit_files(&result, &wit_vendor_dir).await?;
                     anyhow::Ok((result, reference, update_manifest))
                 }
