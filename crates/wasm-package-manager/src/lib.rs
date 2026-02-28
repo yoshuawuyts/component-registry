@@ -15,7 +15,8 @@ pub use config::{Config, RegistryConfig};
 pub use credential_helper::CredentialHelper;
 pub use manager::{
     InstallResult, Manager, PullResult, SyncPolicy, SyncResult, TagKind, classify_tag,
-    classify_tags, compute_orphaned_layers, filter_wasm_layers, should_sync, vendor_filename,
+    classify_tags, compute_orphaned_layers, derive_component_name, filter_wasm_layers,
+    sanitize_to_wit_identifier, should_sync, vendor_filename,
 };
 pub use oci_client::Reference;
 pub use progress::ProgressEvent;

@@ -13,8 +13,8 @@ use crate::storage::{
 };
 
 pub use logic::{
-    TagKind, classify_tag, classify_tags, compute_orphaned_layers, filter_wasm_layers, should_sync,
-    vendor_filename,
+    TagKind, classify_tag, classify_tags, compute_orphaned_layers, derive_component_name,
+    filter_wasm_layers, sanitize_to_wit_identifier, should_sync, vendor_filename,
 };
 
 /// Result of syncing the package index from a meta-registry.
@@ -76,6 +76,8 @@ pub struct InstallResult {
     pub digest: Option<String>,
     /// The WIT package name if available (e.g., "wasi:logging@0.1.0").
     pub package_name: Option<String>,
+    /// The `org.opencontainers.image.title` manifest annotation, if present.
+    pub oci_title: Option<String>,
     /// The list of vendored file paths.
     pub vendored_files: Vec<std::path::PathBuf>,
     /// Whether this package is a compiled component (`true`) or a WIT interface (`false`).
@@ -377,6 +379,13 @@ impl Manager {
         let mut package_name = None;
         let mut is_component = true; // Default to component
 
+        // Extract the OCI image.title annotation from the manifest.
+        let oci_title = pull_result
+            .manifest
+            .as_ref()
+            .and_then(|m| m.annotations.as_ref())
+            .and_then(|a| a.get("org.opencontainers.image.title").cloned());
+
         // Pre-compute vendor filename from the OCI reference and image digest.
         let digest_for_name = pull_result.digest.as_deref().unwrap_or("unknown");
         let filename = vendor_filename(
@@ -417,6 +426,7 @@ impl Manager {
             tag: reference.tag().map(|s| s.to_string()),
             digest: pull_result.digest,
             package_name,
+            oci_title,
             vendored_files,
             is_component,
         })
@@ -446,6 +456,13 @@ impl Manager {
         let mut vendored_files = Vec::new();
         let mut package_name = None;
         let mut is_component = true; // Default to component
+
+        // Extract the OCI image.title annotation from the manifest.
+        let oci_title = pull_result
+            .manifest
+            .as_ref()
+            .and_then(|m| m.annotations.as_ref())
+            .and_then(|a| a.get("org.opencontainers.image.title").cloned());
 
         // Pre-compute vendor filename from the OCI reference and image digest.
         let digest_for_name = pull_result.digest.as_deref().unwrap_or("unknown");
@@ -489,6 +506,7 @@ impl Manager {
             tag: reference.tag().map(|s| s.to_string()),
             digest: pull_result.digest,
             package_name,
+            oci_title,
             vendored_files,
             is_component,
         })

@@ -96,6 +96,80 @@ pub enum TagKind {
     Attestation,
 }
 
+/// Sanitize a string into a valid WIT identifier.
+///
+/// WIT identifiers must match `[a-z][a-z0-9]*(-[a-z][a-z0-9]*)*`.
+/// Returns `None` if the input cannot be sanitized into a valid identifier
+/// (e.g. it contains only digits or special characters).
+#[must_use]
+pub fn sanitize_to_wit_identifier(input: &str) -> Option<String> {
+    // Lowercase and replace non-alphanumeric characters with hyphens.
+    let sanitized: String = input
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+        .collect();
+
+    // Collapse consecutive hyphens, strip leading/trailing hyphens.
+    let collapsed: String = sanitized
+        .split('-')
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join("-");
+
+    // Strip leading digits (WIT identifiers must start with [a-z]).
+    let trimmed = collapsed.trim_start_matches(|c: char| c.is_ascii_digit());
+
+    // Strip a possible leading hyphen left after digit removal.
+    let trimmed = trimmed.strip_prefix('-').unwrap_or(trimmed);
+
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    Some(trimmed.to_string())
+}
+
+/// Derive a human-friendly component name for use in `wasm.toml`.
+///
+/// Follows this priority chain:
+/// 1. **WIT package name** — strip the `@version` suffix.
+/// 2. **OCI `image.title`** — sanitized to a WIT-legal identifier.
+/// 3. **Last segment of the repository path** — sanitized; used when no
+///    collision with `existing_names`.
+/// 4. **Full repository path** — with `/` replaced by `-`; used on collision.
+#[must_use]
+pub fn derive_component_name(
+    package_name: Option<&str>,
+    oci_title: Option<&str>,
+    repository: &str,
+    existing_names: &HashSet<String>,
+) -> String {
+    // 1. WIT package name (strip @version).
+    if let Some(name) = package_name {
+        return name.split('@').next().unwrap_or(name).to_string();
+    }
+
+    // 2. OCI image.title annotation.
+    if let Some(title) = oci_title
+        && let Some(sanitized) = sanitize_to_wit_identifier(title)
+    {
+        return sanitized;
+    }
+
+    // 3. Last segment of the repository path.
+    let last_segment = repository.rsplit('/').next().unwrap_or(repository);
+    if let Some(sanitized) = sanitize_to_wit_identifier(last_segment)
+        && !existing_names.contains(&sanitized)
+    {
+        return sanitized;
+    }
+
+    // 4. Full repository path (on collision or if last segment fails).
+    sanitize_to_wit_identifier(&repository.replace('/', "-"))
+        .unwrap_or_else(|| repository.to_string())
+}
+
 /// Classify a list of tags into `(release, signature, attestation)` buckets.
 ///
 /// This is a convenience wrapper around [`classify_tag`] that partitions
@@ -355,5 +429,129 @@ mod tests {
         assert_eq!(release.len(), 3);
         assert!(signature.is_empty());
         assert!(attestation.is_empty());
+    }
+
+    // ── sanitize_to_wit_identifier ──────────────────────────────────────
+
+    #[test]
+    fn sanitize_already_valid() {
+        assert_eq!(
+            sanitize_to_wit_identifier("fetch"),
+            Some("fetch".to_string())
+        );
+    }
+
+    #[test]
+    fn sanitize_uppercase() {
+        assert_eq!(
+            sanitize_to_wit_identifier("Fetch"),
+            Some("fetch".to_string())
+        );
+    }
+
+    #[test]
+    fn sanitize_underscores() {
+        assert_eq!(
+            sanitize_to_wit_identifier("my_component"),
+            Some("my-component".to_string())
+        );
+    }
+
+    #[test]
+    fn sanitize_leading_digits() {
+        assert_eq!(
+            sanitize_to_wit_identifier("123fetch"),
+            Some("fetch".to_string())
+        );
+    }
+
+    #[test]
+    fn sanitize_all_digits() {
+        assert_eq!(sanitize_to_wit_identifier("12345"), None);
+    }
+
+    #[test]
+    fn sanitize_empty_after_sanitization() {
+        assert_eq!(sanitize_to_wit_identifier("!!!"), None);
+    }
+
+    #[test]
+    fn sanitize_complex() {
+        assert_eq!(
+            sanitize_to_wit_identifier("My Cool_Fetch.Component"),
+            Some("my-cool-fetch-component".to_string())
+        );
+    }
+
+    // ── derive_component_name ───────────────────────────────────────────
+
+    #[test]
+    fn derive_name_wit_package_name() {
+        let existing = HashSet::new();
+        let name = derive_component_name(
+            Some("wasi:http@0.2.10"),
+            None,
+            "webassembly/wasi-http",
+            &existing,
+        );
+        assert_eq!(name, "wasi:http");
+    }
+
+    #[test]
+    fn derive_name_oci_title() {
+        let existing = HashSet::new();
+        let name = derive_component_name(
+            None,
+            Some("My Fetch Component"),
+            "yoshuawuyts/fetch",
+            &existing,
+        );
+        assert_eq!(name, "my-fetch-component");
+    }
+
+    #[test]
+    fn derive_name_last_segment() {
+        let existing = HashSet::new();
+        let name = derive_component_name(None, None, "yoshuawuyts/fetch", &existing);
+        assert_eq!(name, "fetch");
+    }
+
+    #[test]
+    fn derive_name_collision() {
+        let mut existing = HashSet::new();
+        existing.insert("fetch".to_string());
+        let name = derive_component_name(None, None, "yoshuawuyts/fetch", &existing);
+        assert_eq!(name, "yoshuawuyts-fetch");
+    }
+
+    #[test]
+    fn derive_name_repo_with_underscores_dots() {
+        let existing = HashSet::new();
+        let name = derive_component_name(None, None, "my_org/my.component", &existing);
+        assert_eq!(name, "my-component");
+    }
+
+    #[test]
+    fn derive_name_repo_with_underscores_dots_collision() {
+        let mut existing = HashSet::new();
+        existing.insert("my-component".to_string());
+        let name = derive_component_name(None, None, "my_org/my.component", &existing);
+        assert_eq!(name, "my-org-my-component");
+    }
+
+    #[test]
+    fn derive_name_oci_title_invalid_chars() {
+        let existing = HashSet::new();
+        let name = derive_component_name(None, Some("!!!"), "yoshuawuyts/fetch", &existing);
+        // Title sanitizes to empty → falls through to last segment
+        assert_eq!(name, "fetch");
+    }
+
+    #[test]
+    fn derive_name_oci_title_sanitizes_to_empty() {
+        let existing = HashSet::new();
+        let name = derive_component_name(None, Some("12345"), "yoshuawuyts/fetch", &existing);
+        // Title is all digits → sanitizes to None → falls through
+        assert_eq!(name, "fetch");
     }
 }

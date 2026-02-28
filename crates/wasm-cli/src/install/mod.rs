@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use futures_concurrency::prelude::*;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
-use wasm_package_manager::{Manager, ProgressEvent, Reference};
+use wasm_package_manager::{Manager, ProgressEvent, Reference, derive_component_name};
 
 use crate::util::write_lock_file;
 
@@ -91,15 +91,30 @@ impl Opts {
             .await;
 
         for (result, reference, update_manifest) in results? {
-            // Use the package name from WIT metadata if available,
-            // otherwise fall back to the full OCI path (registry/repository).
-            // Strip the version suffix (e.g., "@0.2.10") from the package name
-            // so that "wasi:http@0.2.10" becomes "wasi:http" in wasm.toml.
-            let dep_name = result
-                .package_name
-                .as_deref()
-                .map(|name| name.split('@').next().unwrap_or(name).to_string())
-                .unwrap_or_else(|| format!("{}/{}", result.registry, result.repository));
+            // Derive the dependency name.
+            // For components, use `derive_component_name` which tries WIT metadata,
+            // OCI title annotation, last repository segment, then full path.
+            // For interfaces, use the WIT package name (always available).
+            let dep_name = if result.is_component {
+                let existing_names: std::collections::HashSet<String> = manifest
+                    .components
+                    .keys()
+                    .chain(manifest.interfaces.keys())
+                    .cloned()
+                    .collect();
+                derive_component_name(
+                    result.package_name.as_deref(),
+                    result.oci_title.as_deref(),
+                    &result.repository,
+                    &existing_names,
+                )
+            } else {
+                result
+                    .package_name
+                    .as_deref()
+                    .map(|name| name.split('@').next().unwrap_or(name).to_string())
+                    .unwrap_or_else(|| format!("{}/{}", result.registry, result.repository))
+            };
 
             // Determine the version from the tag
             let version = result.tag.clone().unwrap_or_default();
