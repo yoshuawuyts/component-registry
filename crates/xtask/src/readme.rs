@@ -48,6 +48,11 @@ fn wasm_help(workspace_root: &Path) -> Result<String> {
         .env("NO_COLOR", "1")
         // Remove COLUMNS so clap uses its default width on every platform.
         .env_remove("COLUMNS")
+        // Redirect stdin from /dev/null so that `terminal_size::terminal_size()`
+        // cannot detect a terminal via the inherited stdin file descriptor on CI
+        // runners.  Without this, clap may produce different column alignment on
+        // platforms where the CI runner has a terminal attached to stdin.
+        .stdin(std::process::Stdio::null())
         .output()
         .with_context(|| format!("failed to run `{}`", bin.display()))?;
 
