@@ -36,28 +36,30 @@
 //! }
 //! ```
 
+mod components;
 mod config;
 mod credential_helper;
+mod interfaces;
 mod manager;
 mod network;
+mod oci;
 mod progress;
 mod storage;
-mod utils;
 
 pub use config::{Config, RegistryConfig};
 pub use credential_helper::CredentialHelper;
+pub use interfaces::{WitInterface, WitInterfaceView, is_wit_package};
 pub use manager::{
-    InstallResult, Manager, PullResult, SyncPolicy, SyncResult, TagKind, classify_tag,
-    classify_tags, compute_orphaned_layers, derive_component_name, filter_wasm_layers,
+    InstallResult, Manager, PullResult, SyncPolicy, SyncResult, derive_component_name,
     sanitize_to_wit_identifier, should_sync, vendor_filename,
+};
+pub use oci::{
+    ImageEntry, ImageView, InsertResult, TagKind, classify_tag, classify_tags,
+    compute_orphaned_layers, filter_wasm_layers,
 };
 pub use oci_client::Reference;
 pub use progress::ProgressEvent;
-pub use storage::{
-    ImageEntry, ImageView, InsertResult, KnownPackage, KnownPackageView, Migrations, StateInfo,
-    WitInterface, WitInterfaceView,
-};
-pub use utils::is_wit_package;
+pub use storage::{KnownPackage, KnownPackageView, Migrations, StateInfo};
 
 /// Format a byte size as a human-readable string (B, KB, MB, GB).
 #[must_use]
