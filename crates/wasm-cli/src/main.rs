@@ -5,6 +5,7 @@ mod init;
 mod install;
 mod local;
 mod registry;
+mod run;
 mod self_;
 mod tui;
 mod util;
@@ -38,7 +39,7 @@ pub(crate) struct Cli {
 impl Cli {
     async fn run(self) -> Result<(), anyhow::Error> {
         match self.command {
-            Some(Command::Run) => todo!(),
+            Some(Command::Run(opts)) => opts.run(self.offline).await?,
             Some(Command::Local(opts)) => opts.run()?,
             Some(Command::Registry(opts)) => opts.run(self.offline).await?,
             Some(Command::Init(opts)) => opts.run().await?,
@@ -57,8 +58,7 @@ impl Cli {
 #[derive(clap::Parser)]
 enum Command {
     /// Execute a Wasm Component
-    #[command(subcommand)]
-    Run,
+    Run(run::Opts),
     /// Create a new wasm component in an existing directory
     Init(init::Opts),
     /// Install a dependency from an OCI registry
