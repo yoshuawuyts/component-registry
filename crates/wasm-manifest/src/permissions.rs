@@ -54,7 +54,6 @@ impl RunPermissions {
     /// For every field, a `Some` value in `overrides` replaces the
     /// corresponding value in `self`; `None` in `overrides` preserves the
     /// existing value.
-    #[must_use]
     pub fn merge(self, overrides: Self) -> Self {
         Self {
             inherit_env: overrides.inherit_env.or(self.inherit_env),
@@ -66,7 +65,6 @@ impl RunPermissions {
     }
 
     /// Collapse optional fields into concrete values using built-in defaults.
-    #[must_use]
     pub fn resolve(self) -> ResolvedPermissions {
         ResolvedPermissions {
             inherit_env: self.inherit_env.unwrap_or(false),
@@ -125,10 +123,7 @@ mod tests {
         let merged = base.merge(overrides);
         assert_eq!(merged.inherit_env, Some(true));
         assert_eq!(merged.inherit_stdio, Some(true));
-        assert_eq!(
-            merged.allow_dirs,
-            Some(vec![PathBuf::from("/data")])
-        );
+        assert_eq!(merged.allow_dirs, Some(vec![PathBuf::from("/data")]));
         assert!(merged.allow_env.is_none());
     }
 

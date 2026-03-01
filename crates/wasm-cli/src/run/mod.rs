@@ -62,8 +62,16 @@ impl WasiView for WasiState {
 impl Opts {
     /// Execute the `run` command.
     pub(crate) async fn run(self, offline: bool) -> Result<()> {
-        // 1. Resolve input — try OCI first, then treat as local path.
-        let reference = crate::util::parse_reference(&self.input).ok();
+        // 1. Resolve input — local files take priority over OCI references.
+        let local_path = PathBuf::from(&self.input);
+        let is_local = local_path.exists();
+
+        // Only try OCI when the input is not a local file.
+        let reference = if is_local {
+            None
+        } else {
+            crate::util::parse_reference(&self.input).ok()
+        };
 
         // 2. Get Wasm bytes.
         let bytes = if let Some(ref oci_ref) = reference {
@@ -79,10 +87,9 @@ impl Opts {
                 .await
                 .with_context(|| format!("failed to read cached component for {key}"))?
         } else {
-            let path = PathBuf::from(&self.input);
-            tokio::fs::read(&path)
+            tokio::fs::read(&local_path)
                 .await
-                .with_context(|| format!("failed to read {}", path.display()))?
+                .with_context(|| format!("failed to read {}", local_path.display()))?
         };
 
         // 3. Validate — must be a Wasm Component.
@@ -140,10 +147,7 @@ impl Opts {
     ) -> Result<wasm_manifest::ResolvedPermissions> {
         // Layer 1: global config defaults
         let config = wasm_package_manager::Config::load().unwrap_or_default();
-        let base = config
-            .run
-            .map(|r| r.permissions)
-            .unwrap_or_default();
+        let base = config.run.map(|r| r.permissions).unwrap_or_default();
 
         // Layer 2: global components.toml per-component override
         let global_component = wasm_package_manager::Config::load_components()
@@ -199,7 +203,9 @@ fn validate_component(bytes: &[u8]) -> Result<()> {
                 return match encoding {
                     Encoding::Component => Ok(()),
                     Encoding::Module => {
-                        bail!("only Wasm Components can be executed; this appears to be a core module")
+                        bail!(
+                            "only Wasm Components can be executed; this appears to be a core module"
+                        )
                     }
                 };
             }
@@ -237,7 +243,12 @@ fn execute_component(
     // Pre-open directories with full read/write permissions.
     for dir in &permissions.allow_dirs {
         builder
-            .preopened_dir(dir, dir.to_string_lossy(), DirPerms::all(), FilePerms::all())
+            .preopened_dir(
+                dir,
+                dir.to_string_lossy(),
+                DirPerms::all(),
+                FilePerms::all(),
+            )
             .with_context(|| format!("failed to pre-open directory: {}", dir.display()))?;
     }
     if permissions.inherit_network {

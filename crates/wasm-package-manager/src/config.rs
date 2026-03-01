@@ -234,7 +234,9 @@ impl Config {
     /// # Errors
     ///
     /// Returns an error if the file exists but cannot be read or parsed.
-    pub fn load_components_from(config_dir: Option<PathBuf>) -> Result<Option<wasm_manifest::Manifest>> {
+    pub fn load_components_from(
+        config_dir: Option<PathBuf>,
+    ) -> Result<Option<wasm_manifest::Manifest>> {
         let path = Self::components_path_from(config_dir);
         if !path.exists() {
             return Ok(None);
