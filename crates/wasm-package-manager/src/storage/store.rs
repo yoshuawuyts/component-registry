@@ -254,6 +254,7 @@ impl Store {
         layer_digest: &str,
         data: &[u8],
         manifest_id: Option<i64>,
+        media_type: Option<&str>,
         position: i32,
     ) -> anyhow::Result<()> {
         let cache = self.state_info.store_dir();
@@ -264,7 +265,7 @@ impl Store {
                 &self.conn,
                 manifest_id,
                 layer_digest,
-                None,
+                media_type,
                 Some(data.len() as i64),
                 position,
             )?;
