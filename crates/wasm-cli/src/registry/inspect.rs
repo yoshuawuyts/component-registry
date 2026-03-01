@@ -1,31 +1,46 @@
 use bytesize::ByteSize;
-use std::fs;
 use std::io::{Stdout, Write};
-use std::path::PathBuf;
 
 use anyhow::Result;
 use comfy_table::modifiers::UTF8_ROUND_CORNERS;
 use comfy_table::presets::UTF8_FULL;
 use comfy_table::{CellAlignment, ContentArrangement, Table};
 use wasm_metadata::{Metadata, Payload};
+use wasm_package_manager::Reference;
+use wasm_package_manager::manager::Manager;
+use wasm_package_manager::oci::filter_wasm_layers;
 
-/// Read metadata (module name, producers) from a WebAssembly file.
-#[derive(clap::Parser)]
-pub(crate) struct Opts {
-    /// Path to a .wasm to inspect
-    input: PathBuf,
+/// Inspect the metadata of a package on the registry.
+#[derive(clap::Args)]
+pub(crate) struct InspectOpts {
+    /// The reference to inspect (e.g., ghcr.io/example/component:tag)
+    #[arg(value_parser = crate::util::parse_reference)]
+    reference: Reference,
 
     /// Output in JSON encoding
     #[clap(long)]
     json: bool,
 }
 
-impl Opts {
-    pub(crate) fn run(&self) -> Result<()> {
-        let mut output = std::io::stdout();
+impl InspectOpts {
+    pub(crate) async fn run(self, store: &Manager) -> Result<()> {
+        let reference = self.reference;
+        let pull_result = store.pull(reference.clone()).await?;
 
-        let file = fs::read(&self.input)?;
-        let payload = wasm_metadata::Payload::from_binary(&file)?;
+        let manifest = pull_result
+            .manifest
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No manifest found for '{}'", reference.whole()))?;
+
+        let wasm_layers = filter_wasm_layers(&manifest.layers);
+        let layer = wasm_layers
+            .first()
+            .ok_or_else(|| anyhow::anyhow!("No wasm layers found for '{}'", reference.whole()))?;
+
+        let data = store.get(&layer.digest).await?;
+        let payload = wasm_metadata::Payload::from_binary(&data)?;
+
+        let mut output = std::io::stdout();
         if self.json {
             write!(output, "{}", serde_json::to_string(&payload)?)?;
         } else {
@@ -76,7 +91,7 @@ fn write_summary_table(payload: &Payload, f: &mut Stdout) -> Result<()> {
     find_range_max(&mut range_max, payload);
 
     // Recursively add all children to the table
-    write_summary_table_inner(payload, "<root>", &mut 0, range_max, f, &mut table)?;
+    write_summary_table_inner(payload, "<root>", &mut 0, range_max, &mut table)?;
 
     // Write the table to the writer
     writeln!(f, "{table}")?;
@@ -90,7 +105,6 @@ fn write_summary_table_inner(
     parent: &str,
     unknown_id: &mut u16,
     range_max: usize,
-    _f: &mut Stdout,
     table: &mut Table,
 ) -> Result<()> {
     let Metadata {
@@ -143,7 +157,7 @@ fn write_summary_table_inner(
     // Recursively print any children
     if let Payload::Component { children, .. } = payload {
         for payload in children {
-            write_summary_table_inner(payload, &name, unknown_id, range_max, _f, table)?;
+            write_summary_table_inner(payload, &name, unknown_id, range_max, table)?;
         }
     }
 
