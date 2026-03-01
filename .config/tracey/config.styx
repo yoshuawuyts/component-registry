@@ -4,7 +4,7 @@ specs (
     {
         name wasm-cli
         source_url https://github.com/yoshuawuyts/wasm-cli
-        include (docs/spec/**/*.md)
+        include (spec/**/*.md)
         impls (
             {
                 name rust
