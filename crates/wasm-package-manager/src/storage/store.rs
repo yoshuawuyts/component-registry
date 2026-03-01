@@ -1,4 +1,5 @@
 use anyhow::Context;
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::path::Path;
@@ -163,10 +164,18 @@ impl Store {
 
         let manifest = image.manifest.clone();
 
-        // Only store layers if this is a new entry
-        if result == InsertResult::Inserted
-            && let Some(ref manifest) = image.manifest
-        {
+        // Store layers when the manifest is newly inserted, or when it was a
+        // placeholder (e.g. from referrer discovery) that has no layers yet.
+        let needs_layers = was_inserted || {
+            let layer_count: i64 = self.conn.query_row(
+                "SELECT COUNT(*) FROM oci_layer WHERE oci_manifest_id = ?1",
+                [manifest_id],
+                |row| row.get(0),
+            )?;
+            layer_count == 0
+        };
+
+        if needs_layers && let Some(ref manifest) = image.manifest {
             for (idx, layer) in image.layers.iter().enumerate() {
                 let cache = self.state_info.store_dir();
                 let fallback_key = reference.whole().to_string();
@@ -205,7 +214,12 @@ impl Store {
                 self.try_extract_wit_interface(manifest_id, Some(layer_id), data);
             }
         }
-        Ok((result, digest, manifest, Some(manifest_id)))
+        let manifest_id_opt = if result == InsertResult::Inserted {
+            Some(manifest_id)
+        } else {
+            None
+        };
+        Ok((result, digest, manifest, manifest_id_opt))
     }
 
     /// Insert only the metadata (SQLite entry) for an image, without storing layers.
@@ -278,7 +292,7 @@ impl Store {
         manifest_id: Option<i64>,
         media_type: Option<&str>,
         position: i32,
-        layer_annotations: Option<&HashMap<String, String>>,
+        layer_annotations: Option<&BTreeMap<String, String>>,
     ) -> anyhow::Result<()> {
         let cache = self.state_info.store_dir();
         let _integrity = cacache::write(&cache, layer_digest, data).await?;

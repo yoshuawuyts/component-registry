@@ -277,11 +277,6 @@ impl Manager {
                     .await;
 
                 // Store the layer (with annotations from the descriptor)
-                let layer_annotations: Option<std::collections::HashMap<String, String>> =
-                    layer_descriptor
-                        .annotations
-                        .as_ref()
-                        .map(|a| a.iter().map(|(k, v)| (k.clone(), v.clone())).collect());
                 self.store
                     .insert_layer(
                         &layer_descriptor.digest,
@@ -289,7 +284,7 @@ impl Manager {
                         image_id,
                         Some(layer_descriptor.media_type.as_str()),
                         index as i32,
-                        layer_annotations.as_ref(),
+                        layer_descriptor.annotations.as_ref(),
                     )
                     .await?;
 
@@ -830,11 +825,20 @@ impl Manager {
 
     /// Best-effort: fetch and store referrers (signatures, SBOMs, attestations)
     /// for a manifest. Silently skips if the registry doesn't support the
-    /// Referrers API or if any error occurs.
+    /// Referrers API or if any error occurs, but logs unexpected errors.
     async fn try_store_referrers(&self, reference: &Reference, manifest_id: i64) {
         let index = match self.client.pull_referrers(reference).await {
             Ok(Some(index)) => index,
-            _ => return,
+            Ok(None) => return,
+            Err(e) => {
+                tracing::debug!(
+                    "Failed to pull referrers for {}/{}: {}",
+                    reference.registry(),
+                    reference.repository(),
+                    e
+                );
+                return;
+            }
         };
 
         for entry in &index.manifests {

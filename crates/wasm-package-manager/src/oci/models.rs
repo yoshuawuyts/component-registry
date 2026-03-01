@@ -237,8 +237,9 @@ impl OciManifest {
     /// Well-known OCI annotation keys are extracted into dedicated columns;
     /// remaining annotations are stored in `oci_manifest_annotation`.
     ///
-    /// Uses `INSERT … ON CONFLICT DO NOTHING` so duplicate digests within the
-    /// same repository are silently skipped. Returns `(manifest_id, was_inserted)`.
+    /// Uses `INSERT … ON CONFLICT DO UPDATE SET` with `COALESCE` so that
+    /// placeholder rows (e.g. from referrer discovery) are filled in when
+    /// a full pull supplies non-NULL data. Returns `(manifest_id, was_inserted)`.
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn upsert(
         conn: &Connection,
@@ -265,7 +266,21 @@ impl OciManifest {
             }
         }
 
-        let rows_inserted = conn.execute(
+        // Check if the row already exists so we can report was_inserted correctly.
+        let already_exists: bool = conn
+            .query_row(
+                "SELECT COUNT(*) FROM oci_manifest
+                 WHERE oci_repository_id = ?1 AND digest = ?2",
+                (oci_repository_id, digest),
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap_or(0)
+            > 0;
+
+        // COALESCE keeps the existing non-NULL value, only filling in NULLs
+        // from the incoming data. This lets placeholder manifests (created by
+        // referrer discovery) be upgraded later by a full pull.
+        conn.execute(
             "INSERT INTO oci_manifest (
                 oci_repository_id, digest, media_type, raw_json, size_bytes,
                 artifact_type, config_media_type, config_digest,
@@ -279,7 +294,27 @@ impl OciManifest {
                 ?14, ?15, ?16, ?17, ?18,
                 ?19, ?20, ?21, ?22
              )
-             ON CONFLICT(oci_repository_id, digest) DO NOTHING",
+             ON CONFLICT(oci_repository_id, digest) DO UPDATE SET
+                media_type       = COALESCE(excluded.media_type,       oci_manifest.media_type),
+                raw_json         = COALESCE(excluded.raw_json,         oci_manifest.raw_json),
+                size_bytes       = COALESCE(excluded.size_bytes,       oci_manifest.size_bytes),
+                artifact_type    = COALESCE(excluded.artifact_type,    oci_manifest.artifact_type),
+                config_media_type= COALESCE(excluded.config_media_type,oci_manifest.config_media_type),
+                config_digest    = COALESCE(excluded.config_digest,    oci_manifest.config_digest),
+                oci_created      = COALESCE(excluded.oci_created,      oci_manifest.oci_created),
+                oci_authors      = COALESCE(excluded.oci_authors,      oci_manifest.oci_authors),
+                oci_url          = COALESCE(excluded.oci_url,          oci_manifest.oci_url),
+                oci_documentation= COALESCE(excluded.oci_documentation,oci_manifest.oci_documentation),
+                oci_source       = COALESCE(excluded.oci_source,       oci_manifest.oci_source),
+                oci_version      = COALESCE(excluded.oci_version,      oci_manifest.oci_version),
+                oci_revision     = COALESCE(excluded.oci_revision,     oci_manifest.oci_revision),
+                oci_vendor       = COALESCE(excluded.oci_vendor,       oci_manifest.oci_vendor),
+                oci_licenses     = COALESCE(excluded.oci_licenses,     oci_manifest.oci_licenses),
+                oci_ref_name     = COALESCE(excluded.oci_ref_name,     oci_manifest.oci_ref_name),
+                oci_title        = COALESCE(excluded.oci_title,        oci_manifest.oci_title),
+                oci_description  = COALESCE(excluded.oci_description,  oci_manifest.oci_description),
+                oci_base_digest  = COALESCE(excluded.oci_base_digest,  oci_manifest.oci_base_digest),
+                oci_base_name    = COALESCE(excluded.oci_base_name,    oci_manifest.oci_base_name)",
             rusqlite::params![
                 oci_repository_id,
                 digest,
@@ -306,7 +341,7 @@ impl OciManifest {
             ],
         )?;
 
-        let was_inserted = rows_inserted > 0;
+        let was_inserted = !already_exists;
 
         // Retrieve the canonical row id.
         let manifest_id: i64 = conn.query_row(
@@ -315,16 +350,14 @@ impl OciManifest {
             |row| row.get(0),
         )?;
 
-        // Store extra (non-well-known) annotations (only on insert).
-        if was_inserted {
-            for (key, value) in &extra {
-                conn.execute(
-                    "INSERT INTO oci_manifest_annotation (oci_manifest_id, `key`, `value`)
-                     VALUES (?1, ?2, ?3)
-                     ON CONFLICT(oci_manifest_id, `key`) DO UPDATE SET `value` = ?3",
-                    rusqlite::params![manifest_id, key, value],
-                )?;
-            }
+        // Store extra (non-well-known) annotations.
+        for (key, value) in &extra {
+            conn.execute(
+                "INSERT INTO oci_manifest_annotation (oci_manifest_id, `key`, `value`)
+                 VALUES (?1, ?2, ?3)
+                 ON CONFLICT(oci_manifest_id, `key`) DO UPDATE SET `value` = ?3",
+                rusqlite::params![manifest_id, key, value],
+            )?;
         }
 
         Ok((manifest_id, was_inserted))
@@ -1331,6 +1364,68 @@ mod tests {
         assert!(
             referrers.is_empty(),
             "referrer rows should be deleted when subject manifest is deleted"
+        );
+    }
+
+    #[test]
+    fn test_oci_manifest_upsert_upgrades_placeholder() {
+        let conn = setup_test_db();
+        let repo_id = OciRepository::upsert(&conn, "ghcr.io", "user/repo").unwrap();
+
+        // First insert: placeholder with minimal data (as store_referrer does)
+        let (mid1, was_inserted1) = OciManifest::upsert(
+            &conn,
+            repo_id,
+            "sha256:placeholder",
+            None,
+            None,
+            None,
+            Some("application/vnd.dev.cosign.simplesigning.v1+json"),
+            None,
+            None,
+            &HashMap::new(),
+        )
+        .unwrap();
+        assert!(was_inserted1);
+
+        // Verify placeholder has NULL raw_json
+        let placeholder = OciManifest::find(&conn, repo_id, "sha256:placeholder")
+            .unwrap()
+            .unwrap();
+        assert!(placeholder.raw_json.is_none());
+
+        // Second insert: full data (as a normal pull would provide)
+        let (mid2, was_inserted2) = OciManifest::upsert(
+            &conn,
+            repo_id,
+            "sha256:placeholder",
+            Some("application/vnd.oci.image.manifest.v1+json"),
+            Some("{\"layers\":[]}"),
+            Some(4096),
+            None,
+            Some("application/vnd.oci.image.config.v1+json"),
+            Some("sha256:configabc"),
+            &HashMap::new(),
+        )
+        .unwrap();
+        assert!(!was_inserted2, "should report as not newly inserted");
+        assert_eq!(mid1, mid2, "should return the same manifest ID");
+
+        // Verify fields were filled in
+        let upgraded = OciManifest::find(&conn, repo_id, "sha256:placeholder")
+            .unwrap()
+            .unwrap();
+        assert_eq!(upgraded.raw_json.as_deref(), Some("{\"layers\":[]}"));
+        assert_eq!(upgraded.size_bytes, Some(4096));
+        assert_eq!(
+            upgraded.config_media_type.as_deref(),
+            Some("application/vnd.oci.image.config.v1+json")
+        );
+        assert_eq!(upgraded.config_digest.as_deref(), Some("sha256:configabc"));
+        // artifact_type should still be set from the placeholder
+        assert_eq!(
+            upgraded.artifact_type.as_deref(),
+            Some("application/vnd.dev.cosign.simplesigning.v1+json")
         );
     }
 }

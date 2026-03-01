@@ -147,7 +147,11 @@ impl Client {
             Ok(index) => Ok(Some(index)),
             // Registry may not support the Referrers API — log and skip.
             Err(e) => {
-                tracing::debug!("Referrers API unavailable for {}: {}", reference, e);
+                tracing::warn!(
+                    "Failed to pull referrers for {} (treating as no referrers): {}",
+                    reference,
+                    e
+                );
                 Ok(None)
             }
         }
