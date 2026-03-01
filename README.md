@@ -139,6 +139,19 @@ to our manifest and lockfile. Our `deps/wasm.toml` file should now look like thi
 
 TODO: show how to run the component
 
+## Crates
+
+This project is composed of several crates:
+
+| Crate                                                 | Description                                                                                          |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| [`wasm`](crates/wasm-cli)                             | The `wasm(1)` command-line interface providing unified WebAssembly developer tools                   |
+| [`wasm-package-manager`](crates/wasm-package-manager) | A stateful library to interact with OCI registries storing WebAssembly Components                    |
+| [`wasm-detector`](crates/wasm-detector)               | A library to detect local `.wasm` files in a repository                                              |
+| [`wasm-manifest`](crates/wasm-manifest)               | Manifest and lockfile format types for WebAssembly packages                                          |
+| [`wasm-meta-registry`](crates/wasm-meta-registry)     | An HTTP server that indexes OCI registries for WebAssembly package metadata and exposes a search API |
+| [`xtask`](crates/xtask)                               | Internal development automation tasks (formatting, linting, testing, migrations)                     |
+
 ## Contributing
 Want to join us? Check out our ["Contributing" guide][contributing] and take a
 look at some of these issues:
