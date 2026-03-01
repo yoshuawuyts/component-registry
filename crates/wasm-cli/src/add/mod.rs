@@ -44,14 +44,15 @@ impl Opts {
             anyhow::bail!("--name can only be used when adding a single reference");
         }
 
-        for reference in &self.references {
-            let existing_names: std::collections::HashSet<String> = manifest
-                .components
-                .keys()
-                .chain(manifest.interfaces.keys())
-                .cloned()
-                .collect();
+        // Build the set of existing names once; update it as we add entries.
+        let mut existing_names: std::collections::HashSet<String> = manifest
+            .components
+            .keys()
+            .chain(manifest.interfaces.keys())
+            .cloned()
+            .collect();
 
+        for reference in &self.references {
             let result = manager
                 .add(reference, self.name.as_deref(), &existing_names)
                 .await?;
@@ -61,6 +62,7 @@ impl Opts {
             let reference_str = reference.whole().clone();
             let dep = wasm_manifest::Dependency::Compact(reference_str);
             manifest.interfaces.insert(result.dep_name.clone(), dep);
+            existing_names.insert(result.dep_name.clone());
 
             println!(
                 "{:>12} {} as \"{}\"",
