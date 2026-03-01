@@ -47,7 +47,7 @@ pub mod oci;
 mod progress;
 pub mod storage;
 
-pub use config::{Config, RegistryConfig};
+pub use config::{Config, RegistryConfig, RunConfig};
 pub use credential_helper::CredentialHelper;
 pub use oci_client::Reference;
 pub use progress::ProgressEvent;
