@@ -132,7 +132,13 @@ impl WasmDetector {
     ///
     /// Returns an error if the detection fails to complete.
     pub fn detect(&self) -> Result<Vec<WasmEntry>, ignore::Error> {
-        self.into_iter().collect()
+        self.iter().collect()
+    }
+
+    /// Returns an iterator over discovered `.wasm` files.
+    #[must_use]
+    pub fn iter(&self) -> WasmDetectorIter {
+        WasmDetectorIter::new(self)
     }
 
     /// Find all well-known wasm directories that exist in the root.
@@ -176,7 +182,7 @@ impl IntoIterator for WasmDetector {
     type IntoIter = WasmDetectorIter;
 
     fn into_iter(self) -> Self::IntoIter {
-        WasmDetectorIter::new(self)
+        WasmDetectorIter::new(&self)
     }
 }
 
@@ -185,7 +191,7 @@ impl IntoIterator for &WasmDetector {
     type IntoIter = WasmDetectorIter;
 
     fn into_iter(self) -> Self::IntoIter {
-        WasmDetectorIter::new(self.clone())
+        WasmDetectorIter::new(self)
     }
 }
 
@@ -218,7 +224,7 @@ impl std::fmt::Debug for WasmDetectorIter {
 }
 
 impl WasmDetectorIter {
-    fn new(detector: WasmDetector) -> Self {
+    fn new(detector: &WasmDetector) -> Self {
         // Build the main walker that respects gitignore
         let main_walker = WalkBuilder::new(&detector.root)
             .hidden(!detector.include_hidden)

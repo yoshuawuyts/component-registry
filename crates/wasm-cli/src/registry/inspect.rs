@@ -1,3 +1,5 @@
+#![allow(clippy::print_stdout, clippy::print_stderr)]
+
 use bytesize::ByteSize;
 use std::io::{Stdout, Write};
 
@@ -38,7 +40,7 @@ impl InspectOpts {
             .ok_or_else(|| anyhow::anyhow!("No wasm layers found for '{}'", reference.whole()))?;
 
         let data = store.get(&layer.digest).await?;
-        let payload = wasm_metadata::Payload::from_binary(&data)?;
+        let payload = Payload::from_binary(&data)?;
 
         let mut output = std::io::stdout();
         if self.json {
@@ -48,6 +50,20 @@ impl InspectOpts {
             write_details_table(&payload, &mut output)?;
         }
         Ok(())
+    }
+}
+
+/// Get the max value of the `range` field across a payload and all children.
+fn find_range_max(max: &mut usize, payload: &Payload) {
+    let range = &payload.metadata().range;
+    if range.end > *max {
+        *max = range.end;
+    }
+
+    if let Payload::Component { children, .. } = payload {
+        for child in children {
+            find_range_max(max, child);
+        }
     }
 }
 
@@ -72,20 +88,6 @@ fn write_summary_table(payload: &Payload, f: &mut Stdout) -> Result<()> {
         .column_mut(3)
         .expect("This should be the SIZE% column")
         .set_cell_alignment(CellAlignment::Right);
-
-    // Get the max value of the `range` field. This is the upper memory bound.
-    fn find_range_max(max: &mut usize, payload: &Payload) {
-        let range = &payload.metadata().range;
-        if range.end > *max {
-            *max = range.end;
-        }
-
-        if let Payload::Component { children, .. } = payload {
-            for child in children {
-                find_range_max(max, child);
-            }
-        }
-    }
 
     let mut range_max = 0;
     find_range_max(&mut range_max, payload);
@@ -114,20 +116,25 @@ fn write_summary_table_inner(
         ..
     } = payload.metadata();
 
-    let name = match name.as_deref() {
-        Some(name) => name.to_owned(),
-        None => {
-            let name = format!("unknown({unknown_id})");
-            *unknown_id += 1;
-            name
-        }
+    let name = if let Some(name) = name.as_deref() {
+        name.to_owned()
+    } else {
+        let name = format!("unknown({unknown_id})");
+        *unknown_id += 1;
+        name
     };
-    let size = ByteSize::b((range.end - range.start) as u64)
+    let size_bytes = range.end - range.start;
+    let size = ByteSize::b(u64::try_from(size_bytes).unwrap_or(u64::MAX))
         .display()
         .si_short()
         .to_string();
 
-    let usep = match ((range.end - range.start) as f64 / range_max as f64 * 100.0).round() as u8 {
+    let percent = if range_max == 0 {
+        0usize
+    } else {
+        size_bytes.saturating_mul(100) / range_max
+    };
+    let usep = match u8::try_from(percent.min(100)).unwrap_or(100) {
         // If the item was truly empty, it wouldn't be part of the binary
         0..=1 => "<1%".to_string(),
         // We're hedging against the low-ends, this hedges against the high-ends.
@@ -243,10 +250,10 @@ fn write_details_table(payload: &Payload, f: &mut Stdout) -> Result<()> {
         });
 
         // Add the producers to the table
-        for (name, pairs) in producers.iter() {
+        for (name, pairs) in &producers {
             for (field, version) in pairs.iter() {
                 match version.len() {
-                    0 => table.add_row(vec![name, &field.to_string()]),
+                    0 => table.add_row(vec![name, field]),
                     _ => table.add_row(vec![name, &format!("{field} [{version}]")]),
                 };
             }

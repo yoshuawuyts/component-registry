@@ -221,7 +221,11 @@ impl Manager {
             .await;
 
         // Calculate total size from manifest layer descriptors
-        let size_on_disk: u64 = manifest.layers.iter().map(|l| l.size.max(0) as u64).sum();
+        let size_on_disk: u64 = manifest
+            .layers
+            .iter()
+            .map(|l| u64::try_from(l.size.max(0)).unwrap_or(0))
+            .sum();
 
         // Insert metadata into the database
         let (result, image_id) =
@@ -232,7 +236,7 @@ impl Manager {
             // Stream and store each layer individually with progress
             for (index, layer_descriptor) in manifest.layers.iter().enumerate() {
                 let total_bytes = if layer_descriptor.size > 0 {
-                    Some(layer_descriptor.size as u64)
+                    Some(u64::try_from(layer_descriptor.size).unwrap_or(0))
                 } else {
                     None
                 };
@@ -261,7 +265,7 @@ impl Manager {
 
                 while let Some(chunk) = stream.next().await {
                     let chunk = chunk?;
-                    bytes_downloaded += chunk.len() as u64;
+                    bytes_downloaded += u64::try_from(chunk.len()).unwrap_or(0);
                     layer_data.extend_from_slice(&chunk);
 
                     let _ = progress_tx
@@ -283,7 +287,7 @@ impl Manager {
                         &layer_data,
                         image_id,
                         Some(layer_descriptor.media_type.as_str()),
-                        index as i32,
+                        i32::try_from(index).unwrap_or(i32::MAX),
                         layer_descriptor.annotations.as_ref(),
                     )
                     .await?;
@@ -294,7 +298,7 @@ impl Manager {
             // Package already cached — show layers as completed
             for (index, layer_descriptor) in manifest.layers.iter().enumerate() {
                 let total_bytes = if layer_descriptor.size > 0 {
-                    Some(layer_descriptor.size as u64)
+                    Some(u64::try_from(layer_descriptor.size).unwrap_or(0))
                 } else {
                     None
                 };
@@ -431,7 +435,7 @@ impl Manager {
         Ok(InstallResult {
             registry: reference.registry().to_string(),
             repository: reference.repository().to_string(),
-            tag: reference.tag().map(|s| s.to_string()),
+            tag: reference.tag().map(str::to_string),
             digest: pull_result.digest,
             package_name,
             oci_title,
@@ -511,7 +515,7 @@ impl Manager {
         Ok(InstallResult {
             registry: reference.registry().to_string(),
             repository: reference.repository().to_string(),
-            tag: reference.tag().map(|s| s.to_string()),
+            tag: reference.tag().map(str::to_string),
             digest: pull_result.digest,
             package_name,
             oci_title,
@@ -751,7 +755,9 @@ impl Manager {
             let now = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
-                .as_secs() as i64;
+                .as_secs()
+                .try_into()
+                .unwrap_or(i64::MAX);
             if !should_sync(last_synced_epoch, sync_interval, now) {
                 return Ok(SyncResult::Skipped);
             }
@@ -770,7 +776,7 @@ impl Manager {
                 self.update_last_synced_at()?;
                 Ok(SyncResult::NotModified)
             }
-            Ok(FetchResult::Updated { packages, etag }) => self.handle_update(packages, etag),
+            Ok(FetchResult::Updated { packages, etag }) => self.handle_update(&packages, etag),
             Err(e) if has_cached_data => Ok(SyncResult::Degraded {
                 error: e.to_string(),
             }),
@@ -783,13 +789,13 @@ impl Manager {
     #[cfg(feature = "http-sync")]
     fn handle_update(
         &self,
-        packages: Vec<crate::storage::KnownPackage>,
+        packages: &[crate::storage::KnownPackage],
         etag: Option<String>,
     ) -> anyhow::Result<SyncResult> {
         let count = packages.len();
         // Bulk upsert all packages.
-        for pkg in &packages {
-            let first_tag = pkg.tags.first().map(|s| s.as_str());
+        for pkg in packages {
+            let first_tag = pkg.tags.first().map(String::as_str);
             self.store.add_known_package(
                 &pkg.registry,
                 &pkg.repository,

@@ -115,13 +115,13 @@ pub(crate) struct App {
     log_scroll: usize,
     /// Whether offline mode is enabled
     offline: bool,
-    app_sender: mpsc::Sender<AppEvent>,
+    event_sender: mpsc::Sender<AppEvent>,
     manager_receiver: mpsc::Receiver<ManagerEvent>,
 }
 
 impl App {
     pub(crate) fn new(
-        app_sender: mpsc::Sender<AppEvent>,
+        event_sender: mpsc::Sender<AppEvent>,
         manager_receiver: mpsc::Receiver<ManagerEvent>,
         offline: bool,
     ) -> Self {
@@ -141,7 +141,7 @@ impl App {
             log_lines: Vec::new(),
             log_scroll: 0,
             offline,
-            app_sender,
+            event_sender,
             manager_receiver,
         }
     }
@@ -153,12 +153,12 @@ impl App {
             self.handle_manager_events();
         }
         // Notify manager that we're quitting
-        let _ = self.app_sender.try_send(AppEvent::Quit);
+        let _ = self.event_sender.try_send(AppEvent::Quit);
         Ok(())
     }
 
     #[allow(clippy::indexing_slicing)]
-    fn render_frame(&mut self, frame: &mut ratatui::Frame) {
+    fn render_frame(&mut self, frame: &mut Frame) {
         let area = frame.area();
         let status = match (self.manager_state, self.offline) {
             (_, true) => "offline",
@@ -170,7 +170,7 @@ impl App {
         let layout = Layout::vertical([Constraint::Length(3), Constraint::Min(0)]).split(area);
 
         // Render tab bar
-        let tab_bar = TabBar::new(format!("wasm(1) - {}", status), self.current_tab);
+        let tab_bar = TabBar::new(format!("wasm(1) - {status}"), self.current_tab);
         frame.render_widget(tab_bar, layout[0]);
 
         // Render content based on current tab
@@ -215,21 +215,21 @@ impl App {
                 );
             }
             Tab::Settings => {
-                frame.render_widget(SettingsView::new(self.state_info.as_ref()), content_area)
+                frame.render_widget(SettingsView::new(self.state_info.as_ref()), content_area);
             }
             Tab::Log => {
-                frame.render_widget(LogView::new(&self.log_lines, self.log_scroll), content_area)
+                frame.render_widget(LogView::new(&self.log_lines, self.log_scroll), content_area);
             }
         }
 
         // Render pull prompt overlay if active
         if let InputMode::PullPrompt(ref state) = self.input_mode {
-            self.render_pull_prompt(frame, area, state.clone());
+            Self::render_pull_prompt(frame, area, state);
         }
     }
 
     #[allow(clippy::indexing_slicing)]
-    fn render_pull_prompt(&self, frame: &mut ratatui::Frame, area: Rect, state: PullPromptState) {
+    fn render_pull_prompt(frame: &mut Frame, area: Rect, state: &PullPromptState) {
         // Calculate centered popup area
         let popup_width = 60.min(area.width.saturating_sub(4));
         let popup_height = if state.error.is_some() { 7 } else { 5 };
@@ -308,11 +308,11 @@ impl App {
                 ManagerEvent::Ready => {
                     self.manager_state = ManagerState::Ready;
                     // Request packages list and state info when manager is ready
-                    let _ = self.app_sender.try_send(AppEvent::RequestPackages);
-                    let _ = self.app_sender.try_send(AppEvent::RequestStateInfo);
-                    let _ = self.app_sender.try_send(AppEvent::RequestKnownPackages);
-                    let _ = self.app_sender.try_send(AppEvent::RequestWitInterfaces);
-                    let _ = self.app_sender.try_send(AppEvent::DetectLocalWasm);
+                    let _ = self.event_sender.try_send(AppEvent::RequestPackages);
+                    let _ = self.event_sender.try_send(AppEvent::RequestStateInfo);
+                    let _ = self.event_sender.try_send(AppEvent::RequestKnownPackages);
+                    let _ = self.event_sender.try_send(AppEvent::RequestWitInterfaces);
+                    let _ = self.event_sender.try_send(AppEvent::DetectLocalWasm);
                 }
                 ManagerEvent::PackagesList(packages) => {
                     self.packages = packages;
@@ -326,10 +326,8 @@ impl App {
                 ManagerEvent::DeleteResult(_result) => {
                     // Delete completed, packages list will be refreshed automatically
                 }
-                ManagerEvent::SearchResults(packages) => {
-                    self.known_packages = packages;
-                }
-                ManagerEvent::KnownPackagesList(packages) => {
+                ManagerEvent::SearchResults(packages)
+                | ManagerEvent::KnownPackagesList(packages) => {
                     self.known_packages = packages;
                 }
                 ManagerEvent::RefreshTagsResult(_result) => {
@@ -370,8 +368,8 @@ impl App {
                     InputMode::Normal
                 };
                 // Refresh known packages and WIT interfaces
-                let _ = self.app_sender.try_send(AppEvent::RequestKnownPackages);
-                let _ = self.app_sender.try_send(AppEvent::RequestWitInterfaces);
+                let _ = self.event_sender.try_send(AppEvent::RequestKnownPackages);
+                let _ = self.event_sender.try_send(AppEvent::RequestWitInterfaces);
             }
             Err(e) => {
                 // Keep the prompt open with the error
@@ -425,13 +423,13 @@ impl App {
 
     fn handle_normal_key(&mut self, key: KeyCode, modifiers: KeyModifiers) {
         match (key, modifiers) {
-            (KeyCode::Char('q'), _) | (KeyCode::Esc, _) => self.running = false,
-            (KeyCode::Char('c'), KeyModifiers::CONTROL) => self.running = false,
+            (KeyCode::Char('q') | KeyCode::Esc, _)
+            | (KeyCode::Char('c'), KeyModifiers::CONTROL) => self.running = false,
             // Tab navigation
-            (KeyCode::Tab, KeyModifiers::NONE) | (KeyCode::Right, _) => {
+            (KeyCode::Tab | KeyCode::Right, _) => {
                 self.current_tab = self.current_tab.next();
             }
-            (KeyCode::BackTab, _) | (KeyCode::Left, _) => {
+            (KeyCode::BackTab | KeyCode::Left, _) => {
                 self.current_tab = self.current_tab.prev();
             }
             (KeyCode::Char('1'), _) => self.current_tab = Tab::Local,
@@ -441,7 +439,7 @@ impl App {
             (KeyCode::Char('5'), _) => self.current_tab = Tab::Settings,
             (KeyCode::Char('6'), _) => {
                 self.current_tab = Tab::Log;
-                let _ = self.app_sender.try_send(AppEvent::RequestLogLines);
+                let _ = self.event_sender.try_send(AppEvent::RequestLogLines);
             }
             // Pull prompt - 'p' to open (only on Components tab, and not in offline mode)
             (KeyCode::Char('p'), _)
@@ -455,11 +453,11 @@ impl App {
                 self.packages_view_state.filter_active = true;
             }
             // Package list navigation (when on Components tab)
-            (KeyCode::Up, _) | (KeyCode::Char('k'), _) if self.current_tab == Tab::Components => {
+            (KeyCode::Up | KeyCode::Char('k'), _) if self.current_tab == Tab::Components => {
                 self.packages_view_state
                     .select_prev(self.filtered_packages().len());
             }
-            (KeyCode::Down, _) | (KeyCode::Char('j'), _) if self.current_tab == Tab::Components => {
+            (KeyCode::Down | KeyCode::Char('j'), _) if self.current_tab == Tab::Components => {
                 self.packages_view_state
                     .select_next(self.filtered_packages().len());
             }
@@ -488,7 +486,7 @@ impl App {
                     && let Some(package) = filtered.get(selected)
                 {
                     let _ = self
-                        .app_sender
+                        .event_sender
                         .try_send(AppEvent::Delete(package.reference()));
                     // Adjust selection if we're deleting the last item
                     if selected > 0 && selected >= filtered.len() - 1 {
@@ -499,11 +497,11 @@ impl App {
                 }
             }
             // Search tab navigation
-            (KeyCode::Up, _) | (KeyCode::Char('k'), _) if self.current_tab == Tab::Search => {
+            (KeyCode::Up | KeyCode::Char('k'), _) if self.current_tab == Tab::Search => {
                 self.search_view_state
                     .select_prev(self.known_packages.len());
             }
-            (KeyCode::Down, _) | (KeyCode::Char('j'), _) if self.current_tab == Tab::Search => {
+            (KeyCode::Down | KeyCode::Char('j'), _) if self.current_tab == Tab::Search => {
                 self.search_view_state
                     .select_next(self.known_packages.len());
             }
@@ -512,11 +510,11 @@ impl App {
                 self.input_mode = InputMode::SearchInput;
             }
             // Interfaces tab navigation
-            (KeyCode::Up, _) | (KeyCode::Char('k'), _) if self.current_tab == Tab::Interfaces => {
+            (KeyCode::Up | KeyCode::Char('k'), _) if self.current_tab == Tab::Interfaces => {
                 self.interfaces_view_state
                     .select_prev(self.wit_interfaces.len());
             }
-            (KeyCode::Down, _) | (KeyCode::Char('j'), _) if self.current_tab == Tab::Interfaces => {
+            (KeyCode::Down | KeyCode::Char('j'), _) if self.current_tab == Tab::Interfaces => {
                 self.interfaces_view_state
                     .select_next(self.wit_interfaces.len());
             }
@@ -536,7 +534,7 @@ impl App {
                 {
                     // Pull the package with the most recent tag (or latest if none)
                     let reference = package.reference_with_tag();
-                    let _ = self.app_sender.try_send(AppEvent::Pull(reference));
+                    let _ = self.event_sender.try_send(AppEvent::Pull(reference));
                 }
             }
             // Refresh tags for selected package from registry (not in offline mode)
@@ -546,17 +544,17 @@ impl App {
                 if let Some(selected) = self.search_view_state.selected()
                     && let Some(package) = self.known_packages.get(selected)
                 {
-                    let _ = self.app_sender.try_send(AppEvent::RefreshTags(
+                    let _ = self.event_sender.try_send(AppEvent::RefreshTags(
                         package.registry.clone(),
                         package.repository.clone(),
                     ));
                 }
             }
             // Log tab navigation
-            (KeyCode::Up, _) | (KeyCode::Char('k'), _) if self.current_tab == Tab::Log => {
+            (KeyCode::Up | KeyCode::Char('k'), _) if self.current_tab == Tab::Log => {
                 self.log_scroll = self.log_scroll.saturating_sub(1);
             }
-            (KeyCode::Down, _) | (KeyCode::Char('j'), _) if self.current_tab == Tab::Log => {
+            (KeyCode::Down | KeyCode::Char('j'), _) if self.current_tab == Tab::Log => {
                 if self.log_scroll < self.log_lines.len().saturating_sub(1) {
                     self.log_scroll += 1;
                 }
@@ -606,9 +604,9 @@ impl App {
                 // Execute search
                 self.input_mode = InputMode::Normal;
                 if self.search_view_state.search_query.is_empty() {
-                    let _ = self.app_sender.try_send(AppEvent::RequestKnownPackages);
+                    let _ = self.event_sender.try_send(AppEvent::RequestKnownPackages);
                 } else {
-                    let _ = self.app_sender.try_send(AppEvent::SearchPackages(
+                    let _ = self.event_sender.try_send(AppEvent::SearchPackages(
                         self.search_view_state.search_query.clone(),
                     ));
                 }
@@ -647,7 +645,7 @@ impl App {
                     let input = state.input.clone();
                     state.in_progress = true;
                     state.error = None;
-                    let _ = self.app_sender.try_send(AppEvent::Pull(input));
+                    let _ = self.event_sender.try_send(AppEvent::Pull(input));
                 }
             }
             KeyCode::Backspace => {
@@ -687,8 +685,7 @@ impl App {
                         || p.ref_registry.to_lowercase().contains(&query)
                         || p.ref_tag
                             .as_ref()
-                            .map(|t| t.to_lowercase().contains(&query))
-                            .unwrap_or(false)
+                            .is_some_and(|t| t.to_lowercase().contains(&query))
                 })
                 .collect()
         }

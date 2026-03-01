@@ -89,7 +89,7 @@ impl ImageEntry {
                 ref_tag: tag,
                 ref_digest: Some(digest),
                 manifest,
-                size_on_disk: size_bytes.unwrap_or(0) as u64,
+                size_on_disk: u64::try_from(size_bytes.unwrap_or(0)).unwrap_or(0),
             });
         }
         Ok(entries)

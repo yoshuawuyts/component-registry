@@ -80,7 +80,7 @@ impl Store {
 
         Migrations::run_all(&conn)?;
 
-        let migration_info = Migrations::get(&conn)?;
+        let migration_info = Migrations::get(&conn);
         let store_size = dir_size(&store_dir).await;
         let metadata_size = tokio::fs::metadata(&metadata_file)
             .await
@@ -89,7 +89,7 @@ impl Store {
         let state_info = StateInfo::new_at(
             data_dir,
             config_file,
-            migration_info,
+            &migration_info,
             store_size,
             metadata_size,
         );
@@ -107,11 +107,15 @@ impl Store {
         Option<OciImageManifest>,
         Option<i64>,
     )> {
-        let digest = reference.digest().map(|s| s.to_owned()).or(image.digest);
+        let digest = reference.digest().map(str::to_owned).or(image.digest);
         let manifest_str = serde_json::to_string(&image.manifest)?;
 
         // Calculate total size on disk from all layers
-        let size_on_disk: u64 = image.layers.iter().map(|l| l.data.len() as u64).sum();
+        let size_on_disk: u64 = image
+            .layers
+            .iter()
+            .map(|l| u64::try_from(l.data.len()).unwrap_or(u64::MAX))
+            .sum();
 
         // 1. Upsert oci_repository
         let repo_id =
@@ -136,7 +140,7 @@ impl Store {
                 .as_ref()
                 .and_then(|m| m.media_type.as_deref()),
             Some(&manifest_str),
-            Some(size_on_disk as i64),
+            Some(i64::try_from(size_on_disk).unwrap_or(i64::MAX)),
             image
                 .manifest
                 .as_ref()
@@ -178,12 +182,11 @@ impl Store {
         if needs_layers && let Some(ref manifest) = image.manifest {
             for (idx, layer) in image.layers.iter().enumerate() {
                 let cache = self.state_info.store_dir();
-                let fallback_key = reference.whole().to_string();
+                let fallback_key = reference.whole().clone();
                 let layer_digest = manifest
                     .layers
                     .get(idx)
-                    .map(|l| l.digest.as_str())
-                    .unwrap_or(&fallback_key);
+                    .map_or(fallback_key.as_str(), |l| l.digest.as_str());
                 let layer_media_type = manifest.layers.get(idx).map(|l| l.media_type.as_str());
                 let layer_size = manifest.layers.get(idx).map(|l| l.size);
                 let data = &layer.data;
@@ -196,7 +199,7 @@ impl Store {
                     layer_digest,
                     layer_media_type,
                     layer_size.map(|s| s.max(0)),
-                    idx as i32,
+                    i32::try_from(idx).unwrap_or(i32::MAX),
                 )?;
 
                 // Store layer-level annotations
@@ -251,7 +254,7 @@ impl Store {
             digest.unwrap_or("unknown"),
             manifest.media_type.as_deref(),
             Some(&manifest_str),
-            Some(size_on_disk as i64),
+            Some(i64::try_from(size_on_disk).unwrap_or(i64::MAX)),
             manifest.artifact_type.as_deref(),
             Some(manifest.config.media_type.as_str()),
             Some(manifest.config.digest.as_str()),
@@ -303,7 +306,7 @@ impl Store {
                 manifest_id,
                 layer_digest,
                 media_type,
-                Some(data.len() as i64),
+                Some(i64::try_from(data.len()).unwrap_or(i64::MAX)),
                 position,
             )?;
 
@@ -379,9 +382,9 @@ impl Store {
                 if let Err(e) = WitWorldImport::insert(
                     &self.conn,
                     wit_world_id,
-                    &item.declared_package,
-                    item.declared_interface.as_deref(),
-                    item.declared_version.as_deref(),
+                    &item.package,
+                    item.interface.as_deref(),
+                    item.version.as_deref(),
                     None,
                 ) {
                     tracing::warn!("Failed to insert WIT world import: {}", e);
@@ -392,9 +395,9 @@ impl Store {
                 if let Err(e) = WitWorldExport::insert(
                     &self.conn,
                     wit_world_id,
-                    &item.declared_package,
-                    item.declared_interface.as_deref(),
-                    item.declared_version.as_deref(),
+                    &item.package,
+                    item.interface.as_deref(),
+                    item.version.as_deref(),
                     None,
                 ) {
                     tracing::warn!("Failed to insert WIT world export: {}", e);
@@ -407,8 +410,8 @@ impl Store {
             if let Err(e) = WitInterfaceDependency::insert(
                 &self.conn,
                 wit_interface_id,
-                &dep.declared_package,
-                dep.declared_version.as_deref(),
+                &dep.package,
+                dep.version.as_deref(),
                 None,
             ) {
                 tracing::warn!("Failed to insert WIT interface dependency: {}", e);
@@ -683,10 +686,7 @@ impl Store {
 /// Resolve `wit_world_import.resolved_interface_id` for imports belonging to
 /// the given `wit_interface_id` by matching `(declared_package, declared_version)`
 /// against existing `wit_interface` rows.
-fn resolve_import_foreign_keys(
-    conn: &rusqlite::Connection,
-    wit_interface_id: i64,
-) -> anyhow::Result<usize> {
+fn resolve_import_foreign_keys(conn: &Connection, wit_interface_id: i64) -> anyhow::Result<usize> {
     let updated = conn.execute(
         "UPDATE wit_world_import
          SET resolved_interface_id = (
@@ -704,10 +704,7 @@ fn resolve_import_foreign_keys(
 
 /// Resolve `wit_world_export.resolved_interface_id` for exports belonging to
 /// the given `wit_interface_id`.
-fn resolve_export_foreign_keys(
-    conn: &rusqlite::Connection,
-    wit_interface_id: i64,
-) -> anyhow::Result<usize> {
+fn resolve_export_foreign_keys(conn: &Connection, wit_interface_id: i64) -> anyhow::Result<usize> {
     let updated = conn.execute(
         "UPDATE wit_world_export
          SET resolved_interface_id = (
@@ -726,7 +723,7 @@ fn resolve_export_foreign_keys(
 /// Resolve `wit_interface_dependency.resolved_interface_id` for deps of the
 /// given `wit_interface_id`.
 fn resolve_dependency_foreign_keys(
-    conn: &rusqlite::Connection,
+    conn: &Connection,
     wit_interface_id: i64,
 ) -> anyhow::Result<usize> {
     let updated = conn.execute(
@@ -747,7 +744,7 @@ fn resolve_dependency_foreign_keys(
 /// Resolve `component_target.wit_world_id` for targets of components under
 /// the given `manifest_id` by matching against `wit_world` + `wit_interface`.
 fn resolve_component_target_foreign_keys(
-    conn: &rusqlite::Connection,
+    conn: &Connection,
     manifest_id: i64,
 ) -> anyhow::Result<usize> {
     let updated = conn.execute(

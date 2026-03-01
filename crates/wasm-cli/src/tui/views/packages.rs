@@ -129,14 +129,10 @@ impl StatefulWidget for PackagesView<'_> {
                 .map(|entry| {
                     let tag = entry.ref_tag.as_deref().unwrap_or("-");
                     let size = format_size(entry.size_on_disk);
-                    let digest = entry
-                        .ref_digest
-                        .as_ref()
-                        .map(|d| {
-                            // Strip "sha256:" prefix
-                            d.strip_prefix("sha256:").unwrap_or(d).to_string()
-                        })
-                        .unwrap_or_else(|| "-".to_string());
+                    let digest = entry.ref_digest.as_ref().map_or_else(
+                        || "-".to_string(),
+                        |d| d.strip_prefix("sha256:").unwrap_or(d).to_string(),
+                    );
                     Row::new(vec![
                         Cell::from(entry.ref_repository.clone()),
                         Cell::from(entry.ref_registry.clone()),
