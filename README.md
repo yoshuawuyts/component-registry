@@ -42,8 +42,17 @@
 </div>
 
 ## Installation
+
+To install the `wasm` command and make it available from the command line, run:
+
 ```sh
-$ cargo add wasm
+$ cargo install wasm
+```
+
+To interface with the package manager backend programatically, install:
+
+```rust
+$ cargo add wasm-package-manager
 ```
 
 ## Using `wasm`
@@ -76,14 +85,36 @@ Global Options:
 ```
 <!-- commands-end -->
 
-## Example: Installing a Package
+## Example
 
-Initialize a new project and install the [Bytecode Alliance WASI HTTP sample][ba-sample]:
+Let's use `wasm(1)` to fetch a Wasm Component locally and then run that. First
+we have to setup a manifest and add a place for the downloaded components and
+interfaces to go. To do that run:
+
 
 ```bash
 # Create a new project
 $ wasm init
+```
 
+This creates a new `deps/` directory in your project which contains a manifest,
+lockfile, and a place for the downloaded artifacts to go. It's recommended to add
+`deps/vendor/` to your `.gitignore` file:
+
+```bash
+deps/
+├── vendor/         # Contains downloaded .wasm and .wit files
+├── wasm.lock.toml  # Project lockfile
+└── wasm.toml       # Project manifest
+```
+
+Now that we have our basic project structure setup, let's fetch [a basic HTTP
+Rust sample][ba-sample]. This component implements the `wasi:http` world and
+exposes some basic testing endpoints. To get this we can run `wasm install`:
+
+[ba-sample]: https://github.com/bytecodealliance/sample-wasi-http-rust
+
+```bash
 # Install the Bytecode Alliance WASI HTTP sample component
 $ wasm install ghcr.io/bytecodealliance/sample-wasi-http-rust/sample-wasi-http-rust:0.1.6
    Installing ghcr.io/bytecodealliance/sample-wasi-http-rust/sample-wasi-http-rust:0.1.6
@@ -92,16 +123,11 @@ $ wasm install ghcr.io/bytecodealliance/sample-wasi-http-rust/sample-wasi-http-r
     Finished installation in 1.3s
 ```
 
-The component is then available in your project under `deps/vendor/wasm/`:
+This will have downloaded the `.wasm` component to `deps/vendor/`, and added it
+to our manifest and lockfile. Our `deps/wasm.toml` file should now look like this:
 
+```toml
 ```
-deps/
-└── vendor/
-    └── wasm/
-        └── sample-wasi-http-rust.wasm
-```
-
-[ba-sample]: https://github.com/bytecodealliance/sample-wasi-http-rust
 
 ## Storage Layout
 
