@@ -5,7 +5,7 @@ use ratatui::{
 };
 use std::time::Duration;
 use tokio::sync::mpsc;
-use wasm_package_manager::interfaces::WitInterfaceView;
+use wasm_package_manager::interfaces::WitTypeView;
 use wasm_package_manager::manager::PullResult;
 use wasm_package_manager::oci::{ImageView, InsertResult};
 use wasm_package_manager::storage::{KnownPackageView, StateInfo};
@@ -103,8 +103,8 @@ pub(crate) struct App {
     search_view_state: SearchViewState,
     /// Known packages for search results
     known_packages: Vec<KnownPackageView>,
-    /// WIT interfaces with their component references
-    wit_interfaces: Vec<(WitInterfaceView, String)>,
+    /// WIT types with their component references
+    wit_types: Vec<(WitTypeView, String)>,
     /// Interfaces view state
     interfaces_view_state: InterfacesViewState,
     /// Local WASM files
@@ -135,7 +135,7 @@ impl App {
             state_info: None,
             search_view_state: SearchViewState::new(),
             known_packages: Vec::new(),
-            wit_interfaces: Vec::new(),
+            wit_types: Vec::new(),
             interfaces_view_state: InterfacesViewState::new(),
             local_wasm_files: Vec::new(),
             log_lines: Vec::new(),
@@ -200,7 +200,7 @@ impl App {
             }
             Tab::Interfaces => {
                 frame.render_stateful_widget(
-                    InterfacesView::new(&self.wit_interfaces),
+                    InterfacesView::new(&self.wit_types),
                     content_area,
                     &mut self.interfaces_view_state,
                 );
@@ -311,7 +311,7 @@ impl App {
                     let _ = self.event_sender.try_send(AppEvent::RequestPackages);
                     let _ = self.event_sender.try_send(AppEvent::RequestStateInfo);
                     let _ = self.event_sender.try_send(AppEvent::RequestKnownPackages);
-                    let _ = self.event_sender.try_send(AppEvent::RequestWitInterfaces);
+                    let _ = self.event_sender.try_send(AppEvent::RequestWitTypes);
                     let _ = self.event_sender.try_send(AppEvent::DetectLocalWasm);
                 }
                 ManagerEvent::PackagesList(packages) => {
@@ -333,8 +333,8 @@ impl App {
                 ManagerEvent::RefreshTagsResult(_result) => {
                     // Tag refresh completed, packages list will be refreshed automatically
                 }
-                ManagerEvent::WitInterfacesList(interfaces) => {
-                    self.wit_interfaces = interfaces;
+                ManagerEvent::WitTypesList(types) => {
+                    self.wit_types = types;
                 }
                 ManagerEvent::LocalWasmList(files) => {
                     self.local_wasm_files = files;
@@ -369,7 +369,7 @@ impl App {
                 };
                 // Refresh known packages and WIT interfaces
                 let _ = self.event_sender.try_send(AppEvent::RequestKnownPackages);
-                let _ = self.event_sender.try_send(AppEvent::RequestWitInterfaces);
+                let _ = self.event_sender.try_send(AppEvent::RequestWitTypes);
             }
             Err(e) => {
                 // Keep the prompt open with the error
@@ -511,15 +511,13 @@ impl App {
             }
             // Interfaces tab navigation
             (KeyCode::Up | KeyCode::Char('k'), _) if self.current_tab == Tab::Interfaces => {
-                self.interfaces_view_state
-                    .select_prev(self.wit_interfaces.len());
+                self.interfaces_view_state.select_prev(self.wit_types.len());
             }
             (KeyCode::Down | KeyCode::Char('j'), _) if self.current_tab == Tab::Interfaces => {
-                self.interfaces_view_state
-                    .select_next(self.wit_interfaces.len());
+                self.interfaces_view_state.select_next(self.wit_types.len());
             }
             (KeyCode::Enter, _) if self.current_tab == Tab::Interfaces => {
-                if !self.wit_interfaces.is_empty() {
+                if !self.wit_types.is_empty() {
                     self.interfaces_view_state.viewing_detail = true;
                     self.interfaces_view_state.detail_scroll = 0;
                     self.input_mode = InputMode::InterfaceDetail;

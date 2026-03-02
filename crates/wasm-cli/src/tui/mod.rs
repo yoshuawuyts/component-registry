@@ -8,7 +8,7 @@ pub mod views;
 
 use app::App;
 use tokio::sync::mpsc;
-use wasm_package_manager::interfaces::WitInterfaceView;
+use wasm_package_manager::interfaces::WitTypeView;
 use wasm_package_manager::manager::{Manager, PullResult};
 use wasm_package_manager::oci::ImageView;
 use wasm_package_manager::storage::{KnownPackageView, StateInfo};
@@ -34,7 +34,7 @@ pub enum AppEvent {
     /// Refresh tags for a package (registry, repository)
     RefreshTags(String, String),
     /// Request all WIT interfaces
-    RequestWitInterfaces,
+    RequestWitTypes,
     /// Request to detect local WASM files
     DetectLocalWasm,
     /// Request log file lines
@@ -61,7 +61,7 @@ pub enum ManagerEvent {
     /// Result of refreshing tags for a package
     RefreshTagsResult(Result<usize, String>),
     /// List of WIT interfaces with their component references
-    WitInterfacesList(Vec<(WitInterfaceView, String)>),
+    WitTypesList(Vec<(WitTypeView, String)>),
     /// List of local WASM files
     LocalWasmList(Vec<wasm_detector::WasmEntry>),
     /// Progress event during a pull operation
@@ -219,12 +219,9 @@ async fn run_manager(
                         .ok();
                 }
             }
-            AppEvent::RequestWitInterfaces => {
-                if let Ok(interfaces) = manager.list_wit_interfaces_with_components() {
-                    sender
-                        .send(ManagerEvent::WitInterfacesList(interfaces))
-                        .await
-                        .ok();
+            AppEvent::RequestWitTypes => {
+                if let Ok(types) = manager.list_wit_types_with_components() {
+                    sender.send(ManagerEvent::WitTypesList(types)).await.ok();
                 }
             }
             AppEvent::DetectLocalWasm => {

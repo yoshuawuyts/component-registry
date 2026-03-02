@@ -6,7 +6,7 @@ use tokio_stream::StreamExt;
 mod logic;
 
 use crate::config::Config;
-use crate::interfaces::WitInterfaceView;
+use crate::interfaces::WitTypeView;
 use crate::oci::{Client, ImageView, InsertResult};
 use crate::progress::ProgressEvent;
 use crate::storage::{KnownPackageView, StateInfo, Store};
@@ -712,15 +712,13 @@ impl Manager {
             .ok_or_else(|| anyhow::anyhow!("failed to retrieve indexed package"))
     }
 
-    /// Get all WIT interfaces with their associated component references.
-    pub fn list_wit_interfaces_with_components(
-        &self,
-    ) -> anyhow::Result<Vec<(WitInterfaceView, String)>> {
+    /// Get all WIT types with their associated component references.
+    pub fn list_wit_types_with_components(&self) -> anyhow::Result<Vec<(WitTypeView, String)>> {
         Ok(self
             .store
-            .list_wit_interfaces_with_components()?
+            .list_wit_types_with_components()?
             .into_iter()
-            .map(|(iface, s)| (WitInterfaceView::from(iface), s))
+            .map(|(wt, s)| (WitTypeView::from(wt), s))
             .collect())
     }
 

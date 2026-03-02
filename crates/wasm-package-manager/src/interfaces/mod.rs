@@ -1,6 +1,6 @@
-//! WIT interface and world types.
+//! WIT type and world types.
 //!
-//! This module groups all WIT-related concepts: interface and world
+//! This module groups all WIT-related concepts: type and world
 //! data models, views, the WIT metadata parser, and WIT-package
 //! detection logic.
 
@@ -11,7 +11,7 @@ mod views;
 mod worlds;
 
 pub use detect::is_wit_package;
-pub use models::WitInterface;
+pub use models::WitType;
 pub(crate) use parser::extract_wit_metadata;
-pub use views::WitInterfaceView;
-pub use worlds::{WitInterfaceDependency, WitWorld, WitWorldExport, WitWorldImport};
+pub use views::WitTypeView;
+pub use worlds::{WitTypeDependency, WitWorld, WitWorldExport, WitWorldImport};
