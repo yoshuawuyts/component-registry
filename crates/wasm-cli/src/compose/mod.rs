@@ -62,6 +62,11 @@ impl Opts {
         let seams_dir = PathBuf::from("seams");
 
         if let Some(ref name) = self.name {
+            // Reject names with path separators or traversal sequences.
+            if name.contains('/') || name.contains('\\') || name.contains("..") {
+                bail!("invalid composition name '{name}': must be a plain name, not a path");
+            }
+
             // Treat the argument as a name and look under seams/
             let wac_path = seams_dir.join(format!("{name}.wac"));
             if wac_path.exists() {
