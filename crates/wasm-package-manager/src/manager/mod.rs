@@ -9,7 +9,7 @@ use crate::config::Config;
 use crate::oci::{Client, ImageView, InsertResult};
 use crate::progress::ProgressEvent;
 use crate::storage::{KnownPackageView, StateInfo, Store};
-use crate::types::WitTypeView;
+use crate::types::WitPackageView;
 
 pub use logic::{derive_component_name, sanitize_to_wit_identifier, should_sync, vendor_filename};
 
@@ -713,12 +713,14 @@ impl Manager {
     }
 
     /// Get all WIT types with their associated component references.
-    pub fn list_wit_types_with_components(&self) -> anyhow::Result<Vec<(WitTypeView, String)>> {
+    pub fn list_wit_packages_with_components(
+        &self,
+    ) -> anyhow::Result<Vec<(WitPackageView, String)>> {
         Ok(self
             .store
-            .list_wit_types_with_components()?
+            .list_wit_packages_with_components()?
             .into_iter()
-            .map(|(wt, s)| (WitTypeView::from(wt), s))
+            .map(|(wt, s)| (WitPackageView::from(wt), s))
             .collect())
     }
 

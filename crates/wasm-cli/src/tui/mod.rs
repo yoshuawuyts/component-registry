@@ -11,7 +11,7 @@ use tokio::sync::mpsc;
 use wasm_package_manager::manager::{Manager, PullResult};
 use wasm_package_manager::oci::ImageView;
 use wasm_package_manager::storage::{KnownPackageView, StateInfo};
-use wasm_package_manager::types::WitTypeView;
+use wasm_package_manager::types::WitPackageView;
 use wasm_package_manager::{ProgressEvent, Reference};
 
 /// Events sent from the TUI to the Manager
@@ -61,7 +61,7 @@ pub enum ManagerEvent {
     /// Result of refreshing tags for a package
     RefreshTagsResult(Result<usize, String>),
     /// List of WIT types with their component references
-    WitTypesList(Vec<(WitTypeView, String)>),
+    WitTypesList(Vec<(WitPackageView, String)>),
     /// List of local WASM files
     LocalWasmList(Vec<wasm_detector::WasmEntry>),
     /// Progress event during a pull operation
@@ -220,7 +220,7 @@ async fn run_manager(
                 }
             }
             AppEvent::RequestWitTypes => {
-                if let Ok(types) = manager.list_wit_types_with_components() {
+                if let Ok(types) = manager.list_wit_packages_with_components() {
                     sender.send(ManagerEvent::WitTypesList(types)).await.ok();
                 }
             }

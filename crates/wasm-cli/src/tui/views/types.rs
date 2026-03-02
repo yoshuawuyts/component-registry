@@ -5,7 +5,7 @@ use ratatui::{
         Table, TableState, Widget, Wrap,
     },
 };
-use wasm_package_manager::types::WitTypeView;
+use wasm_package_manager::types::WitPackageView;
 
 /// State for the types view
 #[derive(Debug, Default)]
@@ -68,13 +68,13 @@ impl TypesViewState {
 /// View for displaying WIT types
 #[derive(Debug)]
 pub struct TypesView<'a> {
-    interfaces: &'a [(WitTypeView, String)],
+    interfaces: &'a [(WitPackageView, String)],
 }
 
 impl<'a> TypesView<'a> {
     /// Create a new TypesView with the given types
     #[must_use]
-    pub fn new(interfaces: &'a [(WitTypeView, String)]) -> Self {
+    pub fn new(interfaces: &'a [(WitPackageView, String)]) -> Self {
         Self { interfaces }
     }
 }
@@ -155,7 +155,7 @@ impl TypesView<'_> {
         area: Rect,
         buf: &mut Buffer,
         state: &mut TypesViewState,
-        interface: &WitTypeView,
+        interface: &WitPackageView,
         component_ref: &str,
     ) {
         // Split into header and content

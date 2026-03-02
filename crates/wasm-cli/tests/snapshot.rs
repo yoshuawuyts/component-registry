@@ -142,11 +142,11 @@ fn test_types_view_snapshot() {
 // r[verify tui.types-view.populated]
 #[test]
 fn test_types_view_populated_snapshot() {
-    use wasm_package_manager::types::WitTypeView;
+    use wasm_package_manager::types::WitPackageView;
 
     let interfaces = vec![
         (
-            WitTypeView {
+            WitPackageView {
                 package_name: "wasi:http".to_string(),
                 version: Some("0.2.0".to_string()),
                 description: None,
@@ -156,7 +156,7 @@ fn test_types_view_populated_snapshot() {
             "ghcr.io/example/http-proxy:v1.0.0".to_string(),
         ),
         (
-            WitTypeView {
+            WitPackageView {
                 package_name: "wasi:cli".to_string(),
                 version: Some("0.2.0".to_string()),
                 description: None,

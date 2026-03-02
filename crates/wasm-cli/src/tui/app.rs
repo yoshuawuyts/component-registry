@@ -8,7 +8,7 @@ use tokio::sync::mpsc;
 use wasm_package_manager::manager::PullResult;
 use wasm_package_manager::oci::{ImageView, InsertResult};
 use wasm_package_manager::storage::{KnownPackageView, StateInfo};
-use wasm_package_manager::types::WitTypeView;
+use wasm_package_manager::types::WitPackageView;
 
 use super::components::{TabBar, TabItem};
 use super::views::packages::PackagesViewState;
@@ -104,7 +104,7 @@ pub(crate) struct App {
     /// Known packages for search results
     known_packages: Vec<KnownPackageView>,
     /// WIT types with their component references
-    wit_types: Vec<(WitTypeView, String)>,
+    wit_types: Vec<(WitPackageView, String)>,
     /// Types view state
     types_view_state: TypesViewState,
     /// Local WASM files

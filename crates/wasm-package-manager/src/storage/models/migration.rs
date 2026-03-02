@@ -105,7 +105,8 @@ mod tests {
         conn.execute("SELECT 1 FROM oci_layer LIMIT 1", []).unwrap();
 
         // Verify WIT layer tables exist
-        conn.execute("SELECT 1 FROM wit_type LIMIT 1", []).unwrap();
+        conn.execute("SELECT 1 FROM wit_package LIMIT 1", [])
+            .unwrap();
         conn.execute("SELECT 1 FROM wit_world LIMIT 1", []).unwrap();
 
         // Verify Wasm layer tables exist
