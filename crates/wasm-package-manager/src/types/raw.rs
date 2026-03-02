@@ -1,11 +1,14 @@
 use rusqlite::Connection;
 
-/// A WIT package stored in the database.
+/// A raw WIT package stored in the database.
 ///
 /// Each row represents a unique (package_name, version, oci_layer_id) tuple.
 /// The record is content-addressable: inserting a duplicate is a no-op.
+///
+/// This is the internal database-backed type. The public API exposes
+/// [`super::WitPackage`] instead, which strips away internal IDs.
 #[derive(Debug, Clone)]
-pub struct WitPackage {
+pub struct RawWitPackage {
     id: i64,
     /// The WIT package name (e.g. "wasi:http").
     pub package_name: String,
@@ -23,7 +26,7 @@ pub struct WitPackage {
     pub created_at: String,
 }
 
-impl WitPackage {
+impl RawWitPackage {
     /// Returns the primary-key ID of this WIT package.
     #[must_use]
     pub fn id(&self) -> i64 {

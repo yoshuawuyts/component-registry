@@ -5,14 +5,14 @@ use std::collections::HashSet;
 use std::path::Path;
 
 use super::config::StateInfo;
-use super::models::{KnownPackage, Migrations};
+use super::models::{Migrations, RawKnownPackage};
 use crate::components::{ComponentTarget, WasmComponent};
 use crate::oci::{
-    ImageEntry, InsertResult, OciLayer, OciLayerAnnotation, OciManifest, OciReferrer,
-    OciRepository, OciTag,
+    InsertResult, OciLayer, OciLayerAnnotation, OciManifest, OciReferrer, OciRepository, OciTag,
+    RawImageEntry,
 };
 use crate::types::{
-    WitPackage, WitPackageDependency, WitWorld, WitWorldExport, WitWorldImport,
+    RawWitPackage, WitPackageDependency, WitWorld, WitWorldExport, WitWorldImport,
     extract_wit_metadata,
 };
 use futures_concurrency::prelude::*;
@@ -340,7 +340,7 @@ impl Store {
         // Split "namespace:name@version" into (package_name, version).
         let (package_name, version) = split_package_version(raw_name);
 
-        let wit_package_id = match WitPackage::insert(
+        let wit_package_id = match RawWitPackage::insert(
             &self.conn,
             package_name,
             version,
@@ -508,8 +508,8 @@ impl Store {
     }
 
     /// Returns all currently stored images and their metadata.
-    pub(crate) fn list_all(&self) -> anyhow::Result<Vec<ImageEntry>> {
-        ImageEntry::get_all(&self.conn)
+    pub(crate) fn list_all(&self) -> anyhow::Result<Vec<RawImageEntry>> {
+        RawImageEntry::get_all(&self.conn)
     }
 
     /// Deletes an image by its reference.
@@ -607,8 +607,8 @@ impl Store {
         query: &str,
         offset: u32,
         limit: u32,
-    ) -> anyhow::Result<Vec<KnownPackage>> {
-        KnownPackage::search(&self.conn, query, offset, limit)
+    ) -> anyhow::Result<Vec<RawKnownPackage>> {
+        RawKnownPackage::search(&self.conn, query, offset, limit)
     }
 
     /// Get all known packages.
@@ -616,8 +616,8 @@ impl Store {
         &self,
         offset: u32,
         limit: u32,
-    ) -> anyhow::Result<Vec<KnownPackage>> {
-        KnownPackage::get_all(&self.conn, offset, limit)
+    ) -> anyhow::Result<Vec<RawKnownPackage>> {
+        RawKnownPackage::get_all(&self.conn, offset, limit)
     }
 
     /// Get a known package by registry and repository.
@@ -625,8 +625,8 @@ impl Store {
         &self,
         registry: &str,
         repository: &str,
-    ) -> anyhow::Result<Option<KnownPackage>> {
-        KnownPackage::get(&self.conn, registry, repository)
+    ) -> anyhow::Result<Option<RawKnownPackage>> {
+        RawKnownPackage::get(&self.conn, registry, repository)
     }
 
     /// Add or update a known package.
@@ -637,20 +637,20 @@ impl Store {
         tag: Option<&str>,
         description: Option<&str>,
     ) -> anyhow::Result<()> {
-        KnownPackage::upsert(&self.conn, registry, repository, tag, description)
+        RawKnownPackage::upsert(&self.conn, registry, repository, tag, description)
     }
 
     /// Get all WIT packages.
     #[allow(dead_code)]
-    pub(crate) fn list_wit_packages(&self) -> anyhow::Result<Vec<WitPackage>> {
-        WitPackage::get_all(&self.conn)
+    pub(crate) fn list_wit_packages(&self) -> anyhow::Result<Vec<RawWitPackage>> {
+        RawWitPackage::get_all(&self.conn)
     }
 
     /// Get all WIT packages with their associated component references.
     pub(crate) fn list_wit_packages_with_components(
         &self,
-    ) -> anyhow::Result<Vec<(WitPackage, String)>> {
-        WitPackage::get_all_with_images(&self.conn)
+    ) -> anyhow::Result<Vec<(RawWitPackage, String)>> {
+        RawWitPackage::get_all_with_images(&self.conn)
     }
 
     /// Find the OCI reference for a WIT package by name and optional version.
@@ -847,7 +847,7 @@ mod tests {
         let conn = setup_test_db();
         let manifest_id = insert_test_manifest(&conn);
 
-        let iface_id = WitPackage::insert(
+        let iface_id = RawWitPackage::insert(
             &conn,
             "wasi:http",
             Some("0.2.0"),
@@ -874,7 +874,7 @@ mod tests {
         let conn = setup_test_db();
         let manifest_id = insert_test_manifest(&conn);
 
-        let iface_id = WitPackage::insert(
+        let iface_id = RawWitPackage::insert(
             &conn,
             "wasi:http",
             Some("0.2.0"),
@@ -916,7 +916,7 @@ mod tests {
         let conn = setup_test_db();
         let manifest_id = insert_test_manifest(&conn);
 
-        let iface_id = WitPackage::insert(
+        let iface_id = RawWitPackage::insert(
             &conn,
             "wasi:http",
             Some("0.2.0"),
@@ -941,7 +941,7 @@ mod tests {
             OciLayer::insert(&conn, manifest_id, "sha256:layer1", None, Some(100), 0).unwrap();
 
         // Create the WIT interface and world first
-        let iface_id = WitPackage::insert(
+        let iface_id = RawWitPackage::insert(
             &conn,
             "wasi:http",
             Some("0.2.0"),
@@ -985,7 +985,7 @@ mod tests {
         let manifest_id = insert_test_manifest(&conn);
 
         // Insert interface and world (as we would for a WIT-only package)
-        let iface_id = WitPackage::insert(
+        let iface_id = RawWitPackage::insert(
             &conn,
             "wasi:http",
             Some("0.2.0"),
@@ -1012,7 +1012,7 @@ mod tests {
         let conn = setup_test_db();
         let manifest_id = insert_test_manifest(&conn);
 
-        let iface_id = WitPackage::insert(
+        let iface_id = RawWitPackage::insert(
             &conn,
             "wasi:http",
             Some("0.2.0"),
@@ -1054,7 +1054,7 @@ mod tests {
         let manifest_id = insert_test_manifest(&conn);
 
         // Create the dependency interface (wasi:io@0.2.0) first
-        let dep_iface_id = WitPackage::insert(
+        let dep_iface_id = RawWitPackage::insert(
             &conn,
             "wasi:io",
             Some("0.2.0"),
@@ -1066,7 +1066,7 @@ mod tests {
         .unwrap();
 
         // Create the main interface and a world that imports wasi:io
-        let main_iface_id = WitPackage::insert(
+        let main_iface_id = RawWitPackage::insert(
             &conn,
             "wasi:http",
             Some("0.2.0"),
@@ -1114,7 +1114,7 @@ mod tests {
         let conn = setup_test_db();
         let manifest_id = insert_test_manifest(&conn);
 
-        let iface_id = WitPackage::insert(
+        let iface_id = RawWitPackage::insert(
             &conn,
             "wasi:http",
             Some("0.2.0"),
@@ -1162,7 +1162,7 @@ mod tests {
         let manifest_id = insert_test_manifest(&conn);
 
         // Create the dependency interface
-        let dep_iface_id = WitPackage::insert(
+        let dep_iface_id = RawWitPackage::insert(
             &conn,
             "wasi:io",
             Some("0.2.0"),
@@ -1174,7 +1174,7 @@ mod tests {
         .unwrap();
 
         // Create the main interface
-        let main_iface_id = WitPackage::insert(
+        let main_iface_id = RawWitPackage::insert(
             &conn,
             "wasi:http",
             Some("0.2.0"),
@@ -1213,7 +1213,7 @@ mod tests {
         let manifest_id = insert_test_manifest(&conn);
 
         // Create the target interface for the export
-        let handler_iface_id = WitPackage::insert(
+        let handler_iface_id = RawWitPackage::insert(
             &conn,
             "wasi:http",
             Some("0.2.0"),
@@ -1279,7 +1279,7 @@ mod tests {
         .unwrap();
 
         // Create the WIT interface and world that the component targets
-        let iface_id = WitPackage::insert(
+        let iface_id = RawWitPackage::insert(
             &conn,
             "wasi:http",
             Some("0.2.0"),
