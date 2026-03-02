@@ -319,6 +319,94 @@ For network-related failures:
 - [Configuration](configuration.md) - Understand storage and settings
 - [API Documentation](https://docs.rs/wasm) - Library usage
 
+## Component Composition
+
+### Workspace Layout
+
+Running `wasm init` creates a workspace that includes composition directories:
+
+```text
+my-workspace/
+├── components/    # Local component source files (.wasm)
+├── types/         # WIT interface definition files (.wit)
+├── seams/         # WAC composition scripts (.wac)
+├── build/         # Composed output artifacts
+└── deps/
+    ├── vendor/
+    │   ├── wasm/  # Vendored component binaries
+    │   └── wit/   # Vendored WIT interfaces
+    ├── wasm.toml
+    └── wasm.lock.toml
+```
+
+### WAC Scripts
+
+[WAC (WebAssembly Composition)](https://github.com/bytecodealliance/wac) is a
+declarative language for composing Wasm components. Place `.wac` files in the
+`seams/` directory to define how components are wired together.
+
+### Compose Subcommands
+
+#### `wasm compose build`
+
+Build a composed component from a WAC script:
+
+```bash
+# Compose from a specific WAC file
+wasm compose build seams/my-composition.wac
+
+# Scan all WAC files in seams/
+wasm compose build
+
+# Specify output directory
+wasm compose build -o output/
+
+# Import dependencies instead of embedding
+wasm compose build --import-dependencies
+```
+
+#### `wasm compose plug`
+
+Plug component exports into a socket component's imports:
+
+```bash
+wasm compose plug socket.wasm --plug adapter1.wasm --plug adapter2.wasm -o composed.wasm
+```
+
+#### `wasm compose targets`
+
+Check if a component conforms to a WIT world:
+
+```bash
+wasm compose targets my-component.wasm interface.wit
+wasm compose targets my-component.wasm interface.wit --world my-world
+```
+
+#### `wasm compose parse`
+
+Parse a WAC file and print its AST as JSON:
+
+```bash
+wasm compose parse seams/my-composition.wac
+```
+
+#### `wasm compose resolve`
+
+Parse, resolve, and print the resolved representation of a WAC file:
+
+```bash
+wasm compose resolve seams/my-composition.wac
+```
+
+### Package Resolution
+
+When resolving packages referenced in WAC files, the resolver checks:
+
+1. **Manifest entries** — components and interfaces in `deps/wasm.toml` mapped
+   to vendored files in `deps/vendor/wasm/` and `deps/vendor/wit/`.
+2. **Local directories** — `.wasm` and `.wit` files in `components/` and
+   `types/`.
+
 ## Getting Help
 
 - GitHub Issues: [https://github.com/yoshuawuyts/wasm/issues](https://github.com/yoshuawuyts/wasm/issues)

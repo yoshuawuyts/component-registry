@@ -1,0 +1,23 @@
+---
+source: crates/wasm-cli/tests/test.rs
+expression: output
+---
+Compose and manage sets of interdependent Wasm components
+
+Usage: wasm compose [OPTIONS] <COMMAND>
+
+Commands:
+  build    Build a composed component from a WAC script
+  plug     Plug component exports into a socket component's imports
+  targets  Check if a component conforms to a WIT world
+  parse    Parse a WAC file and print its AST as JSON
+  resolve  Parse and resolve a WAC file and print the resolved representation as JSON
+  help     Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
+
+Global Options:
+      --color <WHEN>  When to use colored output [default: auto] [possible values: auto, always, never]
+      --offline       Run in offline mode
