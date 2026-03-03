@@ -76,30 +76,31 @@ impl Opts {
         };
 
         // 2. Get Wasm bytes.
-        let bytes = if let Some(ref oci_ref) = reference {
-            let manager = if offline {
-                Manager::open_offline().await?
-            } else {
-                Manager::open().await?
-            };
-            let pull_result = manager.pull(oci_ref.clone()).await?;
-            let manifest = pull_result
-                .manifest
-                .as_ref()
-                .context("pulled image has no manifest")?;
-            let wasm_layers = wasm_package_manager::oci::filter_wasm_layers(&manifest.layers);
-            let layer = wasm_layers
-                .first()
-                .context("manifest contains no application/wasm layer")?;
-            let key = &layer.digest;
-            manager
-                .get(key)
+        let bytes = match reference {
+            Some(ref oci_ref) => {
+                let manager = if offline {
+                    Manager::open_offline().await?
+                } else {
+                    Manager::open().await?
+                };
+                let pull_result = manager.pull(oci_ref.clone()).await?;
+                let manifest = pull_result
+                    .manifest
+                    .as_ref()
+                    .context("pulled image has no manifest")?;
+                let wasm_layers = wasm_package_manager::oci::filter_wasm_layers(&manifest.layers);
+                let layer = wasm_layers
+                    .first()
+                    .context("manifest contains no application/wasm layer")?;
+                let key = &layer.digest;
+                manager
+                    .get(key)
+                    .await
+                    .with_context(|| format!("failed to read cached component for {key}"))?
+            }
+            None => tokio::fs::read(&local_path)
                 .await
-                .with_context(|| format!("failed to read cached component for {key}"))?
-        } else {
-            tokio::fs::read(&local_path)
-                .await
-                .with_context(|| format!("failed to read {}", local_path.display()))?
+                .with_context(|| format!("failed to read {}", local_path.display()))?,
         };
 
         // 3. Validate — must be a Wasm Component.

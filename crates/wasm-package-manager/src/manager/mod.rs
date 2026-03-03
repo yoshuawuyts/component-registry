@@ -101,17 +101,7 @@ impl Manager {
             None,
         )?;
 
-        // Fetch all related tags and store them as known packages
-        if let Ok(tags) = self.client.list_tags(&reference).await {
-            for tag in tags {
-                self.store.add_known_package(
-                    reference.registry(),
-                    reference.repository(),
-                    Some(&tag),
-                    None,
-                )?;
-            }
-        }
+        self.store_related_tags(&reference).await?;
 
         // Best-effort: discover and store referrers (signatures, SBOMs, etc.)
         if let Some(manifest_id) = manifest_id {
@@ -262,17 +252,7 @@ impl Manager {
             None,
         )?;
 
-        // Fetch all related tags and store them as known packages
-        if let Ok(tags) = self.client.list_tags(&reference).await {
-            for tag in tags {
-                self.store.add_known_package(
-                    reference.registry(),
-                    reference.repository(),
-                    Some(&tag),
-                    None,
-                )?;
-            }
-        }
+        self.store_related_tags(&reference).await?;
 
         // Best-effort: discover and store referrers (signatures, SBOMs, etc.)
         if let Some(manifest_id) = image_id {
@@ -317,7 +297,6 @@ impl Manager {
         vendor_dir: &Path,
     ) -> anyhow::Result<InstallResult> {
         use crate::oci::filter_wasm_layers;
-        use crate::types::{extract_wit_metadata, is_wit_package};
 
         let pull_result = self.pull(reference.clone()).await?;
 
@@ -355,15 +334,14 @@ impl Manager {
                 self.vendor(&layer.digest, &dest).await?;
                 vendored_files.push(dest);
 
-                // Try to extract WIT package name and detect type from the layer data
-                if package_name.is_none()
-                    && let Ok(data) = self.get(&layer.digest).await
-                {
-                    is_component = !is_wit_package(&data);
-                    if let Some(metadata) = extract_wit_metadata(&data) {
-                        package_name = metadata.package_name;
-                        dependencies = metadata.dependencies;
-                    }
+                if package_name.is_none() {
+                    self.try_extract_layer_metadata(
+                        &layer.digest,
+                        &mut package_name,
+                        &mut is_component,
+                        &mut dependencies,
+                    )
+                    .await;
                 }
             }
         }
@@ -396,7 +374,6 @@ impl Manager {
         progress_tx: &tokio::sync::mpsc::Sender<ProgressEvent>,
     ) -> anyhow::Result<InstallResult> {
         use crate::oci::filter_wasm_layers;
-        use crate::types::{extract_wit_metadata, is_wit_package};
 
         let pull_result = self
             .pull_with_progress(reference.clone(), progress_tx)
@@ -436,15 +413,14 @@ impl Manager {
                 self.vendor(&layer.digest, &dest).await?;
                 vendored_files.push(dest);
 
-                // Try to extract WIT package name and detect type from the layer data
-                if package_name.is_none()
-                    && let Ok(data) = self.get(&layer.digest).await
-                {
-                    is_component = !is_wit_package(&data);
-                    if let Some(metadata) = extract_wit_metadata(&data) {
-                        package_name = metadata.package_name;
-                        dependencies = metadata.dependencies;
-                    }
+                if package_name.is_none() {
+                    self.try_extract_layer_metadata(
+                        &layer.digest,
+                        &mut package_name,
+                        &mut is_component,
+                        &mut dependencies,
+                    )
+                    .await;
                 }
             }
         }
@@ -802,6 +778,47 @@ impl Manager {
             .unwrap_or_default()
             .as_secs();
         self.store.set_sync_meta("last_synced_at", &now.to_string())
+    }
+
+    /// Fetch all related tags for a reference and store them as known packages.
+    ///
+    /// Errors from the registry are silently ignored (best-effort).
+    async fn store_related_tags(&self, reference: &Reference) -> anyhow::Result<()> {
+        let Ok(tags) = self.client.list_tags(reference).await else {
+            return Ok(());
+        };
+        for tag in tags {
+            self.store.add_known_package(
+                reference.registry(),
+                reference.repository(),
+                Some(&tag),
+                None,
+            )?;
+        }
+        Ok(())
+    }
+
+    /// Try to extract WIT metadata from a cached layer.
+    ///
+    /// On success, updates `package_name`, `is_component`, and `dependencies`
+    /// in place. Silently skips if the layer data cannot be read or parsed.
+    async fn try_extract_layer_metadata(
+        &self,
+        layer_digest: &str,
+        package_name: &mut Option<String>,
+        is_component: &mut bool,
+        dependencies: &mut Vec<crate::types::DependencyItem>,
+    ) {
+        use crate::types::{extract_wit_metadata, is_wit_package};
+
+        let Ok(data) = self.get(layer_digest).await else {
+            return;
+        };
+        *is_component = !is_wit_package(&data);
+        if let Some(metadata) = extract_wit_metadata(&data) {
+            *package_name = metadata.package_name;
+            *dependencies = metadata.dependencies;
+        }
     }
 
     /// Best-effort: fetch and store referrers (signatures, SBOMs, attestations)
