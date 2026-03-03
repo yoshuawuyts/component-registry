@@ -283,33 +283,28 @@ impl WasmDetectorIter {
     /// Try to get the next .wasm file from well-known walkers
     fn next_from_well_known(&mut self) -> Option<Result<WasmEntry, ignore::Error>> {
         while self.current_well_known_idx < self.well_known_walkers.len() {
-            if let Some(walker) = self.well_known_walkers.get_mut(self.current_well_known_idx) {
-                loop {
-                    match walker.next() {
-                        Some(Ok(entry)) => {
-                            let path = entry.path();
-                            if path.is_file() && path.extension().is_some_and(|ext| ext == "wasm") {
-                                let path_buf = path.to_path_buf();
-                                // Skip if we've already seen this path
-                                if self.seen_paths.contains(&path_buf) {
-                                    continue;
-                                }
-                                self.seen_paths.insert(path_buf.clone());
-                                return Some(Ok(WasmEntry::new(path_buf)));
-                            }
-                            // Continue to next entry
-                        }
-                        Some(Err(e)) => return Some(Err(e)),
-                        None => {
-                            // Move to next well-known walker
-                            self.current_well_known_idx += 1;
-                            break;
-                        }
-                    }
-                }
-            } else {
+            let Some(walker) = self.well_known_walkers.get_mut(self.current_well_known_idx) else {
                 self.current_well_known_idx += 1;
+                continue;
+            };
+            for entry in walker {
+                match entry {
+                    Ok(entry) => {
+                        let path = entry.path();
+                        if !path.is_file() || path.extension().is_none_or(|ext| ext != "wasm") {
+                            continue;
+                        }
+                        let path_buf = path.to_path_buf();
+                        if self.seen_paths.contains(&path_buf) {
+                            continue;
+                        }
+                        self.seen_paths.insert(path_buf.clone());
+                        return Some(Ok(WasmEntry::new(path_buf)));
+                    }
+                    Err(e) => return Some(Err(e)),
+                }
             }
+            self.current_well_known_idx += 1;
         }
         None
     }

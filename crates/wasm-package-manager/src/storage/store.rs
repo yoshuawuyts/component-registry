@@ -25,15 +25,17 @@ async fn dir_size(path: &Path) -> u64 {
     let mut stack = vec![path.to_path_buf()];
 
     while let Some(dir) = stack.pop() {
-        if let Ok(mut entries) = tokio::fs::read_dir(&dir).await {
-            while let Ok(Some(entry)) = entries.next_entry().await {
-                if let Ok(metadata) = entry.metadata().await {
-                    if metadata.is_dir() {
-                        stack.push(entry.path());
-                    } else {
-                        total += metadata.len();
-                    }
-                }
+        let Ok(mut entries) = tokio::fs::read_dir(&dir).await else {
+            continue;
+        };
+        while let Ok(Some(entry)) = entries.next_entry().await {
+            let Ok(metadata) = entry.metadata().await else {
+                continue;
+            };
+            if metadata.is_dir() {
+                stack.push(entry.path());
+            } else {
+                total += metadata.len();
             }
         }
     }
@@ -300,27 +302,29 @@ impl Store {
         let cache = self.state_info.store_dir();
         let _integrity = cacache::write(&cache, layer_digest, data).await?;
 
-        if let Some(manifest_id) = manifest_id {
-            let layer_id = OciLayer::insert(
-                &self.conn,
-                manifest_id,
-                layer_digest,
-                media_type,
-                Some(i64::try_from(data.len()).unwrap_or(i64::MAX)),
-                position,
-            )?;
+        let Some(manifest_id) = manifest_id else {
+            return Ok(());
+        };
 
-            // Store layer-level annotations
-            if let Some(annotations) = layer_annotations {
-                for (key, value) in annotations {
-                    if let Err(e) = OciLayerAnnotation::insert(&self.conn, layer_id, key, value) {
-                        tracing::warn!("Failed to insert layer annotation '{}': {}", key, e);
-                    }
+        let layer_id = OciLayer::insert(
+            &self.conn,
+            manifest_id,
+            layer_digest,
+            media_type,
+            Some(i64::try_from(data.len()).unwrap_or(i64::MAX)),
+            position,
+        )?;
+
+        // Store layer-level annotations
+        if let Some(annotations) = layer_annotations {
+            for (key, value) in annotations {
+                if let Err(e) = OciLayerAnnotation::insert(&self.conn, layer_id, key, value) {
+                    tracing::warn!("Failed to insert layer annotation '{}': {}", key, e);
                 }
             }
-
-            self.try_extract_wit_package(manifest_id, Some(layer_id), data);
         }
+
+        self.try_extract_wit_package(manifest_id, Some(layer_id), data);
 
         Ok(())
     }
