@@ -791,6 +791,8 @@ fn extract_action_flags(yml: &str, run_only: bool) -> Vec<String> {
         if let Some(start) = trimmed.rfind("(--") {
             if let Some(end) = trimmed[start..].find(')') {
                 let flag = &trimmed[start + 1..start + end];
+                // Descriptions mentioning `wasm run` are run-specific flags;
+                // the rest are global flags.
                 let is_run_specific = trimmed.contains("wasm run");
                 if run_only == is_run_specific {
                     flags.push(flag.to_string());
