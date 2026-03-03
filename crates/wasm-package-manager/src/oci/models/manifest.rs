@@ -114,10 +114,11 @@ impl OciManifest {
         let mut extra: Vec<(&str, &str)> = Vec::new();
 
         for (k, v) in annotations {
-            if let Some(&col) = ann_key_to_col.get(k.as_str()) {
-                well_known.insert(col, v.as_str());
-            } else {
-                extra.push((k.as_str(), v.as_str()));
+            match ann_key_to_col.get(k.as_str()) {
+                Some(&col) => {
+                    well_known.insert(col, v.as_str());
+                }
+                None => extra.push((k.as_str(), v.as_str())),
             }
         }
 

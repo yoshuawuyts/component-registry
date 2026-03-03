@@ -418,13 +418,12 @@ fn upsert_lockfile_package(
     } else {
         &mut lockfile.interfaces
     };
-    if let Some(existing) = packages
+    match packages
         .iter_mut()
         .find(|p| p.name == dep_name && p.registry == registry_path)
     {
-        *existing = package;
-    } else {
-        packages.push(package);
+        Some(existing) => *existing = package,
+        None => packages.push(package),
     }
 }
 
