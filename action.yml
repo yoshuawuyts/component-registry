@@ -44,18 +44,160 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Resolve version
+      id: version
+      shell: bash
+      run: |
+        ACTION_REF="${{ github.action_ref }}"
+        REPO="${{ github.action_repository || 'yoshuawuyts/wasm-cli' }}"
+        if [[ "$ACTION_REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "tag=$ACTION_REF" >> "$GITHUB_OUTPUT"
+        elif [[ "$ACTION_REF" =~ ^v([0-9]+)$ ]]; then
+          # Major version tag (e.g. v0): find the latest release matching this major.
+          # The GitHub API returns releases in reverse chronological order, so the
+          # first match is the most recent release for this major version.
+          MAJOR="${BASH_REMATCH[1]}"
+          TAG=$(curl -sf \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}/releases?per_page=100" \
+            | MAJOR="$MAJOR" node -e "
+              let data = '';
+              process.stdin.on('data', chunk => data += chunk);
+              process.stdin.on('end', () => {
+                try {
+                  const releases = JSON.parse(data);
+                  const prefix = 'v' + process.env.MAJOR + '.';
+                  const match = releases.find(r =>
+                    typeof r.tag_name === 'string' && r.tag_name.startsWith(prefix)
+                  );
+                  if (match) process.stdout.write(match.tag_name);
+                } catch (err) {
+                  process.stderr.write('Failed to parse releases JSON: ' + err.message + '\n');
+                }
+              });
+            ") || true
+          if [ -n "$TAG" ]; then
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Could not resolve latest v${MAJOR}.x release, falling back to cargo install"
+            echo "tag=" >> "$GITHUB_OUTPUT"
+          fi
+        else
+          TAG=$(curl -sf \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}/releases/latest" \
+            | node -e "
+              let data = '';
+              process.stdin.on('data', chunk => data += chunk);
+              process.stdin.on('end', () => {
+                try {
+                  const json = JSON.parse(data);
+                  if (typeof json.tag_name === 'string') {
+                    process.stdout.write(json.tag_name);
+                  }
+                } catch (err) {
+                  process.stderr.write('Failed to parse release JSON: ' + err.message + '\n');
+                }
+              });
+            ") || true
+          if [ -n "$TAG" ]; then
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Could not resolve latest release tag, falling back to cargo install"
+            echo "tag=" >> "$GITHUB_OUTPUT"
+          fi
+        fi
+
+    - name: Detect platform
+      id: platform
+      shell: bash
+      run: |
+        OS="${{ runner.os }}"
+        ARCH="${{ runner.arch }}"
+        case "${OS}-${ARCH}" in
+          Linux-X64)    TARGET="x86_64-unknown-linux-gnu";     EXT="tar.gz" ;;
+          Linux-ARM64)  TARGET="aarch64-unknown-linux-gnu";    EXT="tar.gz" ;;
+          macOS-ARM64)  TARGET="aarch64-apple-darwin";         EXT="tar.gz" ;;
+          Windows-X64)  TARGET="x86_64-pc-windows-msvc";      EXT="zip"    ;;
+          *)
+            echo "::warning::Unsupported platform ${OS}-${ARCH}, falling back to cargo install"
+            echo "target=" >> "$GITHUB_OUTPUT"
+            exit 0
+            ;;
+        esac
+        echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+        echo "ext=$EXT" >> "$GITHUB_OUTPUT"
+
     - name: Cache wasm CLI binary
+      if: steps.version.outputs.tag != '' && steps.platform.outputs.target != ''
+      id: cache
       uses: actions/cache@v5
       with:
-        path: ~/.cargo/bin/wasm
-        key: wasm-cli-${{ runner.os }}
+        path: ${{ runner.tool_cache }}/wasm-cli
+        key: wasm-cli-${{ steps.version.outputs.tag }}-${{ runner.os }}-${{ runner.arch }}
 
-    - name: Install wasm CLI
+    - name: Download pre-built binary
+      id: download
+      if: >-
+        steps.version.outputs.tag != '' &&
+        steps.platform.outputs.target != '' &&
+        steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        TAG="${{ steps.version.outputs.tag }}"
+        TARGET="${{ steps.platform.outputs.target }}"
+        EXT="${{ steps.platform.outputs.ext }}"
+        REPO="${{ github.action_repository || 'yoshuawuyts/wasm-cli' }}"
+        URL="https://github.com/${REPO}/releases/download/${TAG}/wasm-${TARGET}.${EXT}"
+        DEST="${{ runner.tool_cache }}/wasm-cli"
+        mkdir -p "$DEST"
+        echo "Downloading $URL"
+        if [[ "$EXT" == "tar.gz" ]]; then
+          if ! curl -fsSL "$URL" | tar xz -C "$DEST"; then
+            echo "::warning::Failed to download pre-built binary from $URL"
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+        else
+          if ! curl -fsSL "$URL" -o /tmp/wasm.zip; then
+            echo "::warning::Failed to download pre-built binary from $URL"
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! unzip -o /tmp/wasm.zip -d "$DEST"; then
+            echo "::warning::Failed to extract pre-built binary archive"
+            rm -f /tmp/wasm.zip
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          rm -f /tmp/wasm.zip
+        fi
+        if [ -f "$DEST/wasm" ]; then
+          chmod +x "$DEST/wasm"
+        fi
+        echo "ok=true" >> "$GITHUB_OUTPUT"
+
+    - name: Add binary to PATH
+      if: >-
+        steps.version.outputs.tag != '' &&
+        steps.platform.outputs.target != '' &&
+        (steps.cache.outputs.cache-hit == 'true' || steps.download.outputs.ok == 'true')
+      shell: bash
+      run: echo "${{ runner.tool_cache }}/wasm-cli" >> "$GITHUB_PATH"
+
+    - name: Fallback to cargo install
       shell: bash
       run: |
         if ! command -v wasm &>/dev/null; then
-          cargo install --git https://github.com/yoshuawuyts/wasm-cli.git wasm
+          REPO="${{ github.action_repository || 'yoshuawuyts/wasm-cli' }}"
+          cargo install --git "https://github.com/${REPO}.git" wasm
         fi
+
+    - name: Verify wasm is available
+      shell: bash
+      run: wasm --help > /dev/null
 
     - name: Run wasm
       id: wasm
