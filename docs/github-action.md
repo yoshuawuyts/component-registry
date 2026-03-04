@@ -8,14 +8,18 @@ dependencies from OCI registries, or validating local Wasm files.
 ## Usage
 
 Reference the action from the `yoshuawuyts/wasm-cli` repository in any
-workflow step:
+workflow step. Pin to the major version tag for automatic patch and minor
+updates:
 
 ```yaml
-- uses: yoshuawuyts/wasm-cli@main
+- uses: yoshuawuyts/wasm-cli@v0
   with:
     command: run
     input: path/to/component.wasm
 ```
+
+You can also pin to an exact version (`@v0.3.0`) or to the development
+branch (`@main`, which falls back to building from source).
 
 ## Inputs
 
@@ -43,7 +47,7 @@ workflow step:
 ```yaml
 steps:
   - uses: actions/checkout@v4
-  - uses: yoshuawuyts/wasm-cli@main
+  - uses: yoshuawuyts/wasm-cli@v0
     with:
       command: run
       input: my-component.wasm
@@ -54,7 +58,7 @@ steps:
 ```yaml
 steps:
   - uses: actions/checkout@v4
-  - uses: yoshuawuyts/wasm-cli@main
+  - uses: yoshuawuyts/wasm-cli@v0
     with:
       command: install
       input: ghcr.io/bytecodealliance/sample-wasi-http-rust/sample-wasi-http-rust:0.1.6
@@ -65,7 +69,7 @@ steps:
 ```yaml
 steps:
   - uses: actions/checkout@v4
-  - uses: yoshuawuyts/wasm-cli@main
+  - uses: yoshuawuyts/wasm-cli@v0
     with:
       command: run
       input: my-component.wasm
@@ -77,7 +81,7 @@ steps:
 ```yaml
 steps:
   - uses: actions/checkout@v4
-  - uses: yoshuawuyts/wasm-cli@main
+  - uses: yoshuawuyts/wasm-cli@v0
     with:
       command: run
       input: my-component.wasm
@@ -91,7 +95,7 @@ steps:
   - uses: actions/checkout@v4
   - name: Run component
     id: run
-    uses: yoshuawuyts/wasm-cli@main
+    uses: yoshuawuyts/wasm-cli@v0
     with:
       command: run
       input: my-component.wasm
@@ -109,7 +113,7 @@ steps:
 ```yaml
 steps:
   - uses: actions/checkout@v4
-  - uses: yoshuawuyts/wasm-cli@main
+  - uses: yoshuawuyts/wasm-cli@v0
     with:
       command: run
       input: my-component.wasm
