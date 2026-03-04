@@ -60,9 +60,10 @@
 
 pub mod config;
 pub mod indexer;
+pub mod registry_file;
 pub mod server;
 
 pub use config::Config;
-pub use config::RegistryFile;
 pub use indexer::Indexer;
+pub use registry_file::RegistryFile;
 pub use server::router;

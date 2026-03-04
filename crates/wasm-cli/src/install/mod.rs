@@ -157,31 +157,13 @@ impl Opts {
                 dependencies: lockfile_deps,
             };
 
-            if result.is_component {
-                let existing = lockfile
-                    .components
-                    .iter()
-                    .position(|p| p.name == dep_name && p.registry == registry_path);
-                if let Some(existing_pkg) =
-                    existing.and_then(|idx| lockfile.components.get_mut(idx))
-                {
-                    *existing_pkg = package;
-                } else {
-                    lockfile.components.push(package);
-                }
-            } else {
-                let existing = lockfile
-                    .interfaces
-                    .iter()
-                    .position(|p| p.name == dep_name && p.registry == registry_path);
-                if let Some(existing_pkg) =
-                    existing.and_then(|idx| lockfile.interfaces.get_mut(idx))
-                {
-                    *existing_pkg = package;
-                } else {
-                    lockfile.interfaces.push(package);
-                }
-            }
+            upsert_lockfile_package(
+                &mut lockfile,
+                result.is_component,
+                &dep_name,
+                &registry_path,
+                package,
+            );
 
             // Queue WIT dependencies for recursive installation (transitive deps).
             // These are only added to the lockfile, not the manifest.
@@ -417,6 +399,31 @@ fn upsert_lockfile_type(lockfile: &mut wasm_manifest::Lockfile, result: &Install
         *existing = package;
     } else {
         lockfile.interfaces.push(package);
+    }
+}
+
+/// Upsert a package into the appropriate lockfile section (components or interfaces).
+///
+/// If a matching entry (same `name` and `registry`) already exists, it is
+/// replaced; otherwise the package is appended.
+fn upsert_lockfile_package(
+    lockfile: &mut wasm_manifest::Lockfile,
+    is_component: bool,
+    dep_name: &str,
+    registry_path: &str,
+    package: wasm_manifest::Package,
+) {
+    let packages = if is_component {
+        &mut lockfile.components
+    } else {
+        &mut lockfile.interfaces
+    };
+    match packages
+        .iter_mut()
+        .find(|p| p.name == dep_name && p.registry == registry_path)
+    {
+        Some(existing) => *existing = package,
+        None => packages.push(package),
     }
 }
 

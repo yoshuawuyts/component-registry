@@ -1,9 +1,9 @@
 use oci_client::Reference;
-use oci_client::manifest::OciImageManifest;
 use std::path::Path;
 use tokio_stream::StreamExt;
 
 mod logic;
+mod models;
 
 use crate::config::Config;
 use crate::oci::{Client, ImageEntry, InsertResult};
@@ -12,75 +12,7 @@ use crate::storage::{KnownPackage, StateInfo, Store};
 use crate::types::WitPackage;
 
 pub use logic::{derive_component_name, sanitize_to_wit_identifier, should_sync, vendor_filename};
-
-/// Result of syncing the package index from a meta-registry.
-#[derive(Debug)]
-pub enum SyncResult {
-    /// Sync was skipped because the minimum interval has not elapsed.
-    Skipped,
-    /// The server indicated the local data is still current (304 Not Modified).
-    NotModified,
-    /// New package data was fetched and stored locally.
-    Updated {
-        /// Number of packages that were synced.
-        count: usize,
-    },
-    /// The sync failed but local cached data is available.
-    Degraded {
-        /// A human-readable description of the error.
-        error: String,
-    },
-}
-
-/// Controls whether `sync_from_meta_registry` respects the minimum sync
-/// interval or forces an immediate fetch.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SyncPolicy {
-    /// Only sync if the minimum interval has elapsed since the last sync.
-    IfStale,
-    /// Ignore the minimum interval and always contact the registry.
-    Force,
-}
-
-/// Result of a pull operation.
-///
-/// Contains the insert result along with the content digest and manifest
-/// from the pulled image.
-#[derive(Debug, Clone)]
-pub struct PullResult {
-    /// Whether the image was newly inserted or already existed.
-    pub insert_result: InsertResult,
-    /// The content digest of the pulled image (e.g., "sha256:abc123...").
-    pub digest: Option<String>,
-    /// The OCI image manifest.
-    pub manifest: Option<OciImageManifest>,
-}
-
-/// Result of an install operation.
-///
-/// Contains metadata about the installed package for updating
-/// manifest and lockfile entries.
-#[derive(Debug, Clone)]
-pub struct InstallResult {
-    /// The registry hostname (e.g., "ghcr.io").
-    pub registry: String,
-    /// The repository path (e.g., "webassembly/wasi-logging").
-    pub repository: String,
-    /// The tag, if present (e.g., "1.0.0").
-    pub tag: Option<String>,
-    /// The content digest of the image.
-    pub digest: Option<String>,
-    /// The WIT package name if available (e.g., "wasi:logging@0.1.0").
-    pub package_name: Option<String>,
-    /// The `org.opencontainers.image.title` manifest annotation, if present.
-    pub oci_title: Option<String>,
-    /// The list of vendored file paths.
-    pub vendored_files: Vec<std::path::PathBuf>,
-    /// Whether this package is a compiled component (`true`) or a WIT interface (`false`).
-    pub is_component: bool,
-    /// Dependencies on other WIT packages extracted from the component metadata.
-    pub dependencies: Vec<crate::types::DependencyItem>,
-}
+pub use models::{InstallResult, PullResult, SyncPolicy, SyncResult};
 
 /// A cache on disk
 #[derive(Debug)]
@@ -169,17 +101,7 @@ impl Manager {
             None,
         )?;
 
-        // Fetch all related tags and store them as known packages
-        if let Ok(tags) = self.client.list_tags(&reference).await {
-            for tag in tags {
-                self.store.add_known_package(
-                    reference.registry(),
-                    reference.repository(),
-                    Some(&tag),
-                    None,
-                )?;
-            }
-        }
+        self.store_related_tags(&reference).await?;
 
         // Best-effort: discover and store referrers (signatures, SBOMs, etc.)
         if let Some(manifest_id) = manifest_id {
@@ -330,17 +252,7 @@ impl Manager {
             None,
         )?;
 
-        // Fetch all related tags and store them as known packages
-        if let Ok(tags) = self.client.list_tags(&reference).await {
-            for tag in tags {
-                self.store.add_known_package(
-                    reference.registry(),
-                    reference.repository(),
-                    Some(&tag),
-                    None,
-                )?;
-            }
-        }
+        self.store_related_tags(&reference).await?;
 
         // Best-effort: discover and store referrers (signatures, SBOMs, etc.)
         if let Some(manifest_id) = image_id {
@@ -385,7 +297,6 @@ impl Manager {
         vendor_dir: &Path,
     ) -> anyhow::Result<InstallResult> {
         use crate::oci::filter_wasm_layers;
-        use crate::types::{extract_wit_metadata, is_wit_package};
 
         let pull_result = self.pull(reference.clone()).await?;
 
@@ -423,15 +334,14 @@ impl Manager {
                 self.vendor(&layer.digest, &dest).await?;
                 vendored_files.push(dest);
 
-                // Try to extract WIT package name and detect type from the layer data
-                if package_name.is_none()
-                    && let Ok(data) = self.get(&layer.digest).await
-                {
-                    is_component = !is_wit_package(&data);
-                    if let Some(metadata) = extract_wit_metadata(&data) {
-                        package_name = metadata.package_name;
-                        dependencies = metadata.dependencies;
-                    }
+                if package_name.is_none() {
+                    self.try_extract_layer_metadata(
+                        &layer.digest,
+                        &mut package_name,
+                        &mut is_component,
+                        &mut dependencies,
+                    )
+                    .await;
                 }
             }
         }
@@ -464,7 +374,6 @@ impl Manager {
         progress_tx: &tokio::sync::mpsc::Sender<ProgressEvent>,
     ) -> anyhow::Result<InstallResult> {
         use crate::oci::filter_wasm_layers;
-        use crate::types::{extract_wit_metadata, is_wit_package};
 
         let pull_result = self
             .pull_with_progress(reference.clone(), progress_tx)
@@ -504,15 +413,14 @@ impl Manager {
                 self.vendor(&layer.digest, &dest).await?;
                 vendored_files.push(dest);
 
-                // Try to extract WIT package name and detect type from the layer data
-                if package_name.is_none()
-                    && let Ok(data) = self.get(&layer.digest).await
-                {
-                    is_component = !is_wit_package(&data);
-                    if let Some(metadata) = extract_wit_metadata(&data) {
-                        package_name = metadata.package_name;
-                        dependencies = metadata.dependencies;
-                    }
+                if package_name.is_none() {
+                    self.try_extract_layer_metadata(
+                        &layer.digest,
+                        &mut package_name,
+                        &mut is_component,
+                        &mut dependencies,
+                    )
+                    .await;
                 }
             }
         }
@@ -661,20 +569,21 @@ impl Manager {
     /// reference from the local known packages database.
     fn list_cached_tags(&self, reference: &Reference) -> anyhow::Result<Vec<String>> {
         // Use efficient lookup by registry and repository
-        if let Some(pkg) = self
+        match self
             .store
             .get_known_package(reference.registry(), reference.repository())?
         {
-            // Combine all tag types: release, signature, and attestation
-            let tags: Vec<String> = pkg
-                .tags
-                .into_iter()
-                .chain(pkg.signature_tags)
-                .chain(pkg.attestation_tags)
-                .collect();
-            Ok(tags)
-        } else {
-            Ok(Vec::new())
+            Some(pkg) => {
+                // Combine all tag types: release, signature, and attestation
+                let tags: Vec<String> = pkg
+                    .tags
+                    .into_iter()
+                    .chain(pkg.signature_tags)
+                    .chain(pkg.attestation_tags)
+                    .collect();
+                Ok(tags)
+            }
+            None => Ok(Vec::new()),
         }
     }
 
@@ -869,6 +778,47 @@ impl Manager {
             .unwrap_or_default()
             .as_secs();
         self.store.set_sync_meta("last_synced_at", &now.to_string())
+    }
+
+    /// Fetch all related tags for a reference and store them as known packages.
+    ///
+    /// Errors from the registry are silently ignored (best-effort).
+    async fn store_related_tags(&self, reference: &Reference) -> anyhow::Result<()> {
+        let Ok(tags) = self.client.list_tags(reference).await else {
+            return Ok(());
+        };
+        for tag in tags {
+            self.store.add_known_package(
+                reference.registry(),
+                reference.repository(),
+                Some(&tag),
+                None,
+            )?;
+        }
+        Ok(())
+    }
+
+    /// Try to extract WIT metadata from a cached layer.
+    ///
+    /// On success, updates `package_name`, `is_component`, and `dependencies`
+    /// in place. Silently skips if the layer data cannot be read or parsed.
+    async fn try_extract_layer_metadata(
+        &self,
+        layer_digest: &str,
+        package_name: &mut Option<String>,
+        is_component: &mut bool,
+        dependencies: &mut Vec<crate::types::DependencyItem>,
+    ) {
+        use crate::types::{extract_wit_metadata, is_wit_package};
+
+        let Ok(data) = self.get(layer_digest).await else {
+            return;
+        };
+        *is_component = !is_wit_package(&data);
+        if let Some(metadata) = extract_wit_metadata(&data) {
+            *package_name = metadata.package_name;
+            *dependencies = metadata.dependencies;
+        }
     }
 
     /// Best-effort: fetch and store referrers (signatures, SBOMs, attestations)
