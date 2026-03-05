@@ -241,7 +241,7 @@ fn generate_wit_text(decoded: &DecodedWasm) -> String {
                 // Print functions
                 for (func_name, func) in &interface.functions {
                     let params: Vec<String> =
-                        func.params.iter().map(|(name, _ty)| name.clone()).collect();
+                        func.params.iter().map(|param| param.name.clone()).collect();
                     let has_result = func.result.is_some();
                     writeln!(
                         output,

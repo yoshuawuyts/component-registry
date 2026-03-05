@@ -135,7 +135,7 @@ wit-parser = "0.245"
 axum = "0.8.8"
 exponential-backoff = "2.1.0"
 reqwest = { version = "0.13", default-features = false, features = [
-    "rustls-tls",
+    "rustls",
     "json",
     "gzip",
 ] }
