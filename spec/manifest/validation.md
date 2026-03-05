@@ -17,3 +17,6 @@ Validation errors MUST have human-readable display messages.
 
 r[validation.mixed-types]
 Validation MUST handle both component and interface sections.
+
+r[validation.error-codes]
+All validation error variants MUST carry a stable diagnostic error code.

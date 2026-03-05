@@ -1,13 +1,18 @@
 //! Validation functions for manifest and lockfile consistency.
 
 use crate::{Lockfile, Manifest};
+use miette::Diagnostic;
 use std::collections::HashSet;
 
 /// Error type for validation failures.
 ///
+/// Each variant carries a stable [diagnostic error code][miette::Diagnostic::code]
+/// that uniquely identifies the failure and maps back to a spec requirement.
+///
 /// # Example
 ///
 /// ```rust
+/// use miette::Diagnostic;
 /// use wasm_manifest::ValidationError;
 ///
 /// let err = ValidationError::MissingDependency {
@@ -17,22 +22,42 @@ use std::collections::HashSet;
 ///     err.to_string(),
 ///     "Package 'wasi:logging' is in the lockfile but not in the manifest"
 /// );
+/// assert_eq!(
+///     err.code().expect("should have a code").to_string(),
+///     "wasm::validation::missing_dependency",
+/// );
 ///
 /// let err = ValidationError::InvalidDependency {
 ///     package: "wasi:key-value".to_string(),
 ///     dependency: "wasi:http".to_string(),
 /// };
 /// assert!(err.to_string().contains("wasi:http"));
+/// assert_eq!(
+///     err.code().expect("should have a code").to_string(),
+///     "wasm::validation::invalid_dependency",
+/// );
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Diagnostic)]
 #[must_use]
 pub enum ValidationError {
     /// A package in the lockfile is not present in the manifest.
+    ///
+    /// See spec: `r[validation.missing-dependency]`
+    #[diagnostic(
+        code(wasm::validation::missing_dependency),
+        help("remove '{name}' from the lockfile or add it to the manifest")
+    )]
     MissingDependency {
         /// The name of the missing package.
         name: String,
     },
     /// A package dependency references a package that doesn't exist in the lockfile.
+    ///
+    /// See spec: `r[validation.invalid-dependency]`
+    #[diagnostic(
+        code(wasm::validation::invalid_dependency),
+        help("add '{dependency}' to the lockfile or remove the reference from '{package}'")
+    )]
     InvalidDependency {
         /// The package that has the invalid dependency.
         package: String,
@@ -377,5 +402,42 @@ mod tests {
         };
 
         assert!(validate(&manifest, &lockfile).is_ok());
+    }
+
+    // r[verify validation.error-codes]
+    #[test]
+    fn test_all_variants_have_error_codes() {
+        use miette::Diagnostic;
+
+        let missing = ValidationError::MissingDependency {
+            name: "test".to_string(),
+        };
+        assert_eq!(
+            missing
+                .code()
+                .expect("MissingDependency must have a diagnostic code")
+                .to_string(),
+            "wasm::validation::missing_dependency",
+        );
+        assert!(
+            missing.help().is_some(),
+            "MissingDependency must have a help message"
+        );
+
+        let invalid = ValidationError::InvalidDependency {
+            package: "test".to_string(),
+            dependency: "dep".to_string(),
+        };
+        assert_eq!(
+            invalid
+                .code()
+                .expect("InvalidDependency must have a diagnostic code")
+                .to_string(),
+            "wasm::validation::invalid_dependency",
+        );
+        assert!(
+            invalid.help().is_some(),
+            "InvalidDependency must have a help message"
+        );
     }
 }
