@@ -248,12 +248,27 @@ fn validate_version_constraints(manifest: &Manifest, errors: &mut Vec<Validation
 
 /// Detect conflicting version constraints for the same package name across
 /// the components and interfaces sections.
+///
+/// Two constraints conflict when they parse to different semver requirements.
+/// Strings that normalize to the same `VersionReq` (e.g. `"1"` and `"1.0.0"`)
+/// are considered compatible.
 fn validate_version_conflicts(manifest: &Manifest, errors: &mut Vec<ValidationError>) {
     for (name, comp_dep) in &manifest.dependencies.components {
         if let Some(iface_dep) = manifest.dependencies.interfaces.get(name) {
             let comp_ver = comp_dep.version();
             let iface_ver = iface_dep.version();
-            if comp_ver != iface_ver {
+
+            // Try parsing both; if either fails, the invalid-constraint
+            // check above will catch it — skip the conflict check.
+            let (Ok(comp_req), Ok(iface_req)) =
+                (comp_dep.parse_version_req(), iface_dep.parse_version_req())
+            else {
+                continue;
+            };
+
+            // Compare the parsed requirements — this handles cases like
+            // "1.0.0" vs "^1.0.0" which are semantically identical.
+            if comp_req != iface_req {
                 errors.push(ValidationError::VersionConflict {
                     name: name.clone(),
                     version_a: comp_ver.to_string(),

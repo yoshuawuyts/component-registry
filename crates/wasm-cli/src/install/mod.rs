@@ -102,7 +102,7 @@ impl Opts {
             .collect()
             .await;
 
-        for (result, reference, update_manifest) in results.map_err(crate::util::into_miette)? {
+        for (result, _reference, update_manifest) in results.map_err(crate::util::into_miette)? {
             // Derive the dependency name.
             // For components, use `derive_component_name` which tries WIT metadata,
             // OCI title annotation, last repository segment, then full path.
@@ -134,9 +134,11 @@ impl Opts {
             // Add to manifest (compact format) — route to components or interfaces.
             // Only update the manifest when a reference was explicitly provided;
             // for the 0-args case the entries are already in the manifest.
+            // The compact format stores the resolved version string (not the
+            // full OCI reference), so bare "1.2.3" means ^1.2.3 per Cargo
+            // semantics.
             if update_manifest {
-                let reference_str = reference.whole().clone();
-                let dep = wasm_manifest::Dependency::Compact(reference_str);
+                let dep = wasm_manifest::Dependency::Compact(version.clone());
                 if result.is_component {
                     manifest
                         .dependencies
