@@ -179,30 +179,22 @@ fn validate_version_constraints(manifest: &Manifest, errors: &mut Vec<Validation
 /// Check for conflicting version constraints on the same package name
 /// across components and interfaces sections.
 fn validate_version_conflicts(manifest: &Manifest, errors: &mut Vec<ValidationError>) {
-    let component_keys: HashSet<&str> = manifest
-        .dependencies
-        .components
-        .keys()
-        .map(String::as_str)
-        .collect();
-
-    for name in manifest.dependencies.interfaces.keys() {
-        if component_keys.contains(name.as_str()) {
-            let Some(comp_dep) = manifest.dependencies.components.get(name) else {
-                continue;
-            };
-            let Some(iface_dep) = manifest.dependencies.interfaces.get(name) else {
-                continue;
-            };
-            let comp_version = comp_dep.version().unwrap_or("*").to_string();
-            let iface_version = iface_dep.version().unwrap_or("*").to_string();
-            if comp_version != iface_version {
-                errors.push(ValidationError::VersionConflict {
-                    name: name.clone(),
-                    constraint_a: comp_version,
-                    constraint_b: iface_version,
-                });
-            }
+    for (name, iface_dep) in &manifest.dependencies.interfaces {
+        let Some(comp_dep) = manifest.dependencies.components.get(name) else {
+            continue;
+        };
+        let comp_version = comp_dep.version();
+        let iface_version = iface_dep.version();
+        // Skip conflict detection when either side has no version.
+        let (Some(cv), Some(iv)) = (comp_version, iface_version) else {
+            continue;
+        };
+        if cv != iv {
+            errors.push(ValidationError::VersionConflict {
+                name: name.clone(),
+                constraint_a: cv.to_string(),
+                constraint_b: iv.to_string(),
+            });
         }
     }
 }
