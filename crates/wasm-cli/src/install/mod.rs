@@ -456,34 +456,31 @@ fn reference_from_dependency(dep: &wasm_manifest::Dependency) -> anyhow::Result<
 
 /// Resolve CLI install inputs into `(Reference, update_manifest)` pairs.
 ///
-/// Each input is first tried as an OCI reference. If that fails and the input
-/// looks like a `scope:component` manifest key, the matching dependency is
-/// resolved from the manifest (and the manifest is not updated since the entry
-/// already exists).
+/// Each input is first checked against manifest keys (e.g., `wasi:logging`).
+/// If no match is found, it is tried as an OCI reference. Returns an error
+/// when neither interpretation works.
 fn resolve_install_inputs(
     inputs: &[String],
     manifest: &wasm_manifest::Manifest,
 ) -> miette::Result<Vec<(Reference, bool)>> {
     let mut result = Vec::with_capacity(inputs.len());
     for input in inputs {
-        // Try as OCI reference first
-        if let Ok(reference) = crate::util::parse_reference(input) {
-            result.push((reference, true));
-            continue;
-        }
-
-        // Try as scope:component manifest key
+        // Try as scope:component manifest key first
         let dep = manifest
             .components
             .get(input)
             .or_else(|| manifest.interfaces.get(input));
 
-        match dep {
-            Some(dep) => {
-                let reference = reference_from_dependency(dep).map_err(crate::util::into_miette)?;
-                result.push((reference, false));
-            }
-            None => {
+        if let Some(dep) = dep {
+            let reference = reference_from_dependency(dep).map_err(crate::util::into_miette)?;
+            result.push((reference, false));
+            continue;
+        }
+
+        // Try as OCI reference
+        match crate::util::parse_reference(input) {
+            Ok(reference) => result.push((reference, true)),
+            Err(_) => {
                 return Err(miette::miette!(
                     "'{input}' is not a valid OCI reference or manifest key"
                 ));
