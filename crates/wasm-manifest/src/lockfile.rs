@@ -5,6 +5,14 @@ use serde::{Deserialize, Serialize};
 use crate::PackageType;
 
 /// The current revision of the lockfile.
+///
+/// # Example
+///
+/// ```rust
+/// use wasm_manifest::LOCKFILE_VERSION;
+///
+/// assert_eq!(LOCKFILE_VERSION, 3);
+/// ```
 pub const LOCKFILE_VERSION: u32 = 3;
 
 /// The root lockfile structure for a WASM package.
@@ -14,20 +22,22 @@ pub const LOCKFILE_VERSION: u32 = 3;
 ///
 /// # Example
 ///
-/// ```toml
+/// ```rust
+/// use wasm_manifest::Lockfile;
+///
+/// let toml = r#"
 /// lockfile_version = 3
 ///
-/// [[components]]
-/// name = "root:component"
-/// version = "0.1.6"
-/// registry = "ghcr.io/bytecodealliance/sample-wasi-http-rust/sample-wasi-http-rust"
-/// digest = "sha256:abc123..."
-///
 /// [[interfaces]]
-/// name = "wasi:clocks"
-/// version = "0.2.5"
-/// registry = "ghcr.io/webassembly/wasi/clocks"
-/// digest = "sha256:def456..."
+/// name = "wasi:logging"
+/// version = "1.0.0"
+/// registry = "ghcr.io/webassembly/wasi-logging"
+/// digest = "sha256:abc123"
+/// "#;
+///
+/// let lockfile: Lockfile = toml::from_str(toml).unwrap();
+/// assert_eq!(lockfile.lockfile_version, 3);
+/// assert_eq!(lockfile.interfaces.len(), 1);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[must_use]
@@ -56,6 +66,34 @@ impl Default for Lockfile {
 
 impl Lockfile {
     /// Iterate over all packages with their package type.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use wasm_manifest::{Lockfile, PackageType};
+    ///
+    /// let toml = r#"
+    /// lockfile_version = 3
+    ///
+    /// [[components]]
+    /// name = "root:component"
+    /// version = "0.1.0"
+    /// registry = "ghcr.io/example/component"
+    /// digest = "sha256:comp123"
+    ///
+    /// [[interfaces]]
+    /// name = "wasi:clocks"
+    /// version = "0.2.5"
+    /// registry = "ghcr.io/webassembly/wasi/clocks"
+    /// digest = "sha256:iface456"
+    /// "#;
+    ///
+    /// let lockfile: Lockfile = toml::from_str(toml).unwrap();
+    /// let all: Vec<_> = lockfile.all_packages().collect();
+    /// assert_eq!(all.len(), 2);
+    /// assert!(all.iter().any(|(_, pt)| *pt == PackageType::Component));
+    /// assert!(all.iter().any(|(_, pt)| *pt == PackageType::Interface));
+    /// ```
     pub fn all_packages(&self) -> impl Iterator<Item = (&Package, PackageType)> {
         self.components
             .iter()
@@ -69,21 +107,31 @@ impl Lockfile {
 /// Each package represents a dependency that has been resolved to a specific
 /// version with a content digest for integrity verification.
 ///
-/// # Example with dependencies
+/// # Example
 ///
-/// ```toml
+/// ```rust
+/// use wasm_manifest::Lockfile;
+///
+/// let toml = r#"
+/// lockfile_version = 3
+///
 /// [[interfaces]]
 /// name = "wasi:key-value"
 /// version = "2.0.0"
 /// registry = "ghcr.io/webassembly/wasi-key-value"
-/// digest = "sha256:def456..."
+/// digest = "sha256:def456"
 ///
 /// [[interfaces.dependencies]]
 /// name = "wasi:logging"
 /// version = "1.0.0"
-/// ```
+/// "#;
 ///
-/// Note: `[[interfaces.dependencies]]` defines dependencies for the last `[[interfaces]]` entry.
+/// let lockfile: Lockfile = toml::from_str(toml).unwrap();
+/// let pkg = &lockfile.interfaces[0];
+/// assert_eq!(pkg.name, "wasi:key-value");
+/// assert_eq!(pkg.dependencies.len(), 1);
+/// assert_eq!(pkg.dependencies[0].name, "wasi:logging");
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[must_use]
 pub struct Package {
@@ -108,6 +156,18 @@ pub struct Package {
 /// A dependency reference within a package.
 ///
 /// This represents a dependency that a package has on another package.
+///
+/// # Example
+///
+/// ```rust
+/// use wasm_manifest::PackageDependency;
+///
+/// let dep = PackageDependency {
+///     name: "wasi:logging".to_string(),
+///     version: "1.0.0".to_string(),
+/// };
+/// assert_eq!(dep.name, "wasi:logging");
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[must_use]
 pub struct PackageDependency {

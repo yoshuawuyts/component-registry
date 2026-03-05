@@ -4,6 +4,26 @@ use crate::{Lockfile, Manifest};
 use std::collections::HashSet;
 
 /// Error type for validation failures.
+///
+/// # Example
+///
+/// ```rust
+/// use wasm_manifest::ValidationError;
+///
+/// let err = ValidationError::MissingDependency {
+///     name: "wasi:logging".to_string(),
+/// };
+/// assert_eq!(
+///     err.to_string(),
+///     "Package 'wasi:logging' is in the lockfile but not in the manifest"
+/// );
+///
+/// let err = ValidationError::InvalidDependency {
+///     package: "wasi:key-value".to_string(),
+///     dependency: "wasi:http".to_string(),
+/// };
+/// assert!(err.to_string().contains("wasi:http"));
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[must_use]
 pub enum ValidationError {

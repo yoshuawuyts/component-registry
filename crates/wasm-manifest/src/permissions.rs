@@ -23,6 +23,21 @@ use std::path::PathBuf;
 /// | `allow_dirs`      | `[]`    |
 /// | `inherit_stdio`   | `true`  |
 /// | `inherit_network` | `false` |
+///
+/// # Example
+///
+/// ```rust
+/// use wasm_manifest::RunPermissions;
+///
+/// let toml_str = r#"
+/// inherit-env = true
+/// allow-dirs = ["/data", "./output"]
+/// "#;
+///
+/// let perms: RunPermissions = toml::from_str(toml_str).unwrap();
+/// assert_eq!(perms.inherit_env, Some(true));
+/// assert!(perms.inherit_stdio.is_none());
+/// ```
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 #[must_use]
@@ -54,6 +69,25 @@ impl RunPermissions {
     /// For every field, a `Some` value in `overrides` replaces the
     /// corresponding value in `self`; `None` in `overrides` preserves the
     /// existing value.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use wasm_manifest::RunPermissions;
+    ///
+    /// let base = RunPermissions {
+    ///     inherit_env: Some(false),
+    ///     inherit_stdio: Some(true),
+    ///     ..Default::default()
+    /// };
+    /// let overrides = RunPermissions {
+    ///     inherit_env: Some(true),
+    ///     ..Default::default()
+    /// };
+    /// let merged = base.merge(overrides);
+    /// assert_eq!(merged.inherit_env, Some(true));
+    /// assert_eq!(merged.inherit_stdio, Some(true)); // preserved from base
+    /// ```
     pub fn merge(self, overrides: Self) -> Self {
         Self {
             inherit_env: overrides.inherit_env.or(self.inherit_env),
@@ -65,6 +99,21 @@ impl RunPermissions {
     }
 
     /// Collapse optional fields into concrete values using built-in defaults.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use wasm_manifest::RunPermissions;
+    ///
+    /// let perms = RunPermissions {
+    ///     inherit_env: Some(true),
+    ///     ..Default::default()
+    /// };
+    /// let resolved = perms.resolve();
+    /// assert!(resolved.inherit_env);
+    /// assert!(resolved.inherit_stdio); // default is true
+    /// assert!(!resolved.inherit_network); // default is false
+    /// ```
     pub fn resolve(self) -> ResolvedPermissions {
         ResolvedPermissions {
             inherit_env: self.inherit_env.unwrap_or(false),
@@ -79,6 +128,19 @@ impl RunPermissions {
 /// Fully resolved permissions with no optional fields.
 ///
 /// Produced by [`RunPermissions::resolve`].
+///
+/// # Example
+///
+/// ```rust
+/// use wasm_manifest::RunPermissions;
+///
+/// let resolved = RunPermissions::default().resolve();
+/// assert!(!resolved.inherit_env);
+/// assert!(resolved.allow_env.is_empty());
+/// assert!(resolved.allow_dirs.is_empty());
+/// assert!(resolved.inherit_stdio);
+/// assert!(!resolved.inherit_network);
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[must_use]
 pub struct ResolvedPermissions {

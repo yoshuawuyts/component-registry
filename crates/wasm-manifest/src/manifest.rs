@@ -5,6 +5,16 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// The type of a WASM package.
+///
+/// # Example
+///
+/// ```rust
+/// use wasm_manifest::PackageType;
+///
+/// let component = PackageType::Component;
+/// let interface = PackageType::Interface;
+/// assert_ne!(component, interface);
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[must_use]
@@ -22,12 +32,20 @@ pub enum PackageType {
 ///
 /// # Example
 ///
-/// ```toml
+/// ```rust
+/// use wasm_manifest::Manifest;
+///
+/// let toml = r#"
 /// [components]
-/// "root:component" = "ghcr.io/bytecodealliance/sample-wasi-http-rust/sample-wasi-http-rust:0.1.6"
+/// "root:component" = "ghcr.io/example/component:0.1.0"
 ///
 /// [interfaces]
 /// "wasi:clocks" = "ghcr.io/webassembly/wasi/clocks:0.2.5"
+/// "#;
+///
+/// let manifest: Manifest = toml::from_str(toml).unwrap();
+/// assert_eq!(manifest.components.len(), 1);
+/// assert_eq!(manifest.interfaces.len(), 1);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[must_use]
@@ -42,6 +60,26 @@ pub struct Manifest {
 
 impl Manifest {
     /// Iterate over all dependencies with their package type.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use wasm_manifest::{Manifest, PackageType};
+    ///
+    /// let toml = r#"
+    /// [components]
+    /// "root:component" = "ghcr.io/example/component:0.1.0"
+    ///
+    /// [interfaces]
+    /// "wasi:logging" = "ghcr.io/webassembly/wasi-logging:1.0.0"
+    /// "#;
+    ///
+    /// let manifest: Manifest = toml::from_str(toml).unwrap();
+    /// let all: Vec<_> = manifest.all_dependencies().collect();
+    /// assert_eq!(all.len(), 2);
+    /// assert!(all.iter().any(|(_, _, pt)| *pt == PackageType::Component));
+    /// assert!(all.iter().any(|(_, _, pt)| *pt == PackageType::Interface));
+    /// ```
     pub fn all_dependencies(&self) -> impl Iterator<Item = (&String, &Dependency, PackageType)> {
         self.components
             .iter()
@@ -72,6 +110,34 @@ impl Manifest {
 ///    package = "wasi-logging"
 ///    version = "1.0.0"
 ///    ```
+///
+/// # Example
+///
+/// ```rust
+/// use wasm_manifest::{Manifest, Dependency};
+///
+/// let toml = r#"
+/// [interfaces]
+/// "wasi:logging" = "ghcr.io/webassembly/wasi-logging:1.0.0"
+///
+/// [interfaces."wasi:key-value"]
+/// registry = "ghcr.io"
+/// namespace = "webassembly"
+/// package = "wasi-key-value"
+/// version = "2.0.0"
+/// "#;
+///
+/// let manifest: Manifest = toml::from_str(toml).unwrap();
+///
+/// assert!(matches!(
+///     &manifest.interfaces["wasi:logging"],
+///     Dependency::Compact(_)
+/// ));
+/// assert!(matches!(
+///     &manifest.interfaces["wasi:key-value"],
+///     Dependency::Explicit { .. }
+/// ));
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]
 #[must_use]

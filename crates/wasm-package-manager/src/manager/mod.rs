@@ -15,6 +15,22 @@ pub use logic::{derive_component_name, sanitize_to_wit_identifier, should_sync, 
 pub use models::{InstallResult, PullResult, SyncPolicy, SyncResult};
 
 /// A cache on disk
+///
+/// # Example
+///
+/// ```no_run
+/// use wasm_package_manager::manager::Manager;
+///
+/// # #[tokio::main]
+/// # async fn main() -> anyhow::Result<()> {
+/// let manager = Manager::open().await?;
+/// let images = manager.list_all()?;
+/// for image in &images {
+///     println!("{}", image.reference());
+/// }
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug)]
 pub struct Manager {
     client: Client,
