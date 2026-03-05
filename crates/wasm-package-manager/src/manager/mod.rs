@@ -54,6 +54,26 @@ impl Manager {
         })
     }
 
+    /// Create a new store at a custom data directory on disk.
+    ///
+    /// This opens a separate cache at the specified path, isolated from the
+    /// default location. Useful for running multiple instances (e.g. a
+    /// registry server) without sharing state.
+    ///
+    /// This may return an error if it fails to create the cache location on disk.
+    pub async fn open_at(data_dir: impl Into<std::path::PathBuf>) -> anyhow::Result<Self> {
+        let config = Config::load()?;
+        let client = Client::new(config.clone());
+        let store = Store::open_at(data_dir).await?;
+
+        Ok(Self {
+            client,
+            store,
+            config,
+            offline: false,
+        })
+    }
+
     /// Returns whether the manager is in offline mode.
     #[must_use]
     pub fn is_offline(&self) -> bool {

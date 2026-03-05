@@ -45,8 +45,8 @@
 //!         "0.0.0.0:8080".to_string(),
 //!     )?;
 //!
-//!     // Create the HTTP router backed by a package manager
-//!     let manager = Manager::open().await?;
+//!     // Create the HTTP router backed by a package manager with its own data directory
+//!     let manager = Manager::open_at("/tmp/wasm-registry").await?;
 //!     let state = Arc::new(Mutex::new(manager));
 //!     let app = router(state);
 //!

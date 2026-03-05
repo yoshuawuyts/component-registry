@@ -58,6 +58,21 @@ impl Store {
             .context("No config dir known for the current OS")?
             .join("wasm")
             .join("config.toml");
+        Self::open_inner(data_dir, config_file).await
+    }
+
+    /// Open the store at a custom data directory and run any pending migrations.
+    pub(crate) async fn open_at(data_dir: impl Into<std::path::PathBuf>) -> anyhow::Result<Self> {
+        let data_dir = data_dir.into();
+        let config_file = data_dir.join("config.toml");
+        Self::open_inner(data_dir, config_file).await
+    }
+
+    /// Shared implementation for opening a store at a given location.
+    async fn open_inner(
+        data_dir: std::path::PathBuf,
+        config_file: std::path::PathBuf,
+    ) -> anyhow::Result<Self> {
         let store_dir = data_dir.join("store");
         let db_dir = data_dir.join("db");
         let metadata_file = db_dir.join("metadata.db3");
