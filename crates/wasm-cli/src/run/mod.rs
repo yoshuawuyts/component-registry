@@ -353,10 +353,12 @@ fn resolve_manifest_key(input: &str) -> miette::Result<Option<PathBuf>> {
 
     // Reconstruct the vendor filename from lockfile data.
     // The lockfile `registry` field is "host/repository" (e.g., "ghcr.io/user/repo").
-    let (registry_host, repository) = package
-        .registry
-        .split_once('/')
-        .unwrap_or((&package.registry, ""));
+    let (registry_host, repository) = package.registry.split_once('/').ok_or_else(|| {
+        miette::miette!(
+            "invalid registry path '{}' in lockfile for '{input}'",
+            package.registry
+        )
+    })?;
 
     let filename = wasm_package_manager::manager::vendor_filename(
         registry_host,

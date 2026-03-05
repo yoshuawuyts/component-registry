@@ -700,8 +700,8 @@ digest = "sha256:abcdef123456"
     // Try running — should fail because the vendored file doesn't exist
     let stderr = run_cli_error(&["run", "test:hello"], Some(dir.path()));
     assert!(
-        stderr.contains("not found") || stderr.contains("wasm install"),
-        "expected error about missing vendored file, got: {stderr}"
+        stderr.contains("not found") && stderr.contains("wasm install"),
+        "expected error about missing vendored file with install hint, got: {stderr}"
     );
 }
 
