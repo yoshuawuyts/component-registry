@@ -23,6 +23,16 @@ const MIGRATIONS: &[MigrationDef] = &[
 ];
 
 /// Information about the current migration state.
+///
+/// # Example
+///
+/// ```
+/// use wasm_package_manager::storage::Migrations;
+///
+/// let migrations = Migrations { current: 2, total: 3 };
+/// assert_eq!(migrations.current, 2);
+/// assert_eq!(migrations.total, 3);
+/// ```
 #[derive(Debug, Clone)]
 pub struct Migrations {
     /// The current migration version applied to the database.
