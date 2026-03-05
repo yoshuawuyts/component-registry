@@ -520,8 +520,8 @@ fn test_init_creates_files_in_current_dir() {
         .expect("Failed to read wasm.toml");
     let parsed: toml::Value = toml::from_str(&manifest).expect("wasm.toml is not valid TOML");
     assert!(
-        parsed.get("components").is_some() || parsed.get("types").is_some(),
-        "manifest should have a components or types table"
+        parsed.get("dependencies").is_some(),
+        "manifest should have a dependencies table"
     );
 
     // Verify lockfile
@@ -680,8 +680,8 @@ fn test_run_scope_component_not_installed() {
 
     // Write a manifest with a component entry
     let manifest = r#"
-[components]
-"test:hello" = "ghcr.io/example/hello:0.1.0"
+[dependencies.components]
+"test:hello" = "0.1.0"
 "#;
     std::fs::write(dir.path().join("deps/wasm.toml"), manifest).expect("Failed to write manifest");
 
