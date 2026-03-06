@@ -55,8 +55,8 @@ pub(crate) struct Opts {
     #[arg(long)]
     no_stdio: bool,
 
-    /// Address to bind the HTTP server to when running an `wasi:http/proxy`
-    /// component (default: `127.0.0.1:8080`).
+    /// Address to bind the HTTP server to when running a `wasi:http/proxy`
+    /// component.
     #[arg(long, value_name = "ADDR", default_value = "127.0.0.1:8080")]
     listen: SocketAddr,
 }

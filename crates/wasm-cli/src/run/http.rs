@@ -178,7 +178,7 @@ async fn handle_request(
     req: hyper::Request<hyper::body::Incoming>,
 ) -> anyhow::Result<hyper::Response<HyperOutgoingBody>> {
     let mut builder = WasiCtxBuilder::new();
-    apply_permissions(&mut builder, &server.permissions);
+    apply_permissions(&mut builder, &server.permissions).map_err(|e| anyhow::anyhow!("{e:?}"))?;
 
     let mut store = Store::new(
         server.pre.engine(),
@@ -213,19 +213,22 @@ async fn handle_request(
 
 /// Collect the error from a guest task that failed to set a response.
 async fn collect_guest_error(task: tokio::task::JoinHandle<wasmtime::Result<()>>) -> anyhow::Error {
-    let e = match task.await {
+    let inner: anyhow::Error = match task.await {
         Ok(Ok(())) => anyhow::anyhow!("guest never invoked `response-outparam::set`"),
         Ok(Err(e)) => e.into(),
         Err(e) => e.into(),
     };
-    e.context("guest never invoked `response-outparam::set`")
+    inner.context("guest never invoked `response-outparam::set`")
 }
 
 /// Apply resolved permissions to a [`WasiCtxBuilder`].
+///
+/// Returns `Ok(())` on success or a [`miette::Report`] if a directory
+/// pre-open fails.
 fn apply_permissions(
     builder: &mut WasiCtxBuilder,
     permissions: &wasm_manifest::ResolvedPermissions,
-) {
+) -> miette::Result<()> {
     if permissions.inherit_stdio {
         builder.inherit_stdio();
     }
@@ -239,9 +242,22 @@ fn apply_permissions(
             builder.env(entry, &v);
         }
     }
+    // Pre-open directories with full read/write permissions.
+    for dir in &permissions.allow_dirs {
+        builder
+            .preopened_dir(
+                dir,
+                dir.to_string_lossy(),
+                wasmtime_wasi::DirPerms::all(),
+                wasmtime_wasi::FilePerms::all(),
+            )
+            .map_err(crate::util::into_miette)
+            .wrap_err_with(|| format!("failed to pre-open directory: {}", dir.display()))?;
+    }
     if permissions.inherit_network {
         builder.inherit_network();
     }
+    Ok(())
 }
 
 #[cfg(test)]
