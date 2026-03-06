@@ -199,10 +199,11 @@ for reading and writing project manifests (`deps/wasm.toml`) and lockfiles
 
 Key types:
 
-- **`Manifest`** — has `components` and `interfaces` maps of `String → Dependency`.
-- **`Dependency`** — either a compact string (`"ghcr.io/org/pkg:1.0"`) or an
+- **`Manifest`** — root type with a `dependencies: Dependencies` field.
+- **`Dependencies`** — has `components` and `interfaces` maps of `String → Dependency`.
+- **`Dependency`** — either a compact version string (`"1.0.0"`) or an
   explicit table with `registry`, `namespace`, `package`, `version`, and
-  optional `permissions`.
+  optional `permissions`. Bare versions use Cargo-style semver (`"1.0.0"` → `^1.0.0`).
 - **`Lockfile`** — lists resolved packages with digests for reproducible builds.
 - **`RunPermissions`** / **`ResolvedPermissions`** — sandbox controls for the
   `wasm run` command.

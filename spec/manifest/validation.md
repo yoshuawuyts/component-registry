@@ -20,3 +20,11 @@ Validation MUST handle both component and interface sections.
 
 r[validation.error-codes]
 All validation error variants MUST carry a stable diagnostic error code.
+
+r[validation.invalid-version-constraint]
+Validation MUST reject version strings that do not parse as valid semver
+requirements, reporting the dependency name, invalid string, and parse error.
+
+r[validation.version-conflict]
+Validation MUST detect conflicting version constraints for the same package
+name across the components and interfaces sections.

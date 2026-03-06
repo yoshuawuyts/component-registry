@@ -131,16 +131,17 @@ impl Opts {
             .collect()
             .await;
 
-        for (result, reference, update_manifest) in results.map_err(crate::util::into_miette)? {
+        for (result, _reference, update_manifest) in results.map_err(crate::util::into_miette)? {
             // Derive the dependency name.
             // For components, use `derive_component_name` which tries WIT metadata,
             // OCI title annotation, last repository segment, then full path.
             // For interfaces, use the WIT package name (always available).
             let dep_name = if result.is_component {
                 let existing_names: std::collections::HashSet<String> = manifest
+                    .dependencies
                     .components
                     .keys()
-                    .chain(manifest.interfaces.keys())
+                    .chain(manifest.dependencies.interfaces.keys())
                     .cloned()
                     .collect();
                 derive_component_name(
@@ -162,13 +163,21 @@ impl Opts {
             // Add to manifest (compact format) — route to components or interfaces.
             // Only update the manifest when a reference was explicitly provided;
             // for the 0-args case the entries are already in the manifest.
+            // The compact format stores the resolved version string (not the
+            // full OCI reference), so bare "1.2.3" means ^1.2.3 per Cargo
+            // semantics.
             if update_manifest {
-                let reference_str = reference.whole().clone();
-                let dep = wasm_manifest::Dependency::Compact(reference_str);
+                let dep = wasm_manifest::Dependency::Compact(version.clone());
                 if result.is_component {
-                    manifest.components.insert(dep_name.clone(), dep);
+                    manifest
+                        .dependencies
+                        .components
+                        .insert(dep_name.clone(), dep);
                 } else {
-                    manifest.interfaces.insert(dep_name.clone(), dep);
+                    manifest
+                        .dependencies
+                        .interfaces
+                        .insert(dep_name.clone(), dep);
                 }
             }
 
@@ -506,9 +515,10 @@ fn resolve_install_inputs(
     for input in inputs {
         // Try as scope:component manifest key first
         let dep = manifest
+            .dependencies
             .components
             .get(input)
-            .or_else(|| manifest.interfaces.get(input));
+            .or_else(|| manifest.dependencies.interfaces.get(input));
 
         if let Some(dep) = dep {
             let reference = reference_from_dependency(dep).map_err(crate::util::into_miette)?;

@@ -13,6 +13,7 @@ keywords = { workspace = true }
 
 [dependencies]
 miette = { workspace = true }
+semver = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 toml = { workspace = true }
 

@@ -129,6 +129,7 @@ cacache = { version = "13.1.0", features = [
     "tokio-stream",
 ], default-features = false }
 rusqlite = { version = "0.38.0", features = ["bundled"] }
+semver = { version = "1.0.27", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
 toml = "1.0"
 wasmparser = "0.245"
