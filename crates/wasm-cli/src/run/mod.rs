@@ -176,7 +176,7 @@ impl Opts {
         let merged = base.merge(global_component);
 
         // Layer 3: local wasm.toml per-component override
-        let local_manifest = std::fs::read_to_string("deps/wasm.toml")
+        let local_manifest = std::fs::read_to_string("wasm.toml")
             .ok()
             .and_then(|s| toml::from_str::<wasm_manifest::Manifest>(&s).ok());
         let local_component = local_manifest
@@ -333,8 +333,8 @@ fn execute_component(
 /// reconstructs the vendor filename from registry, version, and digest.
 /// Returns `None` if the input doesn't match any manifest entry.
 fn resolve_manifest_key(input: &str) -> miette::Result<Option<PathBuf>> {
-    let lockfile_path = PathBuf::from("deps/wasm.lock.toml");
-    let manifest_path = PathBuf::from("deps/wasm.toml");
+    let lockfile_path = PathBuf::from("wasm.lock.toml");
+    let manifest_path = PathBuf::from("wasm.toml");
 
     let Ok(manifest_str) = std::fs::read_to_string(&manifest_path) else {
         return Ok(None);
@@ -382,7 +382,7 @@ fn resolve_manifest_key(input: &str) -> miette::Result<Option<PathBuf>> {
         &package.digest,
     );
 
-    let vendored_path = PathBuf::from("deps/vendor/wasm").join(filename);
+    let vendored_path = PathBuf::from("vendor/wasm").join(filename);
     if !vendored_path.exists() {
         return Err(RunError::VendoredFileMissing {
             path: vendored_path.display().to_string(),

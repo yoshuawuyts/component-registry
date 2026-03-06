@@ -33,11 +33,10 @@ pub(crate) struct Opts {
 
 impl Opts {
     pub(crate) async fn run(self, offline: bool) -> miette::Result<()> {
-        let deps = std::path::Path::new("deps");
-        let manifest_path = deps.join("wasm.toml");
-        let lockfile_path = deps.join("wasm.lock.toml");
-        let wasm_vendor_dir = deps.join("vendor/wasm");
-        let wit_vendor_dir = deps.join("vendor/wit");
+        let manifest_path = std::path::PathBuf::from("wasm.toml");
+        let lockfile_path = std::path::PathBuf::from("wasm.lock.toml");
+        let wasm_vendor_dir = std::path::PathBuf::from("vendor/wasm");
+        let wit_vendor_dir = std::path::PathBuf::from("vendor/wit");
 
         // Abort early if `wasm.toml` does not exist — guide the user
         if !manifest_path.exists() {
@@ -313,7 +312,7 @@ async fn install_one(
 /// Move vendored WIT files from the wasm vendor dir into the wit vendor dir.
 ///
 /// WIT-only packages (types) are initially stored alongside components in
-/// `deps/vendor/wasm/`. This function moves them to `deps/vendor/wit/` so that
+/// `vendor/wasm/`. This function moves them to `vendor/wit/` so that
 /// WIT tooling can find them at the conventional location.
 async fn re_vendor_wit_files(
     result: &InstallResult,
