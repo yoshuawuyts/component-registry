@@ -560,6 +560,8 @@ fn looks_like_wit_name(input: &str) -> bool {
         return false;
     };
     // The component part is everything before an optional `@version` suffix.
+    // `split().next()` always returns Some on a non-empty string; the
+    // `unwrap_or` is defensive but never reached in practice.
     let component = rest.split('@').next().unwrap_or(rest);
     !scope.is_empty()
         && !component.is_empty()

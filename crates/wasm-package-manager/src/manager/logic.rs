@@ -254,15 +254,35 @@ pub fn filter_tag_suggestions(tags: &[String], requested_version: Option<&str>) 
                 return true;
             }
             // Include pre-release tags only when the user's request shares
-            // the same major.minor prefix.
+            // the same major.minor version. Parse the prefix to extract
+            // numeric components for exact comparison.
             if let Some(prefix) = requested_version {
-                let base = format!("{}.{}", v.major, v.minor);
-                return base.starts_with(prefix) || prefix.starts_with(&base);
+                return prefix_matches_version(prefix, v.major, v.minor);
             }
             false
         })
         .cloned()
         .collect()
+}
+
+/// Check whether a user-supplied version prefix matches a given major.minor.
+///
+/// Parses the prefix to extract numeric major and (optional) minor
+/// components, then compares them exactly against the provided values.
+fn prefix_matches_version(prefix: &str, major: u64, minor: u64) -> bool {
+    let mut parts = prefix.split('.');
+    let Some(first) = parts.next().and_then(|s| s.parse::<u64>().ok()) else {
+        return false;
+    };
+    if first != major {
+        return false;
+    }
+    // If the prefix has a minor component, it must match exactly.
+    // If not (e.g. just "0"), match any minor.
+    match parts.next() {
+        Some(s) => s.parse::<u64>().ok().is_some_and(|m| m == minor),
+        None => true,
+    }
 }
 
 #[cfg(test)]
@@ -580,5 +600,25 @@ mod tests {
         let tags = vec!["0.3.0-preview-2026-02-20".into(), "1.0.0-alpha.1".into()];
         let suggestions = filter_tag_suggestions(&tags, None);
         assert!(suggestions.is_empty());
+    }
+
+    #[test]
+    fn filter_tag_suggestions_does_not_match_different_minor() {
+        // "0.3" should NOT match a tag with minor=30 (e.g. "0.30.0-beta")
+        let tags = vec!["0.30.0-beta".into(), "0.3.0-preview".into(), "1.0.0".into()];
+        let suggestions = filter_tag_suggestions(&tags, Some("0.3"));
+        assert_eq!(suggestions, vec!["0.3.0-preview", "1.0.0"]);
+    }
+
+    #[test]
+    fn filter_tag_suggestions_major_only_prefix() {
+        // "1" should match any pre-release tag with major=1
+        let tags = vec![
+            "1.0.0-rc1".into(),
+            "1.5.0-beta".into(),
+            "2.0.0-alpha".into(),
+        ];
+        let suggestions = filter_tag_suggestions(&tags, Some("1"));
+        assert_eq!(suggestions, vec!["1.0.0-rc1", "1.5.0-beta"]);
     }
 }
