@@ -10,6 +10,7 @@ use std::sync::Arc;
 
 use hyper::server::conn::http1;
 use miette::Context;
+use wasmparser::{Parser, Payload};
 use wasmtime::component::{Component, Linker, ResourceTable};
 use wasmtime::{Engine, Store};
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
@@ -52,6 +53,37 @@ impl WasiHttpView for HttpState {
 struct Server {
     pre: ProxyPre<HttpState>,
     permissions: wasm_manifest::ResolvedPermissions,
+}
+
+/// Check whether a component exports `wasi:http/incoming-handler`, indicating
+/// it targets the `wasi:http/proxy` world rather than `wasi:cli/command`.
+///
+/// Only top-level component exports are considered; nested component exports
+/// are ignored by tracking nesting depth through `Version` / `End` payloads.
+pub(super) fn exports_http_incoming_handler(bytes: &[u8]) -> bool {
+    let parser = Parser::new(0);
+    let mut depth: u32 = 0;
+
+    for payload in parser.parse_all(bytes) {
+        let Ok(payload) = payload else { continue };
+        match payload {
+            Payload::Version { .. } => {
+                depth += 1;
+            }
+            Payload::End(_) => {
+                depth = depth.saturating_sub(1);
+            }
+            Payload::ComponentExportSection(reader) if depth == 1 => {
+                for export in reader.into_iter().flatten() {
+                    if export.name.0.starts_with("wasi:http/incoming-handler") {
+                        return true;
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    false
 }
 
 /// Start an HTTP server that proxies incoming requests to an HTTP
@@ -116,20 +148,26 @@ pub(super) async fn serve(
 
         let server = Arc::clone(&server);
         tokio::task::spawn(async move {
-            if let Err(e) = http1::Builder::new()
-                .keep_alive(true)
-                .serve_connection(
-                    TokioIo::new(stream),
-                    hyper::service::service_fn(move |req| {
-                        let server = Arc::clone(&server);
-                        async move { handle_request(&server, req).await }
-                    }),
-                )
-                .await
-            {
-                eprintln!("error serving {peer}: {e}");
-            }
+            serve_connection(server, stream, peer).await;
         });
+    }
+}
+
+/// Serve a single TCP connection using HTTP/1.1, dispatching each request to
+/// the guest component.
+async fn serve_connection(server: Arc<Server>, stream: tokio::net::TcpStream, peer: SocketAddr) {
+    if let Err(e) = http1::Builder::new()
+        .keep_alive(true)
+        .serve_connection(
+            TokioIo::new(stream),
+            hyper::service::service_fn(move |req| {
+                let server = Arc::clone(&server);
+                async move { handle_request(&server, req).await }
+            }),
+        )
+        .await
+    {
+        eprintln!("error serving {peer}: {e}");
     }
 }
 
@@ -169,17 +207,18 @@ async fn handle_request(
     match receiver.await {
         Ok(Ok(resp)) => Ok(resp),
         Ok(Err(e)) => Err(e.into()),
-        Err(_) => {
-            let e = match task.await {
-                Ok(Ok(())) => {
-                    anyhow::anyhow!("guest never invoked `response-outparam::set`")
-                }
-                Ok(Err(e)) => e.into(),
-                Err(e) => e.into(),
-            };
-            Err(e.context("guest never invoked `response-outparam::set`"))
-        }
+        Err(_) => Err(collect_guest_error(task).await),
     }
+}
+
+/// Collect the error from a guest task that failed to set a response.
+async fn collect_guest_error(task: tokio::task::JoinHandle<wasmtime::Result<()>>) -> anyhow::Error {
+    let e = match task.await {
+        Ok(Ok(())) => anyhow::anyhow!("guest never invoked `response-outparam::set`"),
+        Ok(Err(e)) => e.into(),
+        Err(e) => e.into(),
+    };
+    e.context("guest never invoked `response-outparam::set`")
 }
 
 /// Apply resolved permissions to a [`WasiCtxBuilder`].
@@ -202,5 +241,54 @@ fn apply_permissions(
     }
     if permissions.inherit_network {
         builder.inherit_network();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Build a minimal component that exports `wasi:http/incoming-handler@0.2.0`.
+    fn build_http_component() -> Vec<u8> {
+        use wasm_encoder::{ComponentExportKind, ComponentExportSection};
+        let mut component = wasm_encoder::Component::new();
+
+        let mut exports = ComponentExportSection::new();
+        exports.export(
+            "wasi:http/incoming-handler@0.2.0",
+            ComponentExportKind::Instance,
+            0,
+            None,
+        );
+        component.section(&exports);
+
+        component.finish()
+    }
+
+    #[test]
+    fn detect_http_world_in_http_component() {
+        let bytes = build_http_component();
+        assert!(
+            exports_http_incoming_handler(&bytes),
+            "should detect wasi:http/incoming-handler export"
+        );
+    }
+
+    #[test]
+    fn detect_cli_world_in_minimal_component() {
+        let bytes = include_bytes!("../../tests/fixtures/minimal_component.wasm");
+        assert!(
+            !exports_http_incoming_handler(bytes),
+            "minimal component should not be detected as HTTP"
+        );
+    }
+
+    #[test]
+    fn detect_cli_world_in_core_module() {
+        let bytes = include_bytes!("../../tests/fixtures/core_module.wasm");
+        assert!(
+            !exports_http_incoming_handler(bytes),
+            "core module should not be detected as HTTP"
+        );
     }
 }
