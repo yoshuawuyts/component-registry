@@ -563,18 +563,16 @@ fn looks_like_wit_name(input: &str) -> bool {
         return false;
     };
     // Split the component from an optional `@version` suffix.
-    let (component, version_part) = match rest.split_once('@') {
+    let component = match rest.split_once('@') {
         Some((comp, ver)) => {
             // Reject empty version or multiple `@` signs.
             if ver.is_empty() || ver.contains('@') {
                 return false;
             }
-            (comp, Some(ver))
+            comp
         }
-        None => (rest, None),
+        None => rest,
     };
-    // Reject empty version (already caught above) — belt and suspenders.
-    let _ = version_part;
     !scope.is_empty()
         && !component.is_empty()
         && !scope.contains('/')

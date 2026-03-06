@@ -185,7 +185,7 @@ fn parse_tag_as_semver(tag: &str) -> Option<semver::Version> {
     }
     // Accept a leading `v` when followed by a digit.
     let stripped = tag.strip_prefix('v')?;
-    if !stripped.chars().next().is_some_and(|c| c.is_ascii_digit()) {
+    if !stripped.starts_with(|c: char| c.is_ascii_digit()) {
         return None;
     }
     semver::Version::parse(stripped).ok()
