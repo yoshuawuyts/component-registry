@@ -254,8 +254,10 @@ impl Opts {
             .into_diagnostic()?;
 
         // Resolve registry and digest for all dependency entries from their
-        // matching top-level package entries.
-        lockfile.resolve_dependency_details().into_diagnostic()?;
+        // matching top-level package entries. Dependency entries whose
+        // packages are not in the lockfile (e.g. offline / skipped) are
+        // silently removed.
+        lockfile.resolve_dependency_details();
 
         // Write updated lockfile
         write_lock_file(&lockfile_path, &lockfile)

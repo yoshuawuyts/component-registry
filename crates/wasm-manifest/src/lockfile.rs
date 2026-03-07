@@ -104,51 +104,40 @@ impl Lockfile {
     }
 
     /// Backfill `registry` and `digest` on every [`PackageDependency`] by
-    /// looking up the matching top-level [`Package`] entry, matched by
-    /// `(name, version)`.
+    /// looking up the matching top-level [`Package`] entry, matched by name.
+    ///
+    /// Dependencies whose name does not match any top-level package are
+    /// silently removed. This handles the case where transitive dependencies
+    /// were skipped (e.g. in offline mode or on resolve failure) — rather
+    /// than writing out empty registry/digest fields, those dependency entries
+    /// are simply omitted from the lockfile.
     ///
     /// Call this after all packages have been inserted into the lockfile so
-    /// that every dependency reference carries the resolved registry path and
-    /// content digest.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// - A dependency refers to a `(name, version)` pair that does not exist
-    ///   in the lockfile.
-    /// - The lockfile contains more than one package with the same
-    ///   `(name, version)`.
-    pub fn resolve_dependency_details(&mut self) -> Result<(), LockfileResolveError> {
-        // Build a lookup from (package name, version) → (registry, digest).
-        let mut lookup: HashMap<(String, String), (String, String)> = HashMap::new();
+    /// that every remaining dependency reference carries the resolved
+    /// registry path and content digest.
+    pub fn resolve_dependency_details(&mut self) {
+        // Build a lookup from package name → (registry, digest).
+        // When the same name appears more than once (e.g. component +
+        // interface, or different versions), the first entry wins.
+        let mut lookup: HashMap<String, (String, String)> = HashMap::new();
 
         for pkg in self.components.iter().chain(self.interfaces.iter()) {
-            let key = (pkg.name.clone(), pkg.version.clone());
-            let value = (pkg.registry.clone(), pkg.digest.clone());
-            if let Some(existing) = lookup.insert(key, value) {
-                return Err(LockfileResolveError::DuplicatePackage {
-                    name: pkg.name.clone(),
-                    version: pkg.version.clone(),
-                    existing_registry: existing.0,
-                    existing_digest: existing.1,
-                });
-            }
+            lookup
+                .entry(pkg.name.clone())
+                .or_insert_with(|| (pkg.registry.clone(), pkg.digest.clone()));
         }
 
         for pkg in self.components.iter_mut().chain(self.interfaces.iter_mut()) {
-            for dep in &mut pkg.dependencies {
-                let (registry, digest) = lookup
-                    .get(&(dep.name.clone(), dep.version.clone()))
-                    .ok_or_else(|| LockfileResolveError::UnresolvedDependency {
-                        name: dep.name.clone(),
-                        version: dep.version.clone(),
-                    })?;
-                dep.registry.clone_from(registry);
-                dep.digest.clone_from(digest);
-            }
+            pkg.dependencies.retain_mut(|dep| {
+                if let Some((registry, digest)) = lookup.get(&dep.name) {
+                    dep.registry.clone_from(registry);
+                    dep.digest.clone_from(digest);
+                    true
+                } else {
+                    false
+                }
+            });
         }
-
-        Ok(())
     }
 }
 
@@ -239,73 +228,6 @@ pub struct PackageDependency {
     /// The content digest for integrity verification (e.g., "sha256:abc123...").
     pub digest: String,
 }
-
-/// Error returned by [`Lockfile::resolve_dependency_details`].
-///
-/// # Example
-///
-/// ```rust
-/// use wasm_manifest::LockfileResolveError;
-///
-/// let err = LockfileResolveError::UnresolvedDependency {
-///     name: "wasi:logging".to_string(),
-///     version: "1.0.0".to_string(),
-/// };
-/// assert!(err.to_string().contains("wasi:logging"));
-/// ```
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[must_use]
-pub enum LockfileResolveError {
-    /// A dependency references a `(name, version)` pair that has no
-    /// corresponding top-level package in the lockfile.
-    UnresolvedDependency {
-        /// The dependency package name.
-        name: String,
-        /// The dependency version.
-        version: String,
-    },
-    /// The lockfile contains more than one package with the same
-    /// `(name, version)` pair.
-    DuplicatePackage {
-        /// The duplicate package name.
-        name: String,
-        /// The duplicate version.
-        version: String,
-        /// The registry of the first entry seen.
-        existing_registry: String,
-        /// The digest of the first entry seen.
-        existing_digest: String,
-    },
-}
-
-impl std::fmt::Display for LockfileResolveError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            LockfileResolveError::UnresolvedDependency { name, version } => {
-                write!(
-                    f,
-                    "no matching package in lockfile for dependency '{name}' \
-                     with version '{version}'"
-                )
-            }
-            LockfileResolveError::DuplicatePackage {
-                name,
-                version,
-                existing_registry,
-                existing_digest,
-            } => {
-                write!(
-                    f,
-                    "duplicate package entry in lockfile for '{name}' version \
-                     '{version}'; existing registry: '{existing_registry}', \
-                     existing digest: '{existing_digest}'"
-                )
-            }
-        }
-    }
-}
-
-impl std::error::Error for LockfileResolveError {}
 
 #[cfg(test)]
 mod tests {
@@ -562,9 +484,7 @@ mod tests {
             ],
         };
 
-        lockfile
-            .resolve_dependency_details()
-            .expect("resolve should succeed");
+        lockfile.resolve_dependency_details();
 
         let dep = &lockfile.interfaces[1].dependencies[0];
         assert_eq!(dep.registry, "ghcr.io/webassembly/wasi-logging");
@@ -572,7 +492,7 @@ mod tests {
     }
 
     #[test]
-    fn test_resolve_dependency_details_unresolved() {
+    fn test_resolve_dependency_details_strips_unresolved() {
         let mut lockfile = Lockfile {
             lockfile_version: 3,
             components: vec![],
@@ -590,44 +510,12 @@ mod tests {
             }],
         };
 
-        let err = lockfile
-            .resolve_dependency_details()
-            .expect_err("should fail for unresolved dep");
-        assert_eq!(
-            err,
-            LockfileResolveError::UnresolvedDependency {
-                name: "wasi:logging".to_string(),
-                version: "1.0.0".to_string(),
-            }
+        lockfile.resolve_dependency_details();
+
+        // The unresolved dependency should have been removed.
+        assert!(
+            lockfile.interfaces[0].dependencies.is_empty(),
+            "unresolved deps should be stripped"
         );
-    }
-
-    #[test]
-    fn test_resolve_dependency_details_duplicate() {
-        let mut lockfile = Lockfile {
-            lockfile_version: 3,
-            components: vec![],
-            interfaces: vec![
-                Package {
-                    name: "wasi:logging".to_string(),
-                    version: "1.0.0".to_string(),
-                    registry: "ghcr.io/webassembly/wasi-logging".to_string(),
-                    digest: "sha256:abc123".to_string(),
-                    dependencies: vec![],
-                },
-                Package {
-                    name: "wasi:logging".to_string(),
-                    version: "1.0.0".to_string(),
-                    registry: "ghcr.io/other/wasi-logging".to_string(),
-                    digest: "sha256:different".to_string(),
-                    dependencies: vec![],
-                },
-            ],
-        };
-
-        let err = lockfile
-            .resolve_dependency_details()
-            .expect_err("should fail for duplicate");
-        assert!(matches!(err, LockfileResolveError::DuplicatePackage { .. }));
     }
 }

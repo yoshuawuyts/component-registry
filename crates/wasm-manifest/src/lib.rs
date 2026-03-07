@@ -43,7 +43,7 @@ mod manifest;
 mod permissions;
 mod validation;
 
-pub use lockfile::{LOCKFILE_VERSION, Lockfile, LockfileResolveError, Package, PackageDependency};
+pub use lockfile::{LOCKFILE_VERSION, Lockfile, Package, PackageDependency};
 pub use manifest::{Dependencies, Dependency, Manifest, PackageType};
 pub use permissions::{ResolvedPermissions, RunPermissions};
 pub use validation::{ValidationError, validate};
