@@ -1,9 +1,10 @@
 #![allow(clippy::print_stdout, clippy::print_stderr)]
 
 mod errors;
+mod progress_bar;
 
 use futures_concurrency::prelude::*;
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use indicatif::MultiProgress;
 use miette::{IntoDiagnostic, WrapErr};
 use wasm_package_manager::manager::{
     InstallResult, Manager, SyncPolicy, SyncResult, derive_component_name,
@@ -13,6 +14,7 @@ use wasm_package_manager::{ProgressEvent, Reference};
 
 use crate::util::write_lock_file;
 use errors::InstallError;
+use progress_bar::{ProgressTree, oci_repo_display_name, package_display_parts, run_progress_bars};
 
 /// Default meta-registry URL.
 const REGISTRY_URL: &str = "http://localhost:8080";
@@ -103,7 +105,10 @@ impl Opts {
         let to_install: Vec<(Reference, bool, Option<String>)> = if self.inputs.is_empty() {
             manifest
                 .all_dependencies()
-                .map(|(_, dep, _)| reference_from_dependency(dep).map(|r| (r, false, None)))
+                .map(|(key, dep, _)| {
+                    resolve_manifest_dependency(key, dep, &manager)
+                        .map(|(r, name)| (r, false, name))
+                })
                 .collect::<anyhow::Result<Vec<_>>>()
                 .map_err(crate::util::into_miette)?
         } else {
@@ -112,6 +117,7 @@ impl Opts {
 
         // Shared progress display for all concurrent installs.
         let multi = MultiProgress::new();
+        let tree = std::sync::Arc::new(tokio::sync::Mutex::new(ProgressTree::new(multi)));
 
         // `&Manager` is Copy, so each async-move block captures its own copy of
         // the reference without requiring Arc or any synchronisation primitive.
@@ -121,12 +127,27 @@ impl Opts {
         let results: anyhow::Result<Vec<_>> = to_install
             .into_co_stream()
             .map(|(reference, update_manifest, explicit_name)| {
-                let multi = multi.clone();
+                let tree = SharedTree::clone(&tree);
                 let vendor_dir = wasm_vendor_dir.clone();
                 let wit_vendor_dir = wit_vendor_dir.clone();
                 async move {
-                    let result =
-                        install_one(manager_ref, multi, offline, &reference, &vendor_dir).await?;
+                    let (name, version) =
+                        package_display_parts(explicit_name.as_deref(), reference.tag());
+                    let display_name = if name.is_empty() {
+                        oci_repo_display_name(reference.repository())
+                    } else {
+                        name
+                    };
+                    let result = install_one(
+                        manager_ref,
+                        &tree,
+                        offline,
+                        &reference,
+                        &vendor_dir,
+                        &display_name,
+                        version.as_deref(),
+                    )
+                    .await?;
                     re_vendor_wit_files(&result, &wit_vendor_dir).await?;
                     anyhow::Ok((result, reference, update_manifest, explicit_name))
                 }
@@ -227,7 +248,7 @@ impl Opts {
                 install_transitive_deps(
                     result.dependencies,
                     manager_ref,
-                    &multi,
+                    &tree,
                     &wasm_vendor_dir,
                     &wit_vendor_dir,
                     &mut lockfile,
@@ -260,44 +281,41 @@ impl Opts {
     }
 }
 
+/// Shared handle to a [`ProgressTree`] for use across concurrent tasks.
+type SharedTree = std::sync::Arc<tokio::sync::Mutex<ProgressTree>>;
+
 /// Install a single package and report progress.
 ///
 /// In offline mode a plain status line is printed. In online mode a
-/// [`MultiProgress`] header bar is created for the package and per-layer
-/// bars are rendered by a background task.
+/// progress bar is created for the package showing aggregated download
+/// progress across all layers.
 async fn install_one(
     manager: &Manager,
-    multi: MultiProgress,
+    tree: &SharedTree,
     offline: bool,
     reference: &Reference,
     vendor_dir: &std::path::Path,
+    display_name: &str,
+    display_version: Option<&str>,
 ) -> anyhow::Result<InstallResult> {
-    let reference_display = reference.whole().clone();
-
     if offline {
-        // No progress bars in offline mode — just print the line
+        // No progress bars in offline mode — print a simple status line.
+        // Use ├── since we cannot rewrite previous lines to fix up └──.
+        let version_str = display_version.map(|v| format!("@{v}")).unwrap_or_default();
         println!(
-            "{:>12} {}",
-            console::style("Installing").cyan().bold(),
-            reference_display,
+            "├── {}{}",
+            console::style(display_name).yellow(),
+            console::style(version_str).white(),
         );
         return manager.install(reference.clone(), vendor_dir).await;
     }
 
     let (progress_tx, progress_rx) = tokio::sync::mpsc::channel::<ProgressEvent>(64);
 
-    // Add a header line managed by the shared multi-progress so it
-    // stays above the per-layer bars and can be rewritten.
-    let header = multi.add(ProgressBar::new_spinner());
-    header.set_style(ProgressStyle::with_template("{msg}").expect("valid progress bar template"));
-    header.set_message(format!(
-        "{:>12} {}",
-        console::style("Installing").cyan().bold(),
-        reference_display,
-    ));
+    let (pb, bar_id) = tree.lock().await.add_bar(display_name, display_version);
 
     // Spawn progress rendering task
-    let progress_handle = tokio::task::spawn(run_progress_bars(multi, progress_rx));
+    let progress_handle = tokio::task::spawn(run_progress_bars(pb.clone(), progress_rx));
 
     let result = manager
         .install_with_progress(reference.clone(), vendor_dir, &progress_tx)
@@ -309,13 +327,10 @@ async fn install_one(
     // Wait for progress bars to finish rendering
     let _ = progress_handle.await;
 
-    // Rewrite the header line: blue → green
-    header.set_message(format!(
-        "{:>12} {}",
-        console::style("Installing").green().bold(),
-        reference_display,
-    ));
-    header.finish();
+    // Only mark the bar as complete (green, hidden) on successful installs.
+    if result.is_ok() {
+        tree.lock().await.finish_bar(bar_id);
+    }
 
     result
 }
@@ -351,7 +366,7 @@ async fn re_vendor_wit_files(
 async fn install_transitive_deps(
     initial_deps: Vec<DependencyItem>,
     manager: &Manager,
-    multi: &MultiProgress,
+    tree: &SharedTree,
     wasm_vendor_dir: &std::path::Path,
     wit_vendor_dir: &std::path::Path,
     lockfile: &mut wasm_manifest::Lockfile,
@@ -376,17 +391,33 @@ async fn install_transitive_deps(
             continue;
         };
 
-        let dep_result =
-            match install_one(manager, multi.clone(), false, &dep_ref, wasm_vendor_dir).await {
-                Ok(r) => r,
-                Err(e) => {
-                    tracing::debug!(
-                        "Failed to install WIT dependency '{}': {e} — skipping",
-                        dep.package,
-                    );
-                    continue;
-                }
-            };
+        let (name, version) = package_display_parts(Some(&dep.package), dep_ref.tag());
+        let display_name = if name.is_empty() {
+            dep.package.clone()
+        } else {
+            name
+        };
+
+        let dep_result = match install_one(
+            manager,
+            tree,
+            false,
+            &dep_ref,
+            wasm_vendor_dir,
+            &display_name,
+            version.as_deref(),
+        )
+        .await
+        {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::debug!(
+                    "Failed to install WIT dependency '{}': {e} — skipping",
+                    dep.package,
+                );
+                continue;
+            }
+        };
 
         if let Err(e) = re_vendor_wit_files(&dep_result, wit_vendor_dir).await {
             tracing::debug!(
@@ -488,6 +519,33 @@ fn upsert_lockfile_package(
     }
 }
 
+/// Resolve a manifest dependency to an OCI [`Reference`].
+///
+/// When the dependency uses the compact format with just a version string
+/// (e.g. `"0.1.6"`) rather than a full OCI reference, the manifest key
+/// (e.g. `ba:sample-wasi-http-rust`) is used to look up the package in the
+/// known-package database.
+fn resolve_manifest_dependency(
+    key: &str,
+    dep: &wasm_manifest::Dependency,
+    manager: &Manager,
+) -> anyhow::Result<(Reference, Option<String>)> {
+    match dep {
+        wasm_manifest::Dependency::Compact(s) if !s.contains('/') && looks_like_wit_name(key) => {
+            // The compact value contains no '/' so it is a version string
+            // (e.g. "0.1.6") rather than an OCI reference path.
+            // Resolve through the known-package DB using the manifest key.
+            let input = format!("{key}@{s}");
+            let reference = resolve_wit_name(&input, manager)?;
+            Ok((reference, Some(key.to_string())))
+        }
+        _ => {
+            let reference = reference_from_dependency(dep)?;
+            Ok((reference, None))
+        }
+    }
+}
+
 /// Convert a manifest [`wasm_manifest::Dependency`] into an OCI [`Reference`].
 ///
 /// Both the compact string format (`"ghcr.io/webassembly/wasi-logging:1.0.0"`) and
@@ -531,8 +589,9 @@ fn resolve_install_inputs(
             .or_else(|| manifest.dependencies.interfaces.get(input));
 
         if let Some(dep) = dep {
-            let reference = reference_from_dependency(dep).map_err(crate::util::into_miette)?;
-            result.push((reference, false, None));
+            let (reference, explicit_name) = resolve_manifest_dependency(input, dep, manager)
+                .map_err(crate::util::into_miette)?;
+            result.push((reference, false, explicit_name));
             continue;
         }
 
@@ -610,109 +669,6 @@ fn resolve_wit_name(input: &str, manager: &Manager) -> anyhow::Result<Reference>
             input: input.to_string(),
         }
         .into()),
-    }
-}
-
-/// Consume progress events and render tree-style multi-progress bars.
-async fn run_progress_bars(
-    multi: MultiProgress,
-    mut rx: tokio::sync::mpsc::Receiver<ProgressEvent>,
-) {
-    let mut bars: Vec<ProgressBar> = Vec::new();
-    let mut layer_count: usize = 0;
-
-    // In-progress style: blue bar + blue bytes + eta
-    let bar_style_progress = ProgressStyle::with_template(
-        "{prefix} {bar:12.blue} {bytes:.blue}/{total_bytes:.blue} {eta}",
-    )
-    .expect("valid progress bar template")
-    .progress_chars("━━┄");
-
-    // In-progress spinner style (unknown size)
-    let bar_style_spinner = ProgressStyle::with_template("{prefix} {spinner:.blue} {bytes}")
-        .expect("valid progress bar template");
-
-    // Completed style: green filled bar + green bytes
-    let bar_style_done = ProgressStyle::with_template("{prefix} {bar:12.green} {total_bytes}")
-        .expect("valid progress bar template")
-        .progress_chars("━━━");
-
-    while let Some(event) = rx.recv().await {
-        match event {
-            ProgressEvent::ManifestFetched {
-                layer_count: count, ..
-            } => {
-                layer_count = count;
-            }
-            ProgressEvent::LayerStarted {
-                index,
-                ref digest,
-                total_bytes,
-                ref title,
-                ref media_type,
-            } => {
-                // Tree glyph: ├── for non-last, └── for last
-                let tree_glyph = if layer_count > 0 && index + 1 < layer_count {
-                    "├──"
-                } else {
-                    "└──"
-                };
-
-                let short_digest = digest
-                    .strip_prefix("sha256:")
-                    .unwrap_or(digest)
-                    .get(..5)
-                    .unwrap_or(digest);
-
-                // Prefer title annotation, fall back to media type
-                let label = title.as_deref().unwrap_or(media_type);
-                let prefix = format!("   {tree_glyph} [{short_digest}] {label}");
-
-                let pb = if let Some(total) = total_bytes {
-                    let pb = multi.add(ProgressBar::new(total));
-                    pb.set_style(bar_style_progress.clone());
-                    pb
-                } else {
-                    let pb = multi.add(ProgressBar::new_spinner());
-                    pb.set_style(bar_style_spinner.clone());
-                    pb
-                };
-                pb.set_prefix(prefix);
-
-                // Ensure the bars vec is large enough
-                while bars.len() <= index {
-                    bars.push(ProgressBar::hidden());
-                }
-                if let Some(slot) = bars.get_mut(index) {
-                    *slot = pb;
-                }
-            }
-            ProgressEvent::LayerProgress {
-                index,
-                bytes_downloaded,
-            } => {
-                if let Some(pb) = bars.get(index) {
-                    pb.set_position(bytes_downloaded);
-                }
-            }
-            ProgressEvent::LayerDownloaded { .. } => {
-                // Download complete — will be marked done on LayerStored
-            }
-            ProgressEvent::LayerStored { index } => {
-                if let Some(pb) = bars.get(index) {
-                    pb.set_style(bar_style_done.clone());
-                    pb.finish();
-                }
-            }
-            ProgressEvent::InstallComplete => {
-                for pb in &bars {
-                    if !pb.is_finished() {
-                        pb.set_style(bar_style_done.clone());
-                        pb.finish();
-                    }
-                }
-            }
-        }
     }
 }
 
