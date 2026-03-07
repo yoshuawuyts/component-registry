@@ -224,7 +224,7 @@ pub(crate) async fn run_progress_bars(
 ) {
     let mut layer_progress: Vec<u64> = Vec::new();
     let mut total_bytes: u64 = 0;
-    let mut has_known_total = false;
+    let mut style_upgraded = false;
 
     while let Some(event) = rx.recv().await {
         match event {
@@ -239,8 +239,8 @@ pub(crate) async fn run_progress_bars(
                     pb.set_length(total_bytes);
                     // Switch from the initial bytes-only style to the full
                     // bar style now that we can display a meaningful total.
-                    if !has_known_total {
-                        has_known_total = true;
+                    if !style_upgraded {
+                        style_upgraded = true;
                         pb.set_style(progress_style());
                     }
                 }
