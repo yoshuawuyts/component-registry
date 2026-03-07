@@ -125,10 +125,10 @@ impl Lockfile {
         for pkg in self.components.iter().chain(self.interfaces.iter()) {
             let key = (pkg.name.clone(), pkg.version.clone());
             let value = (pkg.registry.clone(), pkg.digest.clone());
-            if let Some(existing) = lookup.insert(key.clone(), value) {
+            if let Some(existing) = lookup.insert(key, value) {
                 return Err(LockfileResolveError::DuplicatePackage {
-                    name: key.0,
-                    version: key.1,
+                    name: pkg.name.clone(),
+                    version: pkg.version.clone(),
                     existing_registry: existing.0,
                     existing_digest: existing.1,
                 });
@@ -137,14 +137,12 @@ impl Lockfile {
 
         for pkg in self.components.iter_mut().chain(self.interfaces.iter_mut()) {
             for dep in &mut pkg.dependencies {
-                let key = (dep.name.clone(), dep.version.clone());
-                let (registry, digest) =
-                    lookup
-                        .get(&key)
-                        .ok_or(LockfileResolveError::UnresolvedDependency {
-                            name: key.0,
-                            version: key.1,
-                        })?;
+                let (registry, digest) = lookup
+                    .get(&(dep.name.clone(), dep.version.clone()))
+                    .ok_or_else(|| LockfileResolveError::UnresolvedDependency {
+                        name: dep.name.clone(),
+                        version: dep.version.clone(),
+                    })?;
                 dep.registry.clone_from(registry);
                 dep.digest.clone_from(digest);
             }
