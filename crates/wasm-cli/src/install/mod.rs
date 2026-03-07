@@ -105,7 +105,10 @@ impl Opts {
         let to_install: Vec<(Reference, bool, Option<String>)> = if self.inputs.is_empty() {
             manifest
                 .all_dependencies()
-                .map(|(_, dep, _)| reference_from_dependency(dep).map(|r| (r, false, None)))
+                .map(|(key, dep, _)| {
+                    resolve_manifest_dependency(key, dep, &manager)
+                        .map(|(r, name)| (r, false, name))
+                })
                 .collect::<anyhow::Result<Vec<_>>>()
                 .map_err(crate::util::into_miette)?
         } else {
@@ -516,6 +519,32 @@ fn upsert_lockfile_package(
     }
 }
 
+/// Resolve a manifest dependency to an OCI [`Reference`].
+///
+/// When the dependency uses the compact format with just a version string
+/// (e.g. `"0.1.6"`) rather than a full OCI reference, the manifest key
+/// (e.g. `ba:sample-wasi-http-rust`) is used to look up the package in the
+/// known-package database.
+fn resolve_manifest_dependency(
+    key: &str,
+    dep: &wasm_manifest::Dependency,
+    manager: &Manager,
+) -> anyhow::Result<(Reference, Option<String>)> {
+    match dep {
+        wasm_manifest::Dependency::Compact(s) if !s.contains('/') && looks_like_wit_name(key) => {
+            // Compact format with a version-only string (e.g. "0.1.6").
+            // Resolve through the known-package DB using the manifest key.
+            let input = format!("{key}@{s}");
+            let reference = resolve_wit_name(&input, manager)?;
+            Ok((reference, Some(key.to_string())))
+        }
+        _ => {
+            let reference = reference_from_dependency(dep)?;
+            Ok((reference, None))
+        }
+    }
+}
+
 /// Convert a manifest [`wasm_manifest::Dependency`] into an OCI [`Reference`].
 ///
 /// Both the compact string format (`"ghcr.io/webassembly/wasi-logging:1.0.0"`) and
@@ -559,8 +588,9 @@ fn resolve_install_inputs(
             .or_else(|| manifest.dependencies.interfaces.get(input));
 
         if let Some(dep) = dep {
-            let reference = reference_from_dependency(dep).map_err(crate::util::into_miette)?;
-            result.push((reference, false, None));
+            let (reference, explicit_name) = resolve_manifest_dependency(input, dep, manager)
+                .map_err(crate::util::into_miette)?;
+            result.push((reference, false, explicit_name));
             continue;
         }
 
