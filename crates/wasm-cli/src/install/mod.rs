@@ -122,8 +122,9 @@ impl Opts {
         let manager_ref: &Manager = &manager;
 
         // Pre-compute display parts for each package.
-        // We don't know if there will be transitive deps, so all direct
-        // installs use `├──`. The last bar's glyph will be fixed up later.
+        // All concurrent installs use `├──` since we cannot predict which
+        // finishes last. Transitive deps use best-effort `└──` detection
+        // via work-queue emptiness.
 
         // Run all installs concurrently.
         let results: anyhow::Result<Vec<_>> = to_install

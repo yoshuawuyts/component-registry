@@ -36,7 +36,9 @@ fn tree_glyph(is_last: bool) -> &'static str {
 /// For WIT-style names like `wasi:http@0.2.0`, the name is `wasi:http` and
 /// version is `0.2.0`. For WIT-style names without version like `wasi:http`,
 /// the version is taken from the OCI reference tag (stripping a leading `v`).
-/// For bare OCI references, the repository path is used as the name.
+///
+/// When `explicit_name` is `None`, the returned name is empty and the caller
+/// must provide a fallback (e.g. from `reference.repository()`).
 // r[impl cli.progress-bar.namespace-name]
 pub(crate) fn package_display_parts(
     explicit_name: Option<&str>,
@@ -175,7 +177,8 @@ pub(crate) async fn run_progress_bars(
             ProgressEvent::LayerDownloaded { .. }
             | ProgressEvent::LayerStored { .. }
             | ProgressEvent::InstallComplete => {
-                // Layer events and install-complete are handled by the caller
+                // No action needed: the bar is finished by the caller
+                // (finish_package_bar) after this task completes.
             }
         }
     }
