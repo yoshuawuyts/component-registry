@@ -192,17 +192,22 @@ impl Opts {
             }
 
             // Build lockfile dependencies from WIT metadata.
+            // Only include dependencies that have a resolved version.
             // Registry and digest are left empty here and resolved later
             // by `Lockfile::resolve_dependency_details()` once all transitive
             // dependencies have been installed.
             let lockfile_deps: Vec<wasm_manifest::PackageDependency> = result
                 .dependencies
                 .iter()
-                .map(|d| wasm_manifest::PackageDependency {
-                    name: d.package.clone(),
-                    version: d.version.clone().unwrap_or_default(),
-                    registry: String::new(),
-                    digest: String::new(),
+                .filter_map(|d| {
+                    d.version
+                        .clone()
+                        .map(|version| wasm_manifest::PackageDependency {
+                            name: d.package.clone(),
+                            version,
+                            registry: String::new(),
+                            digest: String::new(),
+                        })
                 })
                 .collect();
 
@@ -250,7 +255,7 @@ impl Opts {
 
         // Resolve registry and digest for all dependency entries from their
         // matching top-level package entries.
-        lockfile.resolve_dependency_details();
+        lockfile.resolve_dependency_details().into_diagnostic()?;
 
         // Write updated lockfile
         write_lock_file(&lockfile_path, &lockfile)
@@ -454,13 +459,18 @@ fn upsert_lockfile_type(lockfile: &mut wasm_manifest::Lockfile, result: &Install
         dependencies: result
             .dependencies
             .iter()
+            // Only include dependencies with a resolved version.
             // Registry and digest are resolved later by
             // `Lockfile::resolve_dependency_details()`.
-            .map(|d| wasm_manifest::PackageDependency {
-                name: d.package.clone(),
-                version: d.version.clone().unwrap_or_default(),
-                registry: String::new(),
-                digest: String::new(),
+            .filter_map(|d| {
+                d.version
+                    .clone()
+                    .map(|version| wasm_manifest::PackageDependency {
+                        name: d.package.clone(),
+                        version,
+                        registry: String::new(),
+                        digest: String::new(),
+                    })
             })
             .collect(),
     };
