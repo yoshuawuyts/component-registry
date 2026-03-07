@@ -14,9 +14,7 @@ use wasm_package_manager::{ProgressEvent, Reference};
 
 use crate::util::write_lock_file;
 use errors::InstallError;
-use progress_bar::{
-    create_package_bar, finish_package_bar, package_display_parts, run_progress_bars,
-};
+use progress_bar::{ProgressTree, package_display_parts, run_progress_bars};
 
 /// Default meta-registry URL.
 const REGISTRY_URL: &str = "http://localhost:8080";
@@ -116,42 +114,35 @@ impl Opts {
 
         // Shared progress display for all concurrent installs.
         let multi = MultiProgress::new();
+        let tree = std::sync::Arc::new(tokio::sync::Mutex::new(ProgressTree::new(multi)));
 
         // `&Manager` is Copy, so each async-move block captures its own copy of
         // the reference without requiring Arc or any synchronisation primitive.
         let manager_ref: &Manager = &manager;
 
-        // Pre-compute display parts for each package.
-        // All concurrent installs use `├──` since we cannot predict which
-        // finishes last. Transitive deps use best-effort `└──` detection
-        // via work-queue emptiness.
-
         // Run all installs concurrently.
         let results: anyhow::Result<Vec<_>> = to_install
             .into_co_stream()
             .map(|(reference, update_manifest, explicit_name)| {
-                let multi = multi.clone();
+                let tree = SharedTree::clone(&tree);
                 let vendor_dir = wasm_vendor_dir.clone();
                 let wit_vendor_dir = wit_vendor_dir.clone();
                 async move {
                     let (name, version) =
                         package_display_parts(explicit_name.as_deref(), reference.tag());
-                    let display = PackageDisplay {
-                        name: if name.is_empty() {
-                            reference.repository().to_string()
-                        } else {
-                            name
-                        },
-                        version,
-                        is_last: false, // never last during concurrent install
+                    let display_name = if name.is_empty() {
+                        reference.repository().to_string()
+                    } else {
+                        name
                     };
                     let result = install_one(
                         manager_ref,
-                        &multi,
-                        offline,
+                        &tree,
+                        false,
                         &reference,
                         &vendor_dir,
-                        &display,
+                        &display_name,
+                        version.as_deref(),
                     )
                     .await?;
                     re_vendor_wit_files(&result, &wit_vendor_dir).await?;
@@ -254,7 +245,7 @@ impl Opts {
                 install_transitive_deps(
                     result.dependencies,
                     manager_ref,
-                    &multi,
+                    &tree,
                     &wasm_vendor_dir,
                     &wit_vendor_dir,
                     &mut lockfile,
@@ -287,15 +278,8 @@ impl Opts {
     }
 }
 
-/// Display metadata for a package being installed.
-struct PackageDisplay {
-    /// The `namespace:name` form of the package.
-    name: String,
-    /// The resolved version string (without leading `v`).
-    version: Option<String>,
-    /// Whether this is the last item in the tree.
-    is_last: bool,
-}
+/// Shared handle to a [`ProgressTree`] for use across concurrent tasks.
+type SharedTree = std::sync::Arc<tokio::sync::Mutex<ProgressTree>>;
 
 /// Install a single package and report progress.
 ///
@@ -304,36 +288,27 @@ struct PackageDisplay {
 /// progress across all layers.
 async fn install_one(
     manager: &Manager,
-    multi: &MultiProgress,
+    tree: &SharedTree,
     offline: bool,
     reference: &Reference,
     vendor_dir: &std::path::Path,
-    display: &PackageDisplay,
+    display_name: &str,
+    display_version: Option<&str>,
 ) -> anyhow::Result<InstallResult> {
     if offline {
         // No progress bars in offline mode — just print the line
-        let version_str = display
-            .version
-            .as_deref()
-            .map(|v| format!("@{v}"))
-            .unwrap_or_default();
+        let version_str = display_version.map(|v| format!("@{v}")).unwrap_or_default();
         println!(
-            "{} {}{}",
-            tree_glyph_str(display.is_last),
-            console::style(&display.name).green(),
-            console::style(version_str).dim(),
+            "└── {}{}",
+            console::style(display_name).green(),
+            console::style(version_str).white(),
         );
         return manager.install(reference.clone(), vendor_dir).await;
     }
 
     let (progress_tx, progress_rx) = tokio::sync::mpsc::channel::<ProgressEvent>(64);
 
-    let pb = create_package_bar(
-        multi,
-        &display.name,
-        display.version.as_deref(),
-        display.is_last,
-    );
+    let pb = tree.lock().await.add_bar(display_name, display_version);
 
     // Spawn progress rendering task
     let progress_handle = tokio::task::spawn(run_progress_bars(pb.clone(), progress_rx));
@@ -348,20 +323,14 @@ async fn install_one(
     // Wait for progress bars to finish rendering
     let _ = progress_handle.await;
 
-    // Mark the bar as complete: yellow → green, bar hidden
-    finish_package_bar(
-        &pb,
-        &display.name,
-        display.version.as_deref(),
-        display.is_last,
-    );
+    // Only mark the bar as complete (green, hidden) on successful installs.
+    if result.is_ok() {
+        tree.lock()
+            .await
+            .finish_bar(&pb, display_name, display_version);
+    }
 
     result
-}
-
-/// Return a tree glyph string for offline / non-indicatif use.
-fn tree_glyph_str(is_last: bool) -> &'static str {
-    if is_last { "└──" } else { "├──" }
 }
 
 /// Move vendored WIT files from the wasm vendor dir into the wit vendor dir.
@@ -395,7 +364,7 @@ async fn re_vendor_wit_files(
 async fn install_transitive_deps(
     initial_deps: Vec<DependencyItem>,
     manager: &Manager,
-    multi: &MultiProgress,
+    tree: &SharedTree,
     wasm_vendor_dir: &std::path::Path,
     wit_vendor_dir: &std::path::Path,
     lockfile: &mut wasm_manifest::Lockfile,
@@ -421,28 +390,32 @@ async fn install_transitive_deps(
         };
 
         let (name, version) = package_display_parts(Some(&dep.package), dep_ref.tag());
-        let display = PackageDisplay {
-            name: if name.is_empty() {
-                dep.package.clone()
-            } else {
-                name
-            },
-            version,
-            // Best-effort: mark as last when the work queue is empty.
-            is_last: work_queue.is_empty(),
+        let display_name = if name.is_empty() {
+            dep.package.clone()
+        } else {
+            name
         };
 
-        let dep_result =
-            match install_one(manager, multi, false, &dep_ref, wasm_vendor_dir, &display).await {
-                Ok(r) => r,
-                Err(e) => {
-                    tracing::debug!(
-                        "Failed to install WIT dependency '{}': {e} — skipping",
-                        dep.package,
-                    );
-                    continue;
-                }
-            };
+        let dep_result = match install_one(
+            manager,
+            tree,
+            false,
+            &dep_ref,
+            wasm_vendor_dir,
+            &display_name,
+            version.as_deref(),
+        )
+        .await
+        {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::debug!(
+                    "Failed to install WIT dependency '{}': {e} — skipping",
+                    dep.package,
+                );
+                continue;
+            }
+        };
 
         if let Err(e) = re_vendor_wit_files(&dep_result, wit_vendor_dir).await {
             tracing::debug!(

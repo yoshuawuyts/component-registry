@@ -24,8 +24,8 @@ The package name MUST be displayed in yellow while downloading.
 r[cli.progress-bar.package-name-complete]
 The package name MUST be displayed in green when downloading completes.
 
-r[cli.progress-bar.version-grey]
-The `@<version>` string MUST be displayed in grey.
+r[cli.progress-bar.version-white]
+The `@<version>` string MUST be displayed in white.
 
 ## Progress Bar Display
 
