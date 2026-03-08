@@ -49,17 +49,6 @@ pub(crate) struct Store {
 }
 
 impl Store {
-    /// Returns the underlying database connection.
-    ///
-    /// Only available in tests to allow low-level data setup without going
-    /// through the full public API.
-    #[cfg(test)]
-    pub(crate) fn conn(&self) -> &Connection {
-        &self.conn
-    }
-}
-
-impl Store {
     /// Open the store and run any pending migrations.
     pub(crate) async fn open() -> anyhow::Result<Self> {
         let data_dir = dirs::data_local_dir()
@@ -136,7 +125,7 @@ impl Store {
         // interfere with each other if any code path writes to state_info paths.
         let tmp = tempfile::tempdir()
             .expect("failed to create temp dir for test Store")
-            .into_path();
+            .keep();
         let migration_info = Migrations {
             current: 0,
             total: 0,
