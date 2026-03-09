@@ -57,6 +57,17 @@ pub(crate) enum InstallError {
         /// The input string that could not be resolved.
         input: String,
     },
+
+    /// Dependency resolution failed: no compatible set of versions exists.
+    #[diagnostic(
+        code(wasm::install::dependency_conflict),
+        help(
+            "Run `wasm registry fetch` to update the registry index.\n\
+             If the conflict persists, check for incompatible dependency\n\
+             version constraints in the packages you are installing."
+        )
+    )]
+    DependencyConflict(String),
 }
 
 impl std::fmt::Display for InstallError {
@@ -73,6 +84,9 @@ impl std::fmt::Display for InstallError {
             }
             InstallError::UnknownPackage { input } => {
                 write!(f, "package '{input}' not found in the registry index")
+            }
+            InstallError::DependencyConflict(reason) => {
+                write!(f, "dependency conflict: {reason}")
             }
         }
     }
@@ -144,6 +158,19 @@ mod tests {
         assert!(
             unknown_pkg.help().is_some(),
             "UnknownPackage must have a help message"
+        );
+
+        let dep_conflict = InstallError::DependencyConflict("no solution".to_string());
+        assert_eq!(
+            dep_conflict
+                .code()
+                .expect("DependencyConflict must have a diagnostic code")
+                .to_string(),
+            "wasm::install::dependency_conflict",
+        );
+        assert!(
+            dep_conflict.help().is_some(),
+            "DependencyConflict must have a help message"
         );
     }
 }
