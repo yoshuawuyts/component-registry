@@ -278,13 +278,12 @@ pub async fn re_vendor_wit_files(
     }
     for file in &result.vendored_files {
         let wasm_bytes = tokio::fs::read(file).await?;
-        let wit_text =
-            crate::types::extract_wit_text(&wasm_bytes).ok_or_else(|| {
-                anyhow::anyhow!(
-                    "'{}' is not a valid WIT package — could not decode binary to WIT text",
-                    file.display()
-                )
-            })?;
+        let wit_text = crate::types::extract_wit_text(&wasm_bytes).ok_or_else(|| {
+            anyhow::anyhow!(
+                "'{}' is not a valid WIT package — could not decode binary to WIT text",
+                file.display()
+            )
+        })?;
 
         if let Some(filename) = file.file_name() {
             let wit_dest = wit_vendor_dir.join(filename).with_extension("wit");

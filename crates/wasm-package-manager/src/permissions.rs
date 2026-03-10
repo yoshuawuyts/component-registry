@@ -9,8 +9,8 @@
 
 use wasm_manifest::{ResolvedPermissions, RunPermissions};
 
-use crate::config::Config;
 use crate::Reference;
+use crate::config::Config;
 
 /// Resolve permissions through the 4-layer merge.
 ///
@@ -23,7 +23,6 @@ use crate::Reference;
 /// 2. Global per-component from `components.toml`
 /// 3. Local per-component from `wasm.toml`
 /// 4. `cli_overrides`
-#[must_use]
 pub fn resolve_permissions(
     reference: Option<&Reference>,
     cli_overrides: RunPermissions,

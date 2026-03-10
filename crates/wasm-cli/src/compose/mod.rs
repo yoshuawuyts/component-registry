@@ -40,11 +40,7 @@ impl Opts {
             LinkerMode::Dynamic => compose::LinkerMode::Dynamic,
         };
 
-        let results = compose::compose(
-            self.name.as_deref(),
-            &linker,
-            &self.output,
-        )?;
+        let results = compose::compose(self.name.as_deref(), &linker, &self.output)?;
 
         for out_path in &results {
             println!("Composed component written to {}", out_path.display());

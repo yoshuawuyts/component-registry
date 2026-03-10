@@ -1,3 +1,5 @@
+#![allow(clippy::print_stderr)]
+
 //! Internal crate for executing WebAssembly components via Wasmtime.
 //!
 //! This crate is **not** intended for third-party consumption — it is an

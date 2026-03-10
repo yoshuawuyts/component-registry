@@ -34,23 +34,15 @@ pub enum LinkerMode {
 ///
 /// Returns an error if no `.wac` files are found, the named file
 /// does not exist, or any composition step fails.
-pub fn compose(
-    name: Option<&str>,
-    linker: &LinkerMode,
-    output: &Path,
-) -> Result<Vec<PathBuf>> {
+pub fn compose(name: Option<&str>, linker: &LinkerMode, output: &Path) -> Result<Vec<PathBuf>> {
     let wac_files = collect_wac_files(name)?;
 
     if wac_files.is_empty() {
         return Err(ComposeError::NoWacFiles.into());
     }
 
-    std::fs::create_dir_all(output).with_context(|| {
-        format!(
-            "could not create output directory '{}'",
-            output.display()
-        )
-    })?;
+    std::fs::create_dir_all(output)
+        .with_context(|| format!("could not create output directory '{}'", output.display()))?;
 
     let mut results = Vec::new();
     for wac_file in &wac_files {
@@ -68,7 +60,10 @@ fn collect_wac_files(name: Option<&str>) -> Result<Vec<PathBuf>> {
     if let Some(name) = name {
         // Reject names with path separators or traversal sequences.
         if name.contains('/') || name.contains('\\') || name.contains("..") {
-            return Err(ComposeError::InvalidName { name: name.to_string() }.into());
+            return Err(ComposeError::InvalidName {
+                name: name.to_string(),
+            }
+            .into());
         }
 
         // Treat the argument as a name and look under seams/
@@ -144,21 +139,19 @@ fn compose_one(wac_file: &Path, linker: &LinkerMode, output: &Path) -> Result<Pa
     let source = std::fs::read_to_string(wac_file)
         .with_context(|| format!("could not read '{}'", wac_file.display()))?;
 
-    let document =
-        wac_parser::Document::parse(&source).map_err(|e| ComposeError::ParseFailed {
-            file: wac_file.display().to_string(),
-            reason: e.to_string(),
-        })?;
+    let document = wac_parser::Document::parse(&source).map_err(|e| ComposeError::ParseFailed {
+        file: wac_file.display().to_string(),
+        reason: e.to_string(),
+    })?;
 
     let base = std::env::current_dir().context("could not determine current directory")?;
     let fs_resolver = resolver::build_resolver(&base)?;
 
-    let keys = wac_resolver::packages(&document).map_err(|e| {
-        ComposeError::PackageDiscoveryFailed {
+    let keys =
+        wac_resolver::packages(&document).map_err(|e| ComposeError::PackageDiscoveryFailed {
             file: wac_file.display().to_string(),
             reason: e.to_string(),
-        }
-    })?;
+        })?;
 
     let packages =
         fs_resolver
@@ -168,13 +161,12 @@ fn compose_one(wac_file: &Path, linker: &LinkerMode, output: &Path) -> Result<Pa
                 reason: e.to_string(),
             })?;
 
-    let resolution =
-        document
-            .resolve(packages)
-            .map_err(|e| ComposeError::ResolutionFailed {
-                file: wac_file.display().to_string(),
-                reason: e.to_string(),
-            })?;
+    let resolution = document
+        .resolve(packages)
+        .map_err(|e| ComposeError::ResolutionFailed {
+            file: wac_file.display().to_string(),
+            reason: e.to_string(),
+        })?;
 
     let mut encode_options = wac_graph::EncodeOptions::default();
     if matches!(linker, LinkerMode::Dynamic) {

@@ -164,7 +164,7 @@ impl Opts {
                 .map_err(crate::util::into_miette)?
         } else {
             resolve_install_inputs(&self.inputs, &manifest, &manager)
-                .map_err(|e| crate::util::into_miette(e))?
+                .map_err(crate::util::into_miette)?
         };
 
         // Shared progress display for all concurrent installs.

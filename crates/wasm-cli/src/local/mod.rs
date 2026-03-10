@@ -37,8 +37,7 @@ impl Opts {
 
 impl ListOpts {
     fn run(&self) {
-        let mut wasm_files =
-            Manager::detect_local_wasm(&self.path, self.hidden, self.follow_links);
+        let mut wasm_files = Manager::detect_local_wasm(&self.path, self.hidden, self.follow_links);
 
         if wasm_files.is_empty() {
             println!("No WASM files found in {}", self.path.display());
