@@ -3,6 +3,8 @@
 mod errors;
 mod progress_bar;
 
+use std::collections::{HashMap, HashSet};
+
 use futures_concurrency::prelude::*;
 use indicatif::MultiProgress;
 use miette::{IntoDiagnostic, WrapErr};
@@ -120,10 +122,8 @@ impl Opts {
         // available for this package (e.g. the meta-registry hasn't indexed
         // its deps, or the sync was skipped in offline mode). In that case
         // we skip silently and let the fallback installer handle it.
-        let mut resolved_transitive: std::collections::HashMap<
-            String,
-            wasm_package_manager::resolver::WitVersion,
-        > = std::collections::HashMap::new();
+        let mut resolved_transitive: HashMap<String, wasm_package_manager::resolver::WitVersion> =
+            HashMap::new();
         if !offline {
             for (key, dep, _) in manifest.all_dependencies() {
                 let version_str = match dep {
@@ -194,8 +194,7 @@ impl Opts {
         // plus transitive dependencies discovered by the resolver.  Transitive
         // entries that are already in the lockfile are skipped to avoid
         // redundant downloads.
-        let planned_transitive: std::collections::HashSet<String> =
-            resolved_transitive.keys().cloned().collect();
+        let planned_transitive: HashSet<String> = resolved_transitive.keys().cloned().collect();
 
         let transitive_installs: Vec<PlannedInstall> = resolved_transitive
             .into_iter()
@@ -289,8 +288,8 @@ impl Opts {
                     explicit_name,
                     ..
                 } => {
-                    process_top_level_result(
-                        &result,
+                    let dependencies = process_top_level_result(
+                        result,
                         update_manifest,
                         explicit_name,
                         &mut manifest,
@@ -301,8 +300,7 @@ impl Opts {
                     // part of the upfront plan (e.g. deps of bare OCI refs
                     // or packages not yet indexed by the meta-registry).
                     if !offline {
-                        let unplanned: Vec<DependencyItem> = result
-                            .dependencies
+                        let unplanned: Vec<DependencyItem> = dependencies
                             .into_iter()
                             .filter(|d| !planned_transitive.contains(&d.package))
                             .collect();
@@ -474,14 +472,15 @@ async fn install_one(
 }
 
 /// Process a top-level install result: update the manifest (if requested)
-/// and upsert the lockfile entry.
+/// and upsert the lockfile entry.  Returns the result's dependency list
+/// so the caller can handle any unplanned transitive deps.
 fn process_top_level_result(
-    result: &InstallResult,
+    result: InstallResult,
     update_manifest: bool,
     explicit_name: Option<String>,
     manifest: &mut wasm_manifest::Manifest,
     lockfile: &mut wasm_manifest::Lockfile,
-) {
+) -> Vec<DependencyItem> {
     // Derive the dependency name.
     // When the user provided an explicit WIT-style name (e.g.
     // `ba:sample-wasi-http-rust`), use that directly — the embedded
@@ -492,7 +491,7 @@ fn process_top_level_result(
     let dep_name = if let Some(name) = explicit_name {
         name
     } else if result.is_component {
-        let existing_names: std::collections::HashSet<String> = manifest
+        let existing_names: HashSet<String> = manifest
             .dependencies
             .components
             .keys()
@@ -558,7 +557,7 @@ fn process_top_level_result(
 
     // Add to lockfile — route to components or interfaces
     let registry_path = format!("{}/{}", result.registry, result.repository);
-    let digest = result.digest.clone().unwrap_or_default();
+    let digest = result.digest.unwrap_or_default();
 
     let package = wasm_manifest::Package {
         name: dep_name.clone(),
@@ -575,6 +574,8 @@ fn process_top_level_result(
         &registry_path,
         package,
     );
+
+    result.dependencies
 }
 
 /// Recursively install transitive WIT dependencies of a component.
@@ -591,8 +592,7 @@ async fn install_transitive_deps(
     lockfile: &mut wasm_manifest::Lockfile,
 ) -> anyhow::Result<()> {
     let mut work_queue = std::collections::VecDeque::from(initial_deps);
-    let mut visited: std::collections::HashSet<(String, Option<String>)> =
-        std::collections::HashSet::new();
+    let mut visited: HashSet<(String, Option<String>)> = HashSet::new();
 
     while let Some(dep) = work_queue.pop_front() {
         let dep_key = (dep.package.clone(), dep.version.clone());
