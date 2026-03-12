@@ -325,7 +325,21 @@ pub(crate) fn resolve_all_from_db(
     let mut root_deps: DependencyConstraints<String, WitVersionRange> =
         DependencyConstraints::default();
     for (name, version) in roots {
-        root_deps.insert(name.clone(), Ranges::singleton(*version));
+        let new_range = Ranges::singleton(*version);
+        match root_deps.get(name) {
+            None => {
+                root_deps.insert(name.clone(), new_range);
+            }
+            Some(existing_range) => {
+                let intersection = existing_range.intersection(&new_range);
+                if intersection.is_empty() {
+                    return Err(ResolveError::NoSolution(format!(
+                        "root package `{name}` has incompatible version requirements",
+                    )));
+                }
+                root_deps.insert(name.clone(), intersection);
+            }
+        }
     }
 
     let provider = VirtualRootProvider {
@@ -719,6 +733,39 @@ mod tests {
         assert!(
             matches!(result, Err(ResolveError::NoSolution(_))),
             "expected NoSolution, got: {result:?}"
+        );
+    }
+
+    /// Duplicate root names with the same version are merged (no error).
+    #[test]
+    fn multi_root_duplicate_same_version_succeeds() {
+        let mut g = DepGraph::new();
+        g.add("wasi:http", "0.2.0", &[("wasi:io", "0.2.0")]);
+        g.add("wasi:io", "0.2.0", &[]);
+
+        // Same package+version listed twice — should not error.
+        let plan = g
+            .resolve_all(&[("wasi:http", "0.2.0"), ("wasi:http", "0.2.0")])
+            .unwrap();
+        assert!(plan.contains_key("wasi:http"));
+        assert_eq!(
+            *plan.get("wasi:http").expect("wasi:http"),
+            WitVersion::new(0, 2, 0)
+        );
+    }
+
+    /// Duplicate root names with different versions produce `NoSolution`
+    /// (the singleton ranges don't intersect).
+    #[test]
+    fn multi_root_duplicate_different_version_errors() {
+        let mut g = DepGraph::new();
+        g.add("wasi:http", "0.2.0", &[]);
+        g.add("wasi:http", "0.3.0", &[]);
+
+        let result = g.resolve_all(&[("wasi:http", "0.2.0"), ("wasi:http", "0.3.0")]);
+        assert!(
+            matches!(result, Err(ResolveError::NoSolution(_))),
+            "expected NoSolution for incompatible root versions, got: {result:?}"
         );
     }
 }

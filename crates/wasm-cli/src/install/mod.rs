@@ -197,9 +197,11 @@ impl Opts {
         // plus transitive dependencies discovered by the resolver.  Transitive
         // entries that are already in the lockfile are skipped to avoid
         // redundant downloads.
+        let existing_interface_names: HashSet<_> =
+            lockfile.interfaces.iter().map(|p| p.name.clone()).collect();
         let transitive_installs: Vec<PlannedInstall> = resolved_transitive
             .into_iter()
-            .filter(|(name, _)| !lockfile.interfaces.iter().any(|p| p.name == *name))
+            .filter(|(name, _)| !existing_interface_names.contains(name))
             .filter_map(|(name, version)| {
                 let dep = DependencyItem {
                     package: name.clone(),
@@ -212,18 +214,21 @@ impl Opts {
             })
             .collect();
 
-        // Derive the set of actually-enqueued transitive package names.
-        // This must be computed *after* filtering so the fallback path
-        // does not treat a dep that was resolved but dropped (e.g. already
-        // in lockfile, or unresolvable via OCI) as "planned".  Unplanned
-        // deps fall through to the sequential `install_transitive_deps`.
-        let planned_transitive: HashSet<String> = transitive_installs
-            .iter()
-            .filter_map(|entry| match entry {
+        // Derive the set of all WIT package names being installed in the
+        // concurrent batch — both top-level and transitive.  This ensures the
+        // fallback path does not sequentially re-install a dep that is already
+        // enqueued in the concurrent batch (e.g. a package that is both a
+        // top-level dep and a transitive dep of another top-level).
+        let planned_packages: HashSet<String> = {
+            let transitive_names = transitive_installs.iter().filter_map(|entry| match entry {
                 PlannedInstall::Transitive { package_name, .. } => Some(package_name.clone()),
                 PlannedInstall::TopLevel { .. } => None,
-            })
-            .collect();
+            });
+            // Top-level manifest keys that went through the resolver are also
+            // being installed concurrently and should be excluded from fallback.
+            let top_level_names = manifest.all_dependencies().map(|(key, _, _)| key.clone());
+            transitive_names.chain(top_level_names).collect()
+        };
 
         let all_installs: Vec<PlannedInstall> = to_install
             .into_iter()
@@ -316,7 +321,7 @@ impl Opts {
                     if !offline {
                         let unplanned: Vec<DependencyItem> = dependencies
                             .into_iter()
-                            .filter(|d| !planned_transitive.contains(&d.package))
+                            .filter(|d| !planned_packages.contains(&d.package))
                             .collect();
                         if !unplanned.is_empty() {
                             install_transitive_deps(
@@ -852,14 +857,15 @@ mod tests {
     }
 
     #[test]
-    fn planned_transitive_only_includes_enqueued_entries() {
+    fn planned_packages_includes_top_level_and_enqueued_transitive() {
         use super::PlannedInstall;
         use std::collections::HashSet;
 
         // Simulate: the resolver returned two transitive deps (wasi:io and
         // wasi:cli), but only wasi:io survived filtering (e.g. wasi:cli was
-        // already in the lockfile or unresolvable via OCI).  The planned set
-        // should contain only wasi:io so the fallback path picks up wasi:cli.
+        // already in the lockfile or unresolvable via OCI).  Top-level
+        // manifest keys ("wasi:http") are also included in the planned set
+        // so the fallback path doesn't reinstall them sequentially.
         let transitive_installs = vec![PlannedInstall::Transitive {
             reference: "ghcr.io/test/wasi-io:0.2.0"
                 .parse()
@@ -867,17 +873,24 @@ mod tests {
             package_name: "wasi:io".to_string(),
         }];
 
-        // This mirrors the derivation in Opts::run.
-        let planned: HashSet<String> = transitive_installs
-            .iter()
-            .filter_map(|entry| match entry {
+        // This mirrors the derivation in Opts::run: transitive names from
+        // the actual install vec, plus all manifest keys.
+        let top_level_keys = vec!["wasi:http".to_string()];
+        let planned: HashSet<String> = {
+            let transitive_names = transitive_installs.iter().filter_map(|entry| match entry {
                 PlannedInstall::Transitive { package_name, .. } => Some(package_name.clone()),
                 PlannedInstall::TopLevel { .. } => None,
-            })
-            .collect();
+            });
+            transitive_names.chain(top_level_keys).collect()
+        };
 
-        // "wasi:io" was actually enqueued → should be in planned set.
+        // "wasi:io" was actually enqueued as transitive → in planned set.
         assert!(planned.contains("wasi:io"));
+        // "wasi:http" is a top-level manifest key → in planned set.
+        assert!(
+            planned.contains("wasi:http"),
+            "top-level manifest keys should appear in planned set"
+        );
         // "wasi:cli" was resolved but not enqueued → absent from planned,
         // so the fallback installer handles it.
         assert!(
