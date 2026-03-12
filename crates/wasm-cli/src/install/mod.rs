@@ -265,6 +265,7 @@ impl Opts {
             .collect();
 
         // Display the resolved plan and transition to the installing phase.
+        // r[impl cli.progress-bar.plan-timing]
         if !offline {
             let plan_entries: Vec<(String, Option<String>)> = all_installs
                 .iter()
@@ -398,10 +399,17 @@ impl Opts {
             .await
             .into_diagnostic()?;
 
-        // Display the final completion summary only in online mode.
-        // In offline mode the phased display was never started.
-        if !offline {
-            let elapsed = start_time.elapsed();
+        // Display the final completion summary.
+        let elapsed = start_time.elapsed();
+        if offline {
+            // Offline mode never starts the phased display — print a plain
+            // summary line so the user still sees the result.
+            println!(
+                "{} Installed in {:.1}s",
+                console::style("✓").green().bold(),
+                elapsed.as_secs_f64()
+            );
+        } else {
             let mut d = display.lock().await;
             let completed_count = d.completed_count();
             d.finish_all(completed_count, elapsed);

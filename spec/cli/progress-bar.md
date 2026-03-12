@@ -41,6 +41,19 @@ not with an `@` separator.
 r[cli.progress-bar.flat-rows]
 Packages MUST be displayed as a flat, column-aligned list without tree glyphs.
 
+r[cli.progress-bar.name-color-downloading]
+Package names MUST be unstyled (default terminal color) while a download is in
+progress.
+
+r[cli.progress-bar.name-color-complete]
+Package names MUST be displayed in green once the download is complete.
+
+## Plan Display
+
+r[cli.progress-bar.plan-timing]
+The resolved plan MUST be displayed after the planning phase completes and
+before the installing phase begins.
+
 ## Per-Package Progress
 
 r[cli.progress-bar.bar-yellow]

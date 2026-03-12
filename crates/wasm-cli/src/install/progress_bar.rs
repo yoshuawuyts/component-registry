@@ -306,6 +306,8 @@ pub(crate) fn oci_repo_display_name(repo: &str) -> String {
 /// The version is space-separated (not `@`-separated).
 // r[impl cli.progress-bar.version-display]
 // r[impl cli.progress-bar.flat-rows]
+// r[impl cli.progress-bar.name-color-downloading]
+// r[impl cli.progress-bar.name-color-complete]
 fn build_prefix(name: &str, version: Option<&str>, name_width: usize, is_complete: bool) -> String {
     let label = match version {
         Some(v) => format!("{name} {v}"),
@@ -1034,5 +1036,54 @@ mod tests {
         // All entries should be realigned — the name_width is consistent
         // across the display after the fallback row was added.
         assert_eq!(display.name_width, "ba:very-long-package-name 1.0.0".len());
+    }
+
+    // r[verify cli.progress-bar.name-color-downloading]
+    #[test]
+    fn prefix_unstyled_during_download() {
+        let prefix = build_prefix("wasi:http", Some("0.2.3"), 20, false);
+        // When not complete the prefix should be plain text (no ANSI escapes).
+        assert_eq!(
+            prefix,
+            console::strip_ansi_codes(&prefix),
+            "downloading prefix must be unstyled"
+        );
+    }
+
+    // r[verify cli.progress-bar.name-color-complete]
+    #[test]
+    fn prefix_green_on_completion() {
+        // Force colors on so the test is deterministic regardless of TTY.
+        console::set_colors_enabled(true);
+        let prefix = build_prefix("wasi:http", Some("0.2.3"), 20, true);
+        // When complete the prefix contains ANSI green escape codes.
+        assert_ne!(
+            prefix,
+            console::strip_ansi_codes(&prefix),
+            "completed prefix must contain ANSI styling"
+        );
+    }
+
+    // r[verify cli.progress-bar.plan-timing]
+    #[test]
+    fn plan_displayed_before_installing_phase() {
+        use indicatif::ProgressDrawTarget;
+
+        let multi = MultiProgress::with_draw_target(ProgressDrawTarget::hidden());
+        let mut display = InstallDisplay::new(multi);
+
+        // Simulate the phase sequence: planning → show_plan → installing.
+        display.start_planning();
+        display.show_plan(&[("wasi:io", Some("0.2.3"))]);
+        // Rows exist before the installing phase begins.
+        assert_eq!(display.completed_count(), 0);
+        assert_eq!(
+            display.entries.len(),
+            1,
+            "plan must be visible before installing starts"
+        );
+        display.start_installing();
+        // Rows remain after starting the install phase.
+        assert_eq!(display.entries.len(), 1);
     }
 }
