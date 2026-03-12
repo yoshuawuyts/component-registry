@@ -927,6 +927,33 @@ impl Manager {
         crate::resolver::resolve_from_db(&self.store, package, version)
     }
 
+    /// Resolve the transitive dependency graph for multiple root packages at
+    /// once, using a single PubGrub solver pass.
+    ///
+    /// All `roots` are fed into one resolution.  This ensures shared
+    /// transitive dependencies are resolved consistently across all roots
+    /// instead of running separate per-root passes that could select
+    /// different versions.
+    ///
+    /// Returns a map from WIT package name to the selected version for every
+    /// package in the resolved set (including the roots themselves).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::resolver::ResolveError::NoSolution`] when no
+    /// conflict-free version assignment exists.
+    /// Returns [`crate::resolver::ResolveError::Db`] when a database query
+    /// fails.
+    pub fn resolve_all_dependencies(
+        &self,
+        roots: &[(String, crate::resolver::WitVersion)],
+    ) -> Result<
+        std::collections::HashMap<String, crate::resolver::WitVersion>,
+        crate::resolver::ResolveError,
+    > {
+        crate::resolver::resolve_all_from_db(&self.store, roots)
+    }
+
     /// Sync the local package index from a meta-registry over HTTP.
     ///
     /// Checks the `_sync_meta` table for `last_synced_at` and skips the sync

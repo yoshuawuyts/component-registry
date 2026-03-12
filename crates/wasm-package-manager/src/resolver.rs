@@ -209,6 +209,143 @@ pub(crate) fn resolve_from_db(
     Ok(selected.into_iter().collect())
 }
 
+// ─── Multi-root resolution ────────────────────────────────────────────────
+
+/// Sentinel package name used for the virtual root when resolving multiple
+/// top-level packages in a single PubGrub pass.
+const VIRTUAL_ROOT: &str = "<virtual-root>";
+
+/// A [`DependencyProvider`] that wraps [`DbDependencyProvider`] with a
+/// virtual root package whose dependencies are the set of top-level packages
+/// to resolve together.
+///
+/// This lets us feed all top-level constraints into a single PubGrub solve
+/// instead of running separate passes per root.
+struct VirtualRootProvider<'s> {
+    inner: DbDependencyProvider<'s>,
+    root_deps: DependencyConstraints<String, WitVersionRange>,
+}
+
+impl DependencyProvider for VirtualRootProvider<'_> {
+    type P = String;
+    type V = WitVersion;
+    type VS = WitVersionRange;
+    type M = String;
+    type Priority = u32;
+    type Err = ResolveError;
+
+    fn get_dependencies(
+        &self,
+        package: &String,
+        version: &WitVersion,
+    ) -> Result<Dependencies<String, WitVersionRange, String>, ResolveError> {
+        if package == VIRTUAL_ROOT {
+            Ok(Dependencies::Available(self.root_deps.clone()))
+        } else {
+            self.inner.get_dependencies(package, version)
+        }
+    }
+
+    fn choose_version(
+        &self,
+        package: &String,
+        range: &WitVersionRange,
+    ) -> Result<Option<WitVersion>, ResolveError> {
+        if package == VIRTUAL_ROOT {
+            let v = WitVersion::new(0, 0, 0);
+            Ok(if range.contains(&v) { Some(v) } else { None })
+        } else {
+            self.inner.choose_version(package, range)
+        }
+    }
+
+    fn prioritize(
+        &self,
+        package: &String,
+        range: &WitVersionRange,
+        stats: &PackageResolutionStatistics,
+    ) -> u32 {
+        if package == VIRTUAL_ROOT {
+            0
+        } else {
+            self.inner.prioritize(package, range, stats)
+        }
+    }
+}
+
+/// Map a [`pubgrub::PubGrubError`] into a [`ResolveError`].
+fn map_pubgrub_error(e: pubgrub::PubGrubError<VirtualRootProvider<'_>>) -> ResolveError {
+    match e {
+        pubgrub::PubGrubError::NoSolution(mut tree) => {
+            tree.collapse_no_versions();
+            ResolveError::NoSolution(pubgrub::DefaultStringReporter::report(&tree))
+        }
+        pubgrub::PubGrubError::ErrorRetrievingDependencies {
+            package,
+            version,
+            source,
+        } => ResolveError::Db(format!(
+            "failed to get deps for {package}@{version}: {source}"
+        )),
+        pubgrub::PubGrubError::ErrorChoosingVersion { package, source } => {
+            ResolveError::Db(format!("failed to choose version for {package}: {source}"))
+        }
+        pubgrub::PubGrubError::ErrorInShouldCancel(e) => {
+            ResolveError::Db(format!("resolution cancelled: {e}"))
+        }
+    }
+}
+
+/// Resolve the transitive dependency graph for multiple root packages at once.
+///
+/// All roots are fed into a single PubGrub pass via a virtual root package.
+/// This ensures that shared transitive dependencies are resolved consistently
+/// across all roots—the solver sees every constraint simultaneously rather
+/// than producing independent (potentially conflicting) per-root results.
+///
+/// Returns a map from WIT package name to the selected version for every
+/// package in the resolved set. The virtual root is stripped from the output.
+///
+/// # Errors
+///
+/// Returns [`ResolveError::NoSolution`] when no conflict-free assignment
+/// exists.  Returns [`ResolveError::Db`] when a database query fails.
+pub(crate) fn resolve_all_from_db(
+    store: &Store,
+    roots: &[(String, WitVersion)],
+) -> Result<HashMap<String, WitVersion>, ResolveError> {
+    if roots.is_empty() {
+        return Ok(HashMap::new());
+    }
+    // Single root — fast path through the simpler provider.
+    if let [(name, version)] = roots {
+        return resolve_from_db(store, name, *version);
+    }
+
+    let mut root_deps: DependencyConstraints<String, WitVersionRange> =
+        DependencyConstraints::default();
+    for (name, version) in roots {
+        root_deps.insert(name.clone(), Ranges::singleton(*version));
+    }
+
+    let provider = VirtualRootProvider {
+        inner: DbDependencyProvider::new(store),
+        root_deps,
+    };
+
+    let selected: SelectedDependencies<VirtualRootProvider<'_>> = pubgrub::resolve(
+        &provider,
+        VIRTUAL_ROOT.to_string(),
+        WitVersion::new(0, 0, 0),
+    )
+    .map_err(map_pubgrub_error)?;
+
+    Ok(selected
+        .into_iter()
+        .filter(|(name, _)| name != VIRTUAL_ROOT)
+        .collect())
+}
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -278,12 +415,39 @@ mod tests {
             name: &str,
             version: &str,
         ) -> Result<HashMap<String, WitVersion>, ResolveError> {
-            // Set up a fresh in-memory SQLite database.
+            let store = self.build_store()?;
+            let root_version = version
+                .parse::<WitVersion>()
+                .map_err(|e| ResolveError::Db(format!("invalid version {version:?}: {e}")))?;
+            resolve_from_db(&store, name, root_version)
+        }
+
+        /// Build a fresh in-memory DB, populate it with all registered
+        /// packages, and run the unified multi-root resolver.
+        fn resolve_all(
+            &self,
+            roots: &[(&str, &str)],
+        ) -> Result<HashMap<String, WitVersion>, ResolveError> {
+            let store = self.build_store()?;
+            let parsed_roots: Vec<(String, WitVersion)> = roots
+                .iter()
+                .map(|(name, version)| {
+                    let v = version.parse::<WitVersion>().map_err(|e| {
+                        ResolveError::Db(format!("invalid version {version:?}: {e}"))
+                    })?;
+                    Ok((name.to_string(), v))
+                })
+                .collect::<Result<Vec<_>, ResolveError>>()?;
+            resolve_all_from_db(&store, &parsed_roots)
+        }
+
+        /// Set up a fresh in-memory SQLite database and populate it with
+        /// all registered packages.
+        fn build_store(&self) -> Result<Store, ResolveError> {
             let conn = Connection::open_in_memory().map_err(|e| ResolveError::Db(e.to_string()))?;
             Migrations::run_all(&conn)
                 .map_err(|e: anyhow::Error| ResolveError::Db(e.to_string()))?;
 
-            // Insert all declared package versions and their dependencies.
             for (pkg_name, pkg_ver, pkg_deps) in &self.packages {
                 let pkg_id = RawWitPackage::insert(
                     &conn,
@@ -297,24 +461,18 @@ mod tests {
                 .map_err(|e| ResolveError::Db(e.to_string()))?;
 
                 for (dep_name, dep_ver) in pkg_deps {
-                    // resolved_package_id is None because foreign-key resolution
-                    // happens lazily; for tests we only need the declared edges.
                     WitPackageDependency::insert(
                         &conn,
                         pkg_id,
                         dep_name.as_str(),
                         Some(dep_ver.as_str()),
-                        None, // resolved_package_id — not yet resolved
+                        None,
                     )
                     .map_err(|e| ResolveError::Db(e.to_string()))?;
                 }
             }
 
-            let store = Store::from_conn(conn);
-            let root_version = version
-                .parse::<WitVersion>()
-                .map_err(|e| ResolveError::Db(format!("invalid version {version:?}: {e}")))?;
-            resolve_from_db(&store, name, root_version)
+            Ok(Store::from_conn(conn))
         }
     }
 
@@ -492,6 +650,75 @@ mod tests {
             *plan.get("wasi:io").expect("wasi:io"),
             WitVersion::new(0, 2, 3),
             "expected wasi:io 0.2.3 (the newest satisfying >=0.2.3), got {plan:?}"
+        );
+    }
+
+    // ── Multi-root resolution ────────────────────────────────────────────────
+
+    /// Two independent roots with a shared transitive dependency.  The
+    /// unified resolver sees both constraints simultaneously and picks a
+    /// single consistent version.
+    #[test]
+    fn multi_root_resolves_shared_dep_consistently() {
+        let mut g = DepGraph::new();
+        g.add("wasi:http", "0.2.0", &[("wasi:io", "0.2.0")]);
+        g.add("wasi:cli", "0.3.0", &[("wasi:io", "0.2.3")]);
+        g.add("wasi:io", "0.2.0", &[]);
+        g.add("wasi:io", "0.2.3", &[]);
+
+        let plan = g
+            .resolve_all(&[("wasi:http", "0.2.0"), ("wasi:cli", "0.3.0")])
+            .unwrap();
+
+        // The solver must pick a single version of wasi:io that satisfies
+        // both >=0.2.0 (from wasi:http) and >=0.2.3 (from wasi:cli).
+        assert_eq!(
+            *plan.get("wasi:io").expect("wasi:io"),
+            WitVersion::new(0, 2, 3),
+            "expected unified wasi:io 0.2.3, got {plan:?}"
+        );
+        // Both roots must appear in the result.
+        assert!(plan.contains_key("wasi:http"));
+        assert!(plan.contains_key("wasi:cli"));
+    }
+
+    /// Multi-root with a single root falls back to `resolve_from_db`.
+    #[test]
+    fn multi_root_single_root_matches_single_resolve() {
+        let mut g = DepGraph::new();
+        g.add("wasi:http", "0.2.0", &[("wasi:io", "0.2.0")]);
+        g.add("wasi:io", "0.2.0", &[]);
+
+        let single = g.resolve("wasi:http", "0.2.0").unwrap();
+        let multi = g.resolve_all(&[("wasi:http", "0.2.0")]).unwrap();
+        assert_eq!(single, multi);
+    }
+
+    /// Multi-root with no roots returns an empty map.
+    #[test]
+    fn multi_root_empty_returns_empty() {
+        let g = DepGraph::new();
+        let plan = g.resolve_all(&[]).unwrap();
+        assert!(plan.is_empty());
+    }
+
+    /// Multi-root detects real conflicts (no version satisfies combined
+    /// constraints).
+    #[test]
+    fn multi_root_detects_real_conflict() {
+        let mut g = DepGraph::new();
+        // wasi:http@0.2.0 needs shared >= 0.1.0
+        // wasi:cli@0.3.0 needs shared >= 0.5.0
+        // But only shared@0.1.0 and shared@0.2.0 exist — no version >= 0.5.0.
+        g.add("wasi:http", "0.2.0", &[("shared", "0.1.0")]);
+        g.add("wasi:cli", "0.3.0", &[("shared", "0.5.0")]);
+        g.add("shared", "0.1.0", &[]);
+        g.add("shared", "0.2.0", &[]);
+
+        let result = g.resolve_all(&[("wasi:http", "0.2.0"), ("wasi:cli", "0.3.0")]);
+        assert!(
+            matches!(result, Err(ResolveError::NoSolution(_))),
+            "expected NoSolution, got: {result:?}"
         );
     }
 }

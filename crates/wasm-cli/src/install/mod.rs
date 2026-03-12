@@ -107,24 +107,24 @@ impl Opts {
 
         // Pre-install conflict detection + transitive dependency planning.
         //
-        // For each WIT-style manifest entry, resolve the full transitive
-        // closure via the PubGrub resolver. The results are merged into a
-        // single map that drives concurrent installation of all transitive
-        // dependencies alongside top-level packages.
+        // Collect all WIT-style manifest entries that have parseable semver
+        // versions, then resolve them *all* in a single PubGrub pass via
+        // `resolve_all_dependencies`.  This ensures shared transitive
+        // dependencies are resolved consistently across roots instead of
+        // running separate per-root passes that could produce conflicting
+        // version selections.
         //
-        // We only run the resolver for packages that:
-        //   (a) use a WIT-style name as their manifest key, and
-        //   (b) declare a parseable semver version.
-        // Other entries (bare OCI references, etc.) are not checked here —
-        // a fallback step after the concurrent batch handles their deps.
+        // Entries that don't qualify (bare OCI references, unparseable
+        // versions, etc.) are skipped here — a fallback step after the
+        // concurrent batch handles their transitive deps.
         //
-        // A `Db` error from the resolver means dep-graph data is not yet
-        // available for this package (e.g. the meta-registry hasn't indexed
-        // its deps, or the sync was skipped in offline mode). In that case
-        // we skip silently and let the fallback installer handle it.
+        // A `Db` error means dep-graph data is not yet available (e.g. the
+        // meta-registry hasn't indexed deps, or sync was skipped in offline
+        // mode).  We skip silently and let the fallback installer handle it.
         let mut resolved_transitive: HashMap<String, wasm_package_manager::resolver::WitVersion> =
             HashMap::new();
         if !offline {
+            let mut roots: Vec<(String, wasm_package_manager::resolver::WitVersion)> = Vec::new();
             for (key, dep, _) in manifest.all_dependencies() {
                 let version_str = match dep {
                     wasm_manifest::Dependency::Compact(s)
@@ -140,17 +140,21 @@ impl Opts {
                 else {
                     continue;
                 };
-                match manager.resolve_dependencies(key, version) {
+                roots.push((key.clone(), version));
+            }
+
+            if !roots.is_empty() {
+                match manager.resolve_all_dependencies(&roots) {
+                    Ok(deps) => {
+                        resolved_transitive = deps;
+                    }
                     Err(ResolveError::NoSolution(msg)) => {
                         return Err(InstallError::DependencyConflict(msg).into());
-                    }
-                    Ok(deps) => {
-                        merge_resolved_deps(&mut resolved_transitive, deps)
-                            .map_err(miette::Report::new)?;
                     }
                     Err(ResolveError::Db(_)) => {} // dep data not yet available; skip
                 }
             }
+
             // Remove top-level manifest entries — they are installed as part
             // of the main install batch, not as transitive dependencies.
             for (key, _, _) in manifest.all_dependencies() {
@@ -588,31 +592,6 @@ fn process_top_level_result(
     result.dependencies
 }
 
-/// Merge a set of resolved dependencies into the cumulative transitive
-/// dependency map.  Returns an error if a package is already present with
-/// a different version (i.e. two resolver roots disagree on the version
-/// for the same transitive dependency).
-fn merge_resolved_deps(
-    target: &mut HashMap<String, wasm_package_manager::resolver::WitVersion>,
-    deps: HashMap<String, wasm_package_manager::resolver::WitVersion>,
-) -> Result<(), InstallError> {
-    for (name, ver) in deps {
-        match target.get(&name) {
-            Some(existing) if existing != &ver => {
-                let msg = format!(
-                    "conflicting transitive dependency resolutions \
-                     for `{name}`: {existing} and {ver}"
-                );
-                return Err(InstallError::DependencyConflict(msg));
-            }
-            _ => {
-                target.insert(name, ver);
-            }
-        }
-    }
-    Ok(())
-}
-
 /// Recursively install transitive WIT dependencies of a component.
 ///
 /// Uses a work queue and visited set to avoid cycles and duplicates.
@@ -870,67 +849,6 @@ mod tests {
         );
         // Original .wasm should still be present (not moved).
         assert!(wasm_path.exists(), "component .wasm should be untouched");
-    }
-
-    #[test]
-    fn merge_resolved_deps_accepts_identical_versions() {
-        use super::merge_resolved_deps;
-        use std::collections::HashMap;
-        use wasm_package_manager::resolver::WitVersion;
-
-        let mut target = HashMap::new();
-        target.insert("wasi:io".to_string(), WitVersion::new(0, 2, 0));
-
-        let mut incoming = HashMap::new();
-        incoming.insert("wasi:io".to_string(), WitVersion::new(0, 2, 0)); // same version
-        incoming.insert("wasi:cli".to_string(), WitVersion::new(0, 3, 0));
-
-        merge_resolved_deps(&mut target, incoming).expect("identical versions should merge");
-        assert_eq!(target.len(), 2);
-        assert_eq!(target["wasi:io"], WitVersion::new(0, 2, 0));
-        assert_eq!(target["wasi:cli"], WitVersion::new(0, 3, 0));
-    }
-
-    #[test]
-    fn merge_resolved_deps_detects_conflicts() {
-        use super::merge_resolved_deps;
-        use std::collections::HashMap;
-        use wasm_package_manager::resolver::WitVersion;
-
-        let mut target = HashMap::new();
-        target.insert("wasi:io".to_string(), WitVersion::new(0, 2, 0));
-
-        let mut incoming = HashMap::new();
-        incoming.insert("wasi:io".to_string(), WitVersion::new(0, 3, 0)); // different version
-
-        let err = merge_resolved_deps(&mut target, incoming).unwrap_err();
-        let msg = err.to_string();
-        assert!(
-            msg.contains("wasi:io"),
-            "error should name the conflicting package, got: {msg}"
-        );
-        assert!(
-            msg.contains("0.2.0") && msg.contains("0.3.0"),
-            "error should include both versions, got: {msg}"
-        );
-    }
-
-    #[test]
-    fn merge_resolved_deps_inserts_new_entries() {
-        use super::merge_resolved_deps;
-        use std::collections::HashMap;
-        use wasm_package_manager::resolver::WitVersion;
-
-        let mut target = HashMap::new();
-
-        let mut incoming = HashMap::new();
-        incoming.insert("wasi:http".to_string(), WitVersion::new(0, 2, 10));
-        incoming.insert("wasi:io".to_string(), WitVersion::new(0, 2, 0));
-
-        merge_resolved_deps(&mut target, incoming).expect("fresh inserts should succeed");
-        assert_eq!(target.len(), 2);
-        assert_eq!(target["wasi:http"], WitVersion::new(0, 2, 10));
-        assert_eq!(target["wasi:io"], WitVersion::new(0, 2, 0));
     }
 
     #[test]
