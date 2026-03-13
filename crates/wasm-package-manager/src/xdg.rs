@@ -14,7 +14,7 @@ use std::path::PathBuf;
 ///
 /// Uses `$XDG_CONFIG_HOME` if set, otherwise falls back to `$HOME/.config`.
 /// If neither environment variable is available, returns `.config` as a
-/// last-resort relative path.
+/// relative path (resolved against the current working directory by callers).
 pub(crate) fn xdg_config_home() -> PathBuf {
     if let Some(val) = env::var_os("XDG_CONFIG_HOME") {
         return PathBuf::from(val);
@@ -27,14 +27,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn returns_a_path() {
+    fn xdg_config_home_returns_non_empty_path() {
         let path = xdg_config_home();
         // The path must be non-empty regardless of the environment.
         assert!(!path.as_os_str().is_empty());
     }
 
     #[test]
-    fn ends_with_dot_config_or_is_overridden() {
+    fn xdg_config_home_defaults_to_dot_config_when_env_unset() {
         let path = xdg_config_home();
         // When $XDG_CONFIG_HOME is not set the path must end with ".config".
         // When it *is* set we simply accept whatever the env provides.
