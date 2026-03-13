@@ -208,6 +208,40 @@ fn test_local_clean_succeeds_when_nothing_to_clean() {
     );
 }
 
+#[cfg(unix)]
+#[test]
+fn test_local_clean_skips_symlinked_vendor_dirs() {
+    let dir = TempDir::new().expect("Failed to create temp dir");
+    let outside = TempDir::new().expect("Failed to create outside dir");
+
+    // Create a file in the "outside" directory that should NOT be deleted.
+    let secret = outside.path().join("secret.txt");
+    std::fs::write(&secret, b"do not delete").expect("write secret");
+
+    // Set up vendor/ with a symlink pointing outside the project.
+    std::fs::create_dir_all(dir.path().join("vendor")).expect("create vendor");
+    std::os::unix::fs::symlink(outside.path(), dir.path().join("vendor/wasm"))
+        .expect("create symlink");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_wasm"))
+        .args(&["local", "clean"])
+        .current_dir(dir.path())
+        .output()
+        .expect("Failed to execute local clean");
+
+    assert!(
+        output.status.success(),
+        "local clean should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    // The file outside the project must still exist.
+    assert!(
+        secret.exists(),
+        "files behind symlinked vendor dirs must not be deleted"
+    );
+}
+
 // =============================================================================
 // Registry Command Help Tests
 // =============================================================================

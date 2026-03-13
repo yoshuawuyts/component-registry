@@ -112,7 +112,25 @@ fn remove_file(path: &std::path::Path) {
 }
 
 /// Remove all contents of a directory (but keep the directory itself).
+///
+/// If `dir` is a symlink the function warns and returns without
+/// traversing, preventing accidental deletion outside the project tree.
 fn remove_dir_contents(dir: &std::path::Path) {
+    // Guard: refuse to traverse symlinks so we never delete outside the project.
+    match std::fs::symlink_metadata(dir) {
+        Ok(meta) if meta.is_symlink() => {
+            eprintln!(
+                "{:>12} {} is a symlink, skipping",
+                console::style("Warning").yellow().bold(),
+                dir.display()
+            );
+            return;
+        }
+        // Not a symlink — proceed. If the path doesn't exist, fall through
+        // to read_dir which handles the NotFound case.
+        Ok(_) | Err(_) => {}
+    }
+
     let entries = match std::fs::read_dir(dir) {
         Ok(entries) => entries,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return,
