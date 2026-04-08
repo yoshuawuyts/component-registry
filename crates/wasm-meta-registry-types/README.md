@@ -16,6 +16,7 @@ use wasm_meta_registry_types::{KnownPackage, PackageDependencyRef};
 let pkg = KnownPackage {
     registry: "ghcr.io".into(),
     repository: "user/my-component".into(),
+    kind: Some(wasm_meta_registry_types::PackageKind::Component),
     description: Some("A useful component".into()),
     tags: vec!["v1.0.0".into()],
     signature_tags: vec![],

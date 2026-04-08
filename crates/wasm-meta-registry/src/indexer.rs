@@ -95,9 +95,19 @@ impl Indexer {
                 }
             };
 
+            let kind_str = match source.kind {
+                crate::config::PackageKind::Component => "component",
+                crate::config::PackageKind::Interface => "interface",
+            };
+
             match self
                 .manager
-                .index_package(&reference, Some(&source.namespace), Some(&source.name))
+                .index_package(
+                    &reference,
+                    Some(&source.namespace),
+                    Some(&source.name),
+                    Some(kind_str),
+                )
                 .await
             {
                 Ok(pkg) => {

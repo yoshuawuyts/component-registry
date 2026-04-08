@@ -8,6 +8,38 @@
 // Existing types (moved from wasm-meta-registry-client)
 // ============================================================
 
+/// Whether a package is a runnable Wasm component or a WIT interface
+/// definition.
+///
+/// # Example
+///
+/// ```rust
+/// use wasm_meta_registry_types::PackageKind;
+///
+/// let kind: PackageKind = serde_json::from_str(r#""component""#).unwrap();
+/// assert_eq!(kind, PackageKind::Component);
+///
+/// let json = serde_json::to_string(&PackageKind::Interface).unwrap();
+/// assert_eq!(json, r#""interface""#);
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PackageKind {
+    /// A runnable Wasm component.
+    Component,
+    /// A WIT interface type package.
+    Interface,
+}
+
+impl std::fmt::Display for PackageKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Component => write!(f, "component"),
+            Self::Interface => write!(f, "interface"),
+        }
+    }
+}
+
 /// A declared dependency on another WIT package, as returned in the
 /// `/v1/packages` response.
 ///
@@ -41,11 +73,12 @@ pub struct PackageDependencyRef {
 /// # Example
 ///
 /// ```rust
-/// use wasm_meta_registry_types::KnownPackage;
+/// use wasm_meta_registry_types::{KnownPackage, PackageKind};
 ///
 /// let pkg = KnownPackage {
 ///     registry: "ghcr.io".into(),
 ///     repository: "user/my-component".into(),
+///     kind: Some(PackageKind::Component),
 ///     description: Some("A useful component".into()),
 ///     tags: vec!["v1.0.0".into(), "latest".into()],
 ///     signature_tags: vec![],
@@ -65,6 +98,12 @@ pub struct KnownPackage {
     pub registry: String,
     /// Repository path (e.g. `"user/repo"`).
     pub repository: String,
+    /// Whether this package is a component or an interface.
+    ///
+    /// `None` when the kind has not been determined yet (e.g. the
+    /// database was created before the `kind` column existed).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kind: Option<PackageKind>,
     /// Optional package description.
     pub description: Option<String>,
     /// Release tags.
@@ -105,6 +144,7 @@ impl KnownPackage {
     /// let pkg = KnownPackage {
     ///     registry: "ghcr.io".into(),
     ///     repository: "user/repo".into(),
+    ///     kind: None,
     ///     description: None,
     ///     tags: vec![],
     ///     signature_tags: vec![],
@@ -136,6 +176,7 @@ impl KnownPackage {
     /// let pkg = KnownPackage {
     ///     registry: "ghcr.io".into(),
     ///     repository: "user/repo".into(),
+    ///     kind: None,
     ///     description: None,
     ///     tags: vec!["v1.0".into(), "latest".into()],
     ///     signature_tags: vec![],
@@ -170,11 +211,12 @@ impl KnownPackage {
 /// # Example
 ///
 /// ```rust
-/// use wasm_meta_registry_types::PackageDetail;
+/// use wasm_meta_registry_types::{PackageDetail, PackageKind};
 ///
 /// let detail = PackageDetail {
 ///     registry: "ghcr.io".into(),
 ///     repository: "webassembly/wasi/http".into(),
+///     kind: Some(PackageKind::Interface),
 ///     description: Some("WASI HTTP interfaces".into()),
 ///     wit_namespace: Some("wasi".into()),
 ///     wit_name: Some("http".into()),
@@ -189,6 +231,9 @@ pub struct PackageDetail {
     pub registry: String,
     /// Repository path.
     pub repository: String,
+    /// Whether this package is a component or an interface.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kind: Option<PackageKind>,
     /// Optional package description.
     pub description: Option<String>,
     /// Optional WIT namespace.
@@ -485,6 +530,7 @@ mod tests {
         let pkg = KnownPackage {
             registry: "ghcr.io".into(),
             repository: "user/repo".into(),
+            kind: None,
             description: None,
             tags: vec![],
             signature_tags: vec![],
@@ -504,6 +550,7 @@ mod tests {
         let pkg = KnownPackage {
             registry: "ghcr.io".into(),
             repository: "user/repo".into(),
+            kind: None,
             description: None,
             tags: vec!["v1.0".into(), "latest".into()],
             signature_tags: vec![],
@@ -523,6 +570,7 @@ mod tests {
         let pkg = KnownPackage {
             registry: "ghcr.io".into(),
             repository: "user/repo".into(),
+            kind: None,
             description: None,
             tags: vec![],
             signature_tags: vec![],
@@ -542,6 +590,7 @@ mod tests {
         let pkg = KnownPackage {
             registry: "ghcr.io".into(),
             repository: "user/repo".into(),
+            kind: None,
             description: None,
             tags: vec!["v1.0".into()],
             signature_tags: vec![],
@@ -577,6 +626,7 @@ mod tests {
         let pkg = KnownPackage {
             registry: "ghcr.io".into(),
             repository: "user/repo".into(),
+            kind: None,
             description: None,
             tags: vec![],
             signature_tags: vec![],

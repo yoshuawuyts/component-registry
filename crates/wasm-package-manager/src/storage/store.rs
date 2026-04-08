@@ -750,6 +750,7 @@ impl Store {
     }
 
     /// Add or update a known package with optional WIT namespace mapping.
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn add_known_package_with_wit(
         &self,
         registry: &str,
@@ -758,6 +759,7 @@ impl Store {
         description: Option<&str>,
         wit_namespace: Option<&str>,
         wit_name: Option<&str>,
+        kind: Option<&str>,
     ) -> anyhow::Result<()> {
         RawKnownPackage::upsert_with_wit(
             &self.conn,
@@ -767,6 +769,7 @@ impl Store {
             description,
             wit_namespace,
             wit_name,
+            kind,
         )
     }
 
@@ -1403,7 +1406,7 @@ impl Store {
     ) -> anyhow::Result<Option<wasm_meta_registry_types::PackageDetail>> {
         // Look up the OCI repository row.
         let row = self.conn.query_row(
-            "SELECT id, wit_namespace, wit_name FROM oci_repository
+            "SELECT id, wit_namespace, wit_name, kind FROM oci_repository
              WHERE registry = ?1 AND repository = ?2",
             rusqlite::params![registry, repository],
             |row| {
@@ -1411,14 +1414,21 @@ impl Store {
                     row.get::<_, i64>(0)?,
                     row.get::<_, Option<String>>(1)?,
                     row.get::<_, Option<String>>(2)?,
+                    row.get::<_, Option<String>>(3)?,
                 ))
             },
         );
 
-        let (_repo_id, wit_namespace, wit_name) = match row {
+        let (_repo_id, wit_namespace, wit_name, kind_str) = match row {
             Ok(r) => r,
             Err(rusqlite::Error::QueryReturnedNoRows) => return Ok(None),
             Err(e) => return Err(e.into()),
+        };
+
+        let kind = match kind_str.as_deref() {
+            Some("component") => Some(wasm_meta_registry_types::PackageKind::Component),
+            Some("interface") => Some(wasm_meta_registry_types::PackageKind::Interface),
+            _ => None,
         };
 
         // Get the description from the latest known-package entry.
@@ -1431,6 +1441,7 @@ impl Store {
         Ok(Some(wasm_meta_registry_types::PackageDetail {
             registry: registry.to_string(),
             repository: repository.to_string(),
+            kind,
             description,
             wit_namespace,
             wit_name,

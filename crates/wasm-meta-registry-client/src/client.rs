@@ -59,6 +59,7 @@ impl fmt::Display for ApiError {
 ///     packages: vec![KnownPackage {
 ///         registry: "ghcr.io".into(),
 ///         repository: "user/repo".into(),
+///         kind: None,
 ///         description: None,
 ///         tags: vec!["v1.0".into()],
 ///         signature_tags: vec![],

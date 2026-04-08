@@ -10,6 +10,7 @@ impl From<RawKnownPackage> for KnownPackage {
         Self {
             registry: pkg.registry,
             repository: pkg.repository,
+            kind: pkg.kind,
             description: pkg.description,
             tags: pkg.tags,
             signature_tags: pkg.signature_tags,

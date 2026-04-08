@@ -1,5 +1,7 @@
 use rusqlite::Connection;
 
+use wasm_meta_registry_types::PackageKind;
+
 use crate::oci::OciRepository;
 
 /// A raw known package that persists in the database even after local deletion.
@@ -38,6 +40,9 @@ pub struct RawKnownPackage {
     /// Optional WIT package name within the namespace (e.g. "http").
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub wit_name: Option<String>,
+    /// Package kind: component or interface.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kind: Option<PackageKind>,
 }
 
 impl RawKnownPackage {
@@ -70,10 +75,20 @@ impl RawKnownPackage {
         tag: Option<&str>,
         description: Option<&str>,
     ) -> anyhow::Result<()> {
-        Self::upsert_with_wit(conn, registry, repository, tag, description, None, None)
+        Self::upsert_with_wit(
+            conn,
+            registry,
+            repository,
+            tag,
+            description,
+            None,
+            None,
+            None,
+        )
     }
 
     /// Inserts or updates a known package with optional WIT namespace mapping.
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn upsert_with_wit(
         conn: &Connection,
         registry: &str,
@@ -82,9 +97,10 @@ impl RawKnownPackage {
         description: Option<&str>,
         wit_namespace: Option<&str>,
         wit_name: Option<&str>,
+        kind: Option<&str>,
     ) -> anyhow::Result<()> {
         let repo_id =
-            OciRepository::upsert_with_wit(conn, registry, repository, wit_namespace, wit_name)?;
+            OciRepository::upsert_full(conn, registry, repository, wit_namespace, wit_name, kind)?;
 
         // Store description on the most recent manifest that doesn't have one.
         // Uses a subquery instead of LIMIT in UPDATE (SQLITE_ENABLE_UPDATE_DELETE_LIMIT
@@ -177,7 +193,7 @@ impl RawKnownPackage {
         let search_pattern = format!("%{query}%");
         let mut stmt = conn.prepare(
             "SELECT id, registry, repository, updated_at, created_at,
-                    wit_namespace, wit_name
+                    wit_namespace, wit_name, kind
              FROM oci_repository
              WHERE registry LIKE ?1
                 OR repository LIKE ?1
@@ -196,12 +212,13 @@ impl RawKnownPackage {
                 row.get::<_, String>(4)?,
                 row.get::<_, Option<String>>(5)?,
                 row.get::<_, Option<String>>(6)?,
+                row.get::<_, Option<String>>(7)?,
             ))
         })?;
 
         let mut packages = Vec::new();
         for row in rows {
-            let (id, registry, repository, updated_at, created_at, wit_ns, wit_n) = row?;
+            let (id, registry, repository, updated_at, created_at, wit_ns, wit_n, kind_str) = row?;
             let tags = Self::fetch_tags(conn, id);
             let description = Self::fetch_description(conn, id);
             packages.push(RawKnownPackage {
@@ -216,6 +233,7 @@ impl RawKnownPackage {
                 created_at,
                 wit_namespace: wit_ns,
                 wit_name: wit_n,
+                kind: parse_kind(kind_str.as_deref()),
             });
         }
         Ok(packages)
@@ -229,7 +247,7 @@ impl RawKnownPackage {
     ) -> anyhow::Result<Vec<RawKnownPackage>> {
         let mut stmt = conn.prepare(
             "SELECT id, registry, repository, updated_at, created_at,
-                    wit_namespace, wit_name
+                    wit_namespace, wit_name, kind
              FROM oci_repository
              ORDER BY repository ASC, registry ASC
              LIMIT ?1 OFFSET ?2",
@@ -244,12 +262,13 @@ impl RawKnownPackage {
                 row.get::<_, String>(4)?,
                 row.get::<_, Option<String>>(5)?,
                 row.get::<_, Option<String>>(6)?,
+                row.get::<_, Option<String>>(7)?,
             ))
         })?;
 
         let mut packages = Vec::new();
         for row in rows {
-            let (id, registry, repository, updated_at, created_at, wit_ns, wit_n) = row?;
+            let (id, registry, repository, updated_at, created_at, wit_ns, wit_n, kind_str) = row?;
             let tags = Self::fetch_tags(conn, id);
             let description = Self::fetch_description(conn, id);
             packages.push(RawKnownPackage {
@@ -264,6 +283,7 @@ impl RawKnownPackage {
                 created_at,
                 wit_namespace: wit_ns,
                 wit_name: wit_n,
+                kind: parse_kind(kind_str.as_deref()),
             });
         }
         Ok(packages)
@@ -277,7 +297,7 @@ impl RawKnownPackage {
     ) -> anyhow::Result<Vec<RawKnownPackage>> {
         let mut stmt = conn.prepare(
             "SELECT id, registry, repository, updated_at, created_at,
-                    wit_namespace, wit_name
+                    wit_namespace, wit_name, kind
              FROM oci_repository
              ORDER BY updated_at DESC
              LIMIT ?2 OFFSET ?1",
@@ -292,12 +312,13 @@ impl RawKnownPackage {
                 row.get::<_, String>(4)?,
                 row.get::<_, Option<String>>(5)?,
                 row.get::<_, Option<String>>(6)?,
+                row.get::<_, Option<String>>(7)?,
             ))
         })?;
 
         let mut packages = Vec::new();
         for row in rows {
-            let (id, registry, repository, updated_at, created_at, wit_ns, wit_n) = row?;
+            let (id, registry, repository, updated_at, created_at, wit_ns, wit_n, kind_str) = row?;
             let tags = Self::fetch_tags(conn, id);
             let description = Self::fetch_description(conn, id);
             packages.push(RawKnownPackage {
@@ -312,6 +333,7 @@ impl RawKnownPackage {
                 created_at,
                 wit_namespace: wit_ns,
                 wit_name: wit_n,
+                kind: parse_kind(kind_str.as_deref()),
             });
         }
         Ok(packages)
@@ -325,7 +347,7 @@ impl RawKnownPackage {
     ) -> anyhow::Result<Option<RawKnownPackage>> {
         let result = conn.query_row(
             "SELECT id, registry, repository, updated_at, created_at,
-                    wit_namespace, wit_name
+                    wit_namespace, wit_name, kind
              FROM oci_repository
              WHERE registry = ?1 AND repository = ?2",
             [registry, repository],
@@ -338,12 +360,13 @@ impl RawKnownPackage {
                     row.get::<_, String>(4)?,
                     row.get::<_, Option<String>>(5)?,
                     row.get::<_, Option<String>>(6)?,
+                    row.get::<_, Option<String>>(7)?,
                 ))
             },
         );
 
         match result {
-            Ok((id, reg, repo, updated_at, created_at, wit_ns, wit_n)) => {
+            Ok((id, reg, repo, updated_at, created_at, wit_ns, wit_n, kind_str)) => {
                 let tags = Self::fetch_tags(conn, id);
                 let description = Self::fetch_description(conn, id);
                 Ok(Some(RawKnownPackage {
@@ -358,6 +381,7 @@ impl RawKnownPackage {
                     created_at,
                     wit_namespace: wit_ns,
                     wit_name: wit_n,
+                    kind: parse_kind(kind_str.as_deref()),
                 }))
             }
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
@@ -377,7 +401,7 @@ impl RawKnownPackage {
     ) -> anyhow::Result<Vec<RawKnownPackage>> {
         let mut stmt = conn.prepare(
             "SELECT DISTINCT r.id, r.registry, r.repository, r.updated_at, r.created_at,
-                    r.wit_namespace, r.wit_name
+                    r.wit_namespace, r.wit_name, r.kind
              FROM oci_repository r
              JOIN oci_manifest m ON m.oci_repository_id = r.id
              JOIN wit_package wp ON wp.oci_manifest_id = m.id
@@ -403,7 +427,7 @@ impl RawKnownPackage {
     ) -> anyhow::Result<Vec<RawKnownPackage>> {
         let mut stmt = conn.prepare(
             "SELECT DISTINCT r.id, r.registry, r.repository, r.updated_at, r.created_at,
-                    r.wit_namespace, r.wit_name
+                    r.wit_namespace, r.wit_name, r.kind
              FROM oci_repository r
              JOIN oci_manifest m ON m.oci_repository_id = r.id
              JOIN wit_package wp ON wp.oci_manifest_id = m.id
@@ -418,7 +442,7 @@ impl RawKnownPackage {
     }
 
     /// Execute a prepared statement that returns `(id, registry, repository,
-    /// updated_at, created_at, wit_namespace, wit_name)` rows and inflate each
+    /// updated_at, created_at, wit_namespace, wit_name, kind)` rows and inflate each
     /// into a full `RawKnownPackage` with tags and description.
     fn collect_repo_rows(
         conn: &Connection,
@@ -434,12 +458,13 @@ impl RawKnownPackage {
                 row.get::<_, String>(4)?,
                 row.get::<_, Option<String>>(5)?,
                 row.get::<_, Option<String>>(6)?,
+                row.get::<_, Option<String>>(7)?,
             ))
         })?;
 
         let mut packages = Vec::new();
         for row in rows {
-            let (id, registry, repository, updated_at, created_at, wit_ns, wit_n) = row?;
+            let (id, registry, repository, updated_at, created_at, wit_ns, wit_n, kind_str) = row?;
             let tags = Self::fetch_tags(conn, id);
             let description = Self::fetch_description(conn, id);
             packages.push(RawKnownPackage {
@@ -454,6 +479,7 @@ impl RawKnownPackage {
                 created_at,
                 wit_namespace: wit_ns,
                 wit_name: wit_n,
+                kind: parse_kind(kind_str.as_deref()),
             });
         }
         Ok(packages)
@@ -490,7 +516,7 @@ impl RawKnownPackage {
     ) -> anyhow::Result<Option<RawKnownPackage>> {
         let result = conn.query_row(
             "SELECT id, registry, repository, updated_at, created_at,
-                    wit_namespace, wit_name
+                    wit_namespace, wit_name, kind
              FROM oci_repository
              WHERE wit_namespace = ?1 AND wit_name = ?2
              ORDER BY updated_at DESC
@@ -505,12 +531,13 @@ impl RawKnownPackage {
                     row.get::<_, String>(4)?,
                     row.get::<_, Option<String>>(5)?,
                     row.get::<_, Option<String>>(6)?,
+                    row.get::<_, Option<String>>(7)?,
                 ))
             },
         );
 
         match result {
-            Ok((id, registry, repository, updated_at, created_at, wit_ns, wit_n)) => {
+            Ok((id, registry, repository, updated_at, created_at, wit_ns, wit_n, kind_str)) => {
                 let tags = Self::fetch_tags(conn, id);
                 let description = Self::fetch_description(conn, id);
                 Ok(Some(RawKnownPackage {
@@ -525,6 +552,7 @@ impl RawKnownPackage {
                     created_at,
                     wit_namespace: wit_ns,
                     wit_name: wit_n,
+                    kind: parse_kind(kind_str.as_deref()),
                 }))
             }
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
@@ -542,7 +570,7 @@ impl RawKnownPackage {
 
         let result = conn.query_row(
             "SELECT id, registry, repository, updated_at, created_at,
-                    wit_namespace, wit_name
+                    wit_namespace, wit_name, kind
              FROM oci_repository
              WHERE repository LIKE ?1
              ORDER BY updated_at DESC
@@ -557,12 +585,13 @@ impl RawKnownPackage {
                     row.get::<_, String>(4)?,
                     row.get::<_, Option<String>>(5)?,
                     row.get::<_, Option<String>>(6)?,
+                    row.get::<_, Option<String>>(7)?,
                 ))
             },
         );
 
         match result {
-            Ok((id, registry, repository, updated_at, created_at, wit_ns, wit_n)) => {
+            Ok((id, registry, repository, updated_at, created_at, wit_ns, wit_n, kind_str)) => {
                 let tags = Self::fetch_tags(conn, id);
                 let description = Self::fetch_description(conn, id);
                 Ok(Some(RawKnownPackage {
@@ -577,11 +606,22 @@ impl RawKnownPackage {
                     created_at,
                     wit_namespace: wit_ns,
                     wit_name: wit_n,
+                    kind: parse_kind(kind_str.as_deref()),
                 }))
             }
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
+    }
+}
+
+/// Parse a `kind` column value ("component" / "interface") into a
+/// [`PackageKind`], returning `None` for `NULL` or unrecognised values.
+fn parse_kind(s: Option<&str>) -> Option<PackageKind> {
+    match s {
+        Some("component") => Some(PackageKind::Component),
+        Some("interface") => Some(PackageKind::Interface),
+        _ => None,
     }
 }
 
@@ -868,6 +908,7 @@ mod tests {
             None,
             Some("ba"),
             Some("sample-wasi-http-rust"),
+            None,
         )
         .unwrap();
 

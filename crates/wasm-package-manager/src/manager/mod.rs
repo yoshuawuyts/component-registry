@@ -736,6 +736,7 @@ impl Manager {
     }
 
     /// Add or update a known package entry with WIT namespace mapping.
+    #[allow(clippy::too_many_arguments)]
     pub fn add_known_package_with_wit(
         &self,
         registry: &str,
@@ -744,6 +745,7 @@ impl Manager {
         description: Option<&str>,
         wit_namespace: Option<&str>,
         wit_name: Option<&str>,
+        kind: Option<&str>,
     ) -> anyhow::Result<()> {
         self.store.add_known_package_with_wit(
             registry,
@@ -752,6 +754,7 @@ impl Manager {
             description,
             wit_namespace,
             wit_name,
+            kind,
         )
     }
 
@@ -832,6 +835,7 @@ impl Manager {
         reference: &Reference,
         wit_namespace: Option<&str>,
         wit_name: Option<&str>,
+        kind: Option<&str>,
     ) -> anyhow::Result<KnownPackage> {
         if self.offline {
             return Err(ManagerError::OfflineIndex.into());
@@ -881,6 +885,7 @@ impl Manager {
                 description.as_deref(),
                 wit_namespace,
                 wit_name,
+                kind,
             )?;
         }
 
@@ -1105,6 +1110,8 @@ impl Manager {
         let count = packages.len();
         // Bulk upsert all packages.
         for pkg in packages {
+            let kind_str = pkg.kind.as_ref().map(ToString::to_string);
+            let kind_ref = kind_str.as_deref();
             let first_tag = pkg.tags.first().map(String::as_str);
             self.store.add_known_package_with_wit(
                 &pkg.registry,
@@ -1113,6 +1120,7 @@ impl Manager {
                 pkg.description.as_deref(),
                 pkg.wit_namespace.as_deref(),
                 pkg.wit_name.as_deref(),
+                kind_ref,
             )?;
             // Also add remaining tags.
             for tag in pkg.tags.iter().skip(1) {
@@ -1123,6 +1131,7 @@ impl Manager {
                     pkg.description.as_deref(),
                     pkg.wit_namespace.as_deref(),
                     pkg.wit_name.as_deref(),
+                    kind_ref,
                 )?;
             }
 
