@@ -85,11 +85,12 @@ let list = OrderedList::builder()
 
 The closure receives the child's builder, and you chain methods on it. No `.build()` call inside the closure — the parent handles it.
 
-Child method names match the element name in snake_case:
+Child method names match the element name in snake_case. **Numbered elements use an underscore before the digit** (e.g., `heading_1`, not `heading1`):
 - `.division(|div| ...)` — adds a `<div>`
 - `.paragraph(|p| ...)` — adds a `<p>`
 - `.anchor(|a| ...)` — adds an `<a>`
-- `.heading1(|h1| ...)` — adds an `<h1>`
+- `.heading_1(|h1| ...)` — adds an `<h1>`
+- `.heading_2(|h2| ...)` — adds an `<h2>`
 - `.span(|s| ...)` — adds a `<span>`
 - `.list_item(|li| ...)` — adds an `<li>`
 - `.section(|s| ...)` — adds a `<section>`
@@ -117,7 +118,7 @@ use html::text_content::Division;
 
 let page = Division::builder()
     .class("container")
-    .heading1(|h1| h1.text("Title"))
+    .heading_1(|h1| h1.text("Title"))
     .paragraph(|p| p.text("Introduction paragraph."))
     .division(|inner| {
         inner
@@ -169,8 +170,26 @@ use html::text_content::Division;
 fn card(title: &str, body: &str) -> Division {
     Division::builder()
         .class("card rounded shadow p-4")
-        .heading3(|h3| h3.text(title).class("font-bold"))
+        .heading_3(|h3| h3.text(title).class("font-bold"))
         .paragraph(|p| p.text(body).class("text-gray-600"))
+        .build()
+}
+```
+
+### Clickable Card (Anchor with Block Layout)
+
+Since `Anchor` is phrasing content, use `Span` with `class="block"` to simulate
+block-level children:
+
+```rust
+use html::inline_text::Anchor;
+
+fn clickable_card(href: &str, title: String, subtitle: &str) -> Anchor {
+    Anchor::builder()
+        .href(href)
+        .class("block border rounded-lg p-4 hover:shadow-sm")
+        .span(|s| s.class("block font-semibold").text(title))
+        .span(|s| s.class("block text-sm text-gray-500").text(subtitle.to_owned()))
         .build()
 }
 ```
@@ -206,7 +225,7 @@ let head = Head::builder()
     .build();
 
 let body = Body::builder()
-    .heading1(|h1| h1.text("Welcome"))
+    .heading_1(|h1| h1.text("Welcome"))
     .paragraph(|p| p.text("Hello, world!"))
     .build();
 
@@ -233,6 +252,8 @@ If you get a type error about `From<X> for YChild`, it means that child element 
 
 1. **Recursion limit**: Deep nesting hits Rust's default limit. Always set `#![recursion_limit = "512"]`.
 2. **Keyword escaping**: HTML attributes matching Rust keywords get a trailing underscore: `type_()`, `for_()`, `is_()`.
-3. **Class is a single string**: Pass all CSS classes space-separated in one `.class("flex gap-4 p-2")` call.
-4. **No raw HTML injection**: The crate escapes text content. To include raw HTML (e.g., SVG), you'll need to use raw string rendering outside the builder or work at the `Display`/`Render` level.
-5. **Builder lifetimes**: Builders borrow string data as `Cow<'static, str>` — string literals work directly, but dynamic strings need `.to_string()` or `.to_owned()`.
+3. **Numbered element methods use underscores**: `heading_1()`, `heading_2()`, etc. — not `heading1()`. The compiler will suggest the correct name if you get it wrong.
+4. **Class is a single string**: Pass all CSS classes space-separated in one `.class("flex gap-4 p-2")` call.
+5. **No raw HTML injection**: The crate escapes text content. For `<script>`, `<style>`, inline SVG, or `onclick` handlers, keep those as raw HTML strings and combine them with the typed builder output (e.g., via `format!`).
+6. **Anchor is phrasing content**: You cannot nest block elements (`Division`, `Paragraph`, `Heading*`) inside `Anchor`. Use `Span` with `class="block"` to simulate block-level layout inside clickable links.
+7. **Builder lifetimes require `'static`**: String literals work directly, but dynamic data must be owned. Use `.to_owned()` for `&str` values and `.clone()` for `String` values — Clippy's `implicit_clone` lint will flag `.to_owned()` on `String`.
