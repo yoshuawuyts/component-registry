@@ -201,7 +201,7 @@ impl RegistryClient {
         repository: &str,
     ) -> Result<Option<PackageDetail>, ApiError> {
         let encoded_reg = percent_encode_query_component(registry);
-        let encoded_repo = percent_encode_query_component(repository);
+        let encoded_repo = percent_encode_path_component(repository);
         let url = format!(
             "{}/v1/packages/detail/{encoded_reg}/{encoded_repo}",
             self.base_url
@@ -217,7 +217,7 @@ impl RegistryClient {
         repository: &str,
     ) -> Result<Vec<PackageVersion>, ApiError> {
         let encoded_reg = percent_encode_query_component(registry);
-        let encoded_repo = percent_encode_query_component(repository);
+        let encoded_repo = percent_encode_path_component(repository);
         let url = format!(
             "{}/v1/packages/versions/{encoded_reg}/{encoded_repo}",
             self.base_url
@@ -234,7 +234,7 @@ impl RegistryClient {
         version: &str,
     ) -> Result<Option<PackageVersion>, ApiError> {
         let encoded_reg = percent_encode_query_component(registry);
-        let encoded_repo = percent_encode_query_component(repository);
+        let encoded_repo = percent_encode_path_component(repository);
         let encoded_ver = percent_encode_query_component(version);
         let url = format!(
             "{}/v1/packages/version/{encoded_reg}/{encoded_ver}/{encoded_repo}",
@@ -525,6 +525,22 @@ fn percent_encode_query_component(input: &str) -> String {
     let mut encoded = String::with_capacity(input.len());
     for byte in input.bytes() {
         if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~') {
+            encoded.push(char::from(byte));
+        } else {
+            use std::fmt::Write as _;
+            write!(&mut encoded, "%{byte:02X}").expect("writing to a String cannot fail");
+        }
+    }
+    encoded
+}
+
+/// Percent-encode a path component, preserving forward slashes for catch-all
+/// route segments (e.g. `{*repository}`).
+#[must_use]
+fn percent_encode_path_component(input: &str) -> String {
+    let mut encoded = String::with_capacity(input.len());
+    for byte in input.bytes() {
+        if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~' | b'/') {
             encoded.push(char::from(byte));
         } else {
             use std::fmt::Write as _;

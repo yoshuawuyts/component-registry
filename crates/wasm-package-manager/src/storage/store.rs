@@ -1156,6 +1156,10 @@ impl Store {
     }
 
     /// Return a single version of a package by tag.
+    ///
+    /// Looks up the manifest directly via the `oci_tag` table rather than
+    /// iterating all versions, so it works even when a manifest has multiple
+    /// tags.
     // r[verify db.package-versions.get]
     pub(crate) fn get_package_version(
         &self,
@@ -1163,10 +1167,121 @@ impl Store {
         repository: &str,
         version_tag: &str,
     ) -> anyhow::Result<Option<wasm_meta_registry_types::PackageVersion>> {
-        let all = self.get_package_versions(registry, repository)?;
-        Ok(all
-            .into_iter()
-            .find(|v| v.tag.as_deref() == Some(version_tag)))
+        use wasm_meta_registry_types::{OciAnnotations, PackageVersion};
+
+        // Find the repository.
+        let repo_id: Option<i64> = self
+            .conn
+            .query_row(
+                "SELECT id FROM oci_repository
+                 WHERE registry = ?1 AND repository = ?2",
+                rusqlite::params![registry, repository],
+                |row| row.get(0),
+            )
+            .optional()?;
+        let Some(repo_id) = repo_id else {
+            return Ok(None);
+        };
+
+        // Find the manifest digest for this tag.
+        let digest: Option<String> = self
+            .conn
+            .query_row(
+                "SELECT manifest_digest FROM oci_tag
+                 WHERE oci_repository_id = ?1 AND tag = ?2
+                 LIMIT 1",
+                rusqlite::params![repo_id, version_tag],
+                |row| row.get(0),
+            )
+            .optional()?;
+        let Some(digest) = digest else {
+            return Ok(None);
+        };
+
+        // Fetch the manifest row.
+        let m: ManifestRow = self.conn.query_row(
+            "SELECT id, digest, size_bytes, created_at,
+                        oci_created, oci_authors, oci_url, oci_documentation,
+                        oci_source, oci_version, oci_revision, oci_vendor,
+                        oci_licenses, oci_title, oci_description
+                 FROM oci_manifest
+                 WHERE oci_repository_id = ?1 AND digest = ?2",
+            rusqlite::params![repo_id, &digest],
+            |row| {
+                Ok(ManifestRow {
+                    id: row.get(0)?,
+                    digest: row.get(1)?,
+                    size_bytes: row.get(2)?,
+                    synced_at: row.get(3)?,
+                    oci_created: row.get(4)?,
+                    oci_authors: row.get(5)?,
+                    oci_url: row.get(6)?,
+                    oci_documentation: row.get(7)?,
+                    oci_source: row.get(8)?,
+                    oci_version: row.get(9)?,
+                    oci_revision: row.get(10)?,
+                    oci_vendor: row.get(11)?,
+                    oci_licenses: row.get(12)?,
+                    oci_title: row.get(13)?,
+                    oci_description: row.get(14)?,
+                })
+            },
+        )?;
+
+        let manifest_created_at = m.oci_created.clone();
+        let custom = self.get_custom_annotations(m.id)?;
+
+        let has_annotations = m.oci_created.is_some()
+            || m.oci_authors.is_some()
+            || m.oci_url.is_some()
+            || m.oci_documentation.is_some()
+            || m.oci_source.is_some()
+            || m.oci_version.is_some()
+            || m.oci_revision.is_some()
+            || m.oci_vendor.is_some()
+            || m.oci_licenses.is_some()
+            || m.oci_title.is_some()
+            || m.oci_description.is_some()
+            || !custom.is_empty();
+
+        let annotations = if has_annotations {
+            Some(OciAnnotations {
+                created: manifest_created_at.clone(),
+                authors: m.oci_authors,
+                url: m.oci_url,
+                documentation: m.oci_documentation,
+                source: m.oci_source,
+                version: m.oci_version,
+                revision: m.oci_revision,
+                vendor: m.oci_vendor,
+                licenses: m.oci_licenses,
+                title: m.oci_title,
+                description: m.oci_description,
+                custom,
+            })
+        } else {
+            None
+        };
+
+        let worlds = self.get_wit_worlds_for_manifest(m.id)?;
+        let components = self.get_components_for_manifest(m.id)?;
+        let dependencies = self.get_dependencies_for_manifest(m.id)?;
+        let referrers = self.get_referrers_for_manifest(m.id)?;
+        let wit_text = self.get_wit_text_for_manifest(m.id)?;
+
+        Ok(Some(PackageVersion {
+            tag: Some(version_tag.to_string()),
+            digest: m.digest,
+            size_bytes: m.size_bytes,
+            created_at: manifest_created_at,
+            synced_at: Some(m.synced_at),
+            annotations,
+            worlds,
+            components,
+            dependencies,
+            referrers,
+            wit_text,
+        }))
     }
 
     /// Return all WIT worlds (with imports and exports) found in WIT packages

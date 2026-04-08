@@ -166,7 +166,12 @@ async fn package_detail(
                 eprintln!("wasm-frontend: version not found for {namespace}/{name}: {version}");
                 return not_found_response();
             }
-            let html = pages::package::render(&pkg, &version);
+            let version_detail = client
+                .fetch_package_version(&pkg.registry, &pkg.repository, &version)
+                .await
+                .ok()
+                .flatten();
+            let html = pages::package::render(&pkg, &version, version_detail.as_ref());
             with_cache_control(html, "public, max-age=300")
         }
         Ok(None) => {
