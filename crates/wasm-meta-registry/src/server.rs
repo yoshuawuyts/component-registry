@@ -346,10 +346,30 @@ mod tests {
         assert_eq!(resp.status(), 200);
 
         let body: serde_json::Value = resp.json().await.expect("invalid json");
-        assert_eq!(body["info"]["title"], "wasm-meta-registry");
-        assert!(body["paths"]["/v1/health"].is_object());
-        assert!(body["paths"]["/v1/search"].is_object());
-        assert!(body["paths"]["/v1/packages"].is_object());
+        let info = body.get("info").expect("missing info");
+        assert_eq!(
+            info.get("title").expect("missing title"),
+            "wasm-meta-registry"
+        );
+        let paths = body.get("paths").expect("missing paths");
+        assert!(
+            paths
+                .get("/v1/health")
+                .expect("missing /v1/health path")
+                .is_object()
+        );
+        assert!(
+            paths
+                .get("/v1/search")
+                .expect("missing /v1/search path")
+                .is_object()
+        );
+        assert!(
+            paths
+                .get("/v1/packages")
+                .expect("missing /v1/packages path")
+                .is_object()
+        );
 
         server.abort();
     }
