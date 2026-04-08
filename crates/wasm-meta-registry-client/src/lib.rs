@@ -52,6 +52,7 @@ pub use client::{FetchResult, RegistryClient};
 /// assert_eq!(dep.version.as_deref(), Some("0.2.0"));
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct PackageDependencyRef {
     /// Declared package name (e.g. `"wasi:io"`).
     pub package: String,
@@ -88,6 +89,7 @@ pub struct PackageDependencyRef {
 /// assert_eq!(pkg.reference(), "ghcr.io/user/my-component");
 /// ```
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct KnownPackage {
     /// Registry hostname (e.g. `"ghcr.io"`).
     pub registry: String,
