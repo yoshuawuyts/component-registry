@@ -18,7 +18,7 @@ use crate::types::{
 };
 use futures_concurrency::prelude::*;
 use oci_client::{Reference, client::ImageData, manifest::OciImageManifest};
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 
 /// Calculate the total size of a directory recursively
 async fn dir_size(path: &Path) -> u64 {
@@ -68,8 +68,8 @@ struct ManifestRow {
     digest: String,
     /// Total size in bytes, if known.
     size_bytes: Option<i64>,
-    /// ISO-8601 timestamp when the row was inserted.
-    created_at: String,
+    /// ISO-8601 timestamp when the row was first inserted into the local DB.
+    synced_at: String,
     // — OCI annotation columns ——————————————————————————
     oci_created: Option<String>,
     oci_authors: Option<String>,
@@ -1034,7 +1034,7 @@ impl Store {
         use wasm_meta_registry_types::{OciAnnotations, PackageVersion};
 
         // First, find the repository.
-        let repo_id: i64 = self
+        let repo_id: Option<i64> = self
             .conn
             .query_row(
                 "SELECT id FROM oci_repository
@@ -1042,7 +1042,10 @@ impl Store {
                 rusqlite::params![registry, repository],
                 |row| row.get(0),
             )
-            .context("repository not found")?;
+            .optional()?;
+        let Some(repo_id) = repo_id else {
+            return Ok(Vec::new());
+        };
 
         // Fetch all manifests for this repository, newest first.
         let mut manifest_stmt = self.conn.prepare(
@@ -1061,7 +1064,7 @@ impl Store {
                     id: row.get(0)?,
                     digest: row.get(1)?,
                     size_bytes: row.get(2)?,
-                    created_at: row.get(3)?,
+                    synced_at: row.get(3)?,
                     oci_created: row.get(4)?,
                     oci_authors: row.get(5)?,
                     oci_url: row.get(6)?,
@@ -1079,6 +1082,8 @@ impl Store {
 
         let mut versions = Vec::with_capacity(manifests.len());
         for m in manifests {
+            let manifest_created_at = m.oci_created.clone();
+
             // Find tags pointing to this manifest.
             let tag = self
                 .conn
@@ -1089,7 +1094,7 @@ impl Store {
                     rusqlite::params![repo_id, &m.digest],
                     |row| row.get::<_, String>(0),
                 )
-                .ok();
+                .optional()?;
 
             // Collect custom annotations.
             let custom = self.get_custom_annotations(m.id)?;
@@ -1109,7 +1114,7 @@ impl Store {
 
             let annotations = if has_annotations {
                 Some(OciAnnotations {
-                    created: m.oci_created,
+                    created: manifest_created_at.clone(),
                     authors: m.oci_authors,
                     url: m.oci_url,
                     documentation: m.oci_documentation,
@@ -1136,7 +1141,8 @@ impl Store {
                 tag,
                 digest: m.digest,
                 size_bytes: m.size_bytes,
-                created_at: Some(m.created_at),
+                created_at: manifest_created_at,
+                synced_at: Some(m.synced_at),
                 annotations,
                 worlds,
                 components,
@@ -2307,5 +2313,96 @@ mod tests {
         assert_eq!(stored.len(), 2);
         assert_eq!(stored[0].package, "wasi:clocks");
         assert_eq!(stored[1].package, "wasi:io");
+    }
+
+    // r[verify db.package-versions.list]
+    // r[verify db.package-versions.get]
+    // r[verify db.package-detail]
+    #[test]
+    fn rich_package_queries_expose_manifest_created_and_synced_timestamps() {
+        let conn = setup_test_db();
+        let repo_id = OciRepository::upsert(&conn, "ghcr.io", "test/pkg").unwrap();
+        let mut annotations = HashMap::new();
+        annotations.insert(
+            "org.opencontainers.image.created".to_string(),
+            "2025-01-01T00:00:00Z".to_string(),
+        );
+        let (manifest_id, _) = OciManifest::upsert(
+            &conn,
+            repo_id,
+            "sha256:abc123",
+            Some("application/vnd.oci.image.manifest.v1+json"),
+            Some("{}"),
+            Some(1024),
+            None,
+            None,
+            None,
+            &annotations,
+        )
+        .unwrap();
+        OciTag::upsert(&conn, repo_id, "0.1.0", "sha256:abc123").unwrap();
+
+        let store = Store::from_conn(conn);
+        let versions = store.get_package_versions("ghcr.io", "test/pkg").unwrap();
+        assert_eq!(versions.len(), 1);
+        let version = &versions[0];
+        assert_eq!(version.tag.as_deref(), Some("0.1.0"));
+        assert_eq!(version.created_at.as_deref(), Some("2025-01-01T00:00:00Z"));
+        assert!(
+            version.synced_at.is_some(),
+            "synced_at should be populated from local DB insertion time"
+        );
+        assert_eq!(
+            version
+                .annotations
+                .as_ref()
+                .and_then(|annotations| annotations.created.as_deref()),
+            Some("2025-01-01T00:00:00Z")
+        );
+
+        let single = store
+            .get_package_version("ghcr.io", "test/pkg", "0.1.0")
+            .unwrap()
+            .expect("expected tagged version");
+        assert_eq!(single.digest, "sha256:abc123");
+
+        let detail = store
+            .get_package_detail("ghcr.io", "test/pkg")
+            .unwrap()
+            .expect("expected package detail");
+        assert_eq!(detail.registry, "ghcr.io");
+        assert_eq!(detail.repository, "test/pkg");
+        assert_eq!(detail.versions.len(), 1);
+        assert_eq!(
+            detail.versions[0].created_at.as_deref(),
+            Some("2025-01-01T00:00:00Z")
+        );
+
+        // Keep `manifest_id` in scope to ensure migration/schema setup accepted row.
+        assert!(manifest_id > 0);
+    }
+
+    // r[verify db.package-versions.list]
+    // r[verify db.package-versions.get]
+    // r[verify db.package-detail]
+    #[test]
+    fn rich_package_queries_return_not_found_for_unknown_repository() {
+        let conn = setup_test_db();
+        let store = Store::from_conn(conn);
+
+        let versions = store
+            .get_package_versions("ghcr.io", "does/not/exist")
+            .unwrap();
+        assert!(versions.is_empty());
+
+        let version = store
+            .get_package_version("ghcr.io", "does/not/exist", "1.0.0")
+            .unwrap();
+        assert!(version.is_none());
+
+        let detail = store
+            .get_package_detail("ghcr.io", "does/not/exist")
+            .unwrap();
+        assert!(detail.is_none());
     }
 }

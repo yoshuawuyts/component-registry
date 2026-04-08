@@ -264,8 +264,13 @@ async fn get_package_versions_nested(
     let manager = manager
         .lock()
         .map_err(|e| anyhow::anyhow!("lock poisoned: {e}"))?;
-    let versions = manager.get_package_versions(&registry, repository)?;
-    Ok(Json(versions))
+    match manager.get_package_detail(&registry, repository)? {
+        Some(_) => {
+            let versions = manager.get_package_versions(&registry, repository)?;
+            Ok(Json(versions).into_response())
+        }
+        None => Ok(StatusCode::NOT_FOUND.into_response()),
+    }
 }
 
 /// Get a specific version of a package by tag.

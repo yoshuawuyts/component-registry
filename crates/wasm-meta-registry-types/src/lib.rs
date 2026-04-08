@@ -206,7 +206,7 @@ impl KnownPackage {
 
 /// Full detail view of a package, including all known versions and metadata.
 ///
-/// Returned by `GET /v1/packages/{registry}/{*repo}/detail`.
+/// Returned by `GET /v1/packages/detail/{registry}/{*repo}`.
 ///
 /// # Example
 ///
@@ -258,6 +258,7 @@ pub struct PackageDetail {
 ///     digest: "sha256:abcdef1234".into(),
 ///     size_bytes: Some(1024),
 ///     created_at: Some("2025-01-01T00:00:00Z".into()),
+///     synced_at: Some("2025-01-02T00:00:00Z".into()),
 ///     annotations: None,
 ///     worlds: vec![],
 ///     components: vec![],
@@ -278,9 +279,12 @@ pub struct PackageVersion {
     /// Total size of the manifest and its layers in bytes.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub size_bytes: Option<i64>,
-    /// ISO 8601 creation timestamp from the manifest.
+    /// ISO 8601 creation timestamp from the OCI manifest annotation.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub created_at: Option<String>,
+    /// ISO 8601 timestamp for when the registry first recorded this manifest.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub synced_at: Option<String>,
     /// Well-known OCI annotations extracted from the manifest.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub annotations: Option<OciAnnotations>,
@@ -650,6 +654,7 @@ mod tests {
             digest: "sha256:abcdef".into(),
             size_bytes: Some(2048),
             created_at: Some("2025-01-01T00:00:00Z".into()),
+            synced_at: Some("2025-01-02T00:00:00Z".into()),
             annotations: Some(OciAnnotations {
                 licenses: Some("Apache-2.0".into()),
                 ..OciAnnotations::default()

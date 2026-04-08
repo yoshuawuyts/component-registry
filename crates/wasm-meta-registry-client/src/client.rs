@@ -353,7 +353,8 @@ impl RegistryClient {
                 ApiError::new(format!("could not connect to the registry API: {e}"))
             })?;
 
-        if response.status() == wstd::http::StatusCode::NOT_FOUND {
+        let status = response.status();
+        if status == wstd::http::StatusCode::NOT_FOUND {
             return Ok(None);
         }
 
@@ -362,6 +363,12 @@ impl RegistryClient {
             .contents()
             .await
             .map_err(|e| ApiError::new(format!("failed to read response body: {e}")))?;
+        if !status.is_success() {
+            let body = String::from_utf8_lossy(&bytes);
+            return Err(ApiError::new(format!(
+                "registry API returned unexpected status {status} for {url}: {body}"
+            )));
+        }
         Ok(Some(bytes.to_vec()))
     }
 
@@ -373,14 +380,23 @@ impl RegistryClient {
                 ApiError::new(format!("could not connect to the registry API: {e}"))
             })?;
 
-        if resp.status() == reqwest::StatusCode::NOT_FOUND {
+        let status = resp.status();
+        if status == reqwest::StatusCode::NOT_FOUND {
             return Ok(None);
         }
 
-        resp.bytes()
+        let bytes = resp
+            .bytes()
             .await
-            .map(|b| Some(b.to_vec()))
-            .map_err(|e| ApiError::new(format!("failed to read response body: {e}")))
+            .map_err(|e| ApiError::new(format!("failed to read response body: {e}")))?;
+        if !status.is_success() {
+            let body = String::from_utf8_lossy(&bytes);
+            return Err(ApiError::new(format!(
+                "registry API returned unexpected status {status} for {url}: {body}"
+            )));
+        }
+
+        Ok(Some(bytes.to_vec()))
     }
 }
 
@@ -521,6 +537,10 @@ fn percent_encode_query_component(input: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(not(all(target_os = "wasi", target_env = "p2")))]
+    use std::io::{Read, Write};
+    #[cfg(not(all(target_os = "wasi", target_env = "p2")))]
+    use std::net::TcpListener;
 
     // r[verify frontend.api.base-url]
     #[test]
@@ -537,6 +557,66 @@ mod tests {
         assert_eq!(
             percent_encode_query_component(query),
             "name%20with%20spaces%20%26%20%3F%20%2F"
+        );
+    }
+
+    #[cfg(not(all(target_os = "wasi", target_env = "p2")))]
+    fn serve_once(status_line: &str, body: &str, content_type: &str) -> String {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind test listener");
+        let addr = listener.local_addr().expect("get listener addr");
+        let status = status_line.to_string();
+        let body = body.to_string();
+        let content_type = content_type.to_string();
+
+        std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept client connection");
+            let mut buf = [0_u8; 1024];
+            let _ = stream.read(&mut buf);
+            let response = format!(
+                "HTTP/1.1 {status}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            stream
+                .write_all(response.as_bytes())
+                .expect("write response");
+            stream.flush().expect("flush response");
+        });
+
+        format!("http://{addr}")
+    }
+
+    #[cfg(not(all(target_os = "wasi", target_env = "p2")))]
+    #[tokio::test]
+    async fn fetch_optional_returns_none_on_404() {
+        let base = serve_once(
+            "404 Not Found",
+            "{\"error\":\"not found\"}",
+            "application/json",
+        );
+        let client = RegistryClient::new(base);
+
+        let result = client
+            .fetch_package_detail("ghcr.io", "user/repo")
+            .await
+            .expect("404 should be treated as not found");
+        assert!(result.is_none());
+    }
+
+    #[cfg(not(all(target_os = "wasi", target_env = "p2")))]
+    #[tokio::test]
+    async fn fetch_optional_errors_on_non_404_non_success_status() {
+        let base = serve_once("500 Internal Server Error", "boom", "text/plain");
+        let client = RegistryClient::new(base);
+
+        let err = client
+            .fetch_package_detail("ghcr.io", "user/repo")
+            .await
+            .expect_err("non-404 non-success should return an API error");
+        let msg = err.to_string();
+        assert!(msg.contains("500"), "error should include status code");
+        assert!(
+            msg.contains("boom"),
+            "error should include response body for debugging"
         );
     }
 }
