@@ -17,7 +17,7 @@
 //!
 //! #[tokio::main]
 //! async fn main() -> anyhow::Result<()> {
-//!     let client = RegistryClient::new("http://localhost:3000");
+//!     let client = RegistryClient::new("http://localhost:8081");
 //!     match client.fetch_packages(None, 100).await? {
 //!         FetchResult::NotModified => println!("up to date"),
 //!         FetchResult::Updated { packages, .. } => {

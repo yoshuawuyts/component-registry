@@ -9,7 +9,7 @@ compiled as a `wasm32-wasip2` component targeting `wasi:http`.
 cargo build -p wasm-frontend --target wasm32-wasip2
 ```
 
-To set a custom API base URL (default: `http://localhost:3000`):
+To set a custom API base URL (default: `http://localhost:8081`):
 
 ```sh
 API_BASE_URL=https://registry.example.com cargo build -p wasm-frontend --target wasm32-wasip2

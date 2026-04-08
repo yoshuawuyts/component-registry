@@ -18,10 +18,11 @@ mod nav;
 mod pages;
 mod reserved;
 
-use axum::extract::Path;
+use axum::extract::{Path, Query};
 use axum::http::{HeaderValue, StatusCode, Uri, header};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::{Json, Router, routing::get};
+use serde::Deserialize;
 
 use crate::api_client::ApiClient;
 use crate::reserved::is_reserved;
@@ -31,6 +32,7 @@ fn app() -> Router {
     Router::new()
         .route("/", get(home))
         .route("/all", get(all_packages))
+        .route("/search", get(search))
         .route("/about", get(about))
         .route("/health", get(health))
         .route("/{namespace}/{name}", get(package_redirect))
@@ -58,6 +60,22 @@ async fn health() -> impl IntoResponse {
 async fn home() -> Response {
     let client = ApiClient::from_env();
     let html = pages::home::render(&client).await;
+    with_cache_control(html, "public, max-age=60")
+}
+
+/// Query parameters for the search page.
+#[derive(Deserialize)]
+struct SearchParams {
+    /// The search query string.
+    #[serde(default)]
+    q: String,
+}
+
+// r[impl frontend.pages.search]
+/// Search results page.
+async fn search(Query(params): Query<SearchParams>) -> Response {
+    let client = ApiClient::from_env();
+    let html = pages::search::render(&client, &params.q).await;
     with_cache_control(html, "public, max-age=60")
 }
 

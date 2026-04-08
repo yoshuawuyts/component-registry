@@ -116,16 +116,35 @@ fn render_section(heading: &str, packages: &[&KnownPackage]) -> Option<Section> 
     let has_more = packages.len() > HOME_SECTION_LIMIT;
     let visible = packages.get(..HOME_SECTION_LIMIT).unwrap_or(packages);
 
+    let (icon, subtitle) = match heading {
+        "Interfaces" => (
+            "⬡",
+            "WIT interface definitions for composable WebAssembly modules",
+        ),
+        "Components" => ("◈", "Standalone WebAssembly components ready to use"),
+        _ => ("", ""),
+    };
+
     let mut section = Section::builder();
     section.class("mb-16");
 
-    // Section header with count
+    // Section header with icon, description, and count
     section.division(|div| {
-        div.class("flex items-baseline justify-between mb-4")
-            .heading_2(|h2| h2.class("text-lg font-semibold").text(heading.to_owned()))
-            .span(|s| {
-                s.class("text-sm text-fg-faint")
-                    .text(format!("{}", packages.len()))
+        div.class("mb-4")
+            .division(|row| {
+                row.class("flex items-baseline justify-between")
+                    .heading_2(|h2| {
+                        h2.class("text-lg font-semibold")
+                            .text(format!("{icon} {heading}"))
+                    })
+                    .span(|s| {
+                        s.class("text-sm text-fg-faint")
+                            .text(format!("{}", packages.len()))
+                    })
+            })
+            .paragraph(|p| {
+                p.class("text-sm text-fg-muted mt-1")
+                    .text(subtitle.to_owned())
             })
     });
 

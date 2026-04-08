@@ -59,7 +59,7 @@ pub enum FetchResult {
 ///
 /// #[tokio::main]
 /// async fn main() -> anyhow::Result<()> {
-///     let client = RegistryClient::new("http://localhost:3000");
+///     let client = RegistryClient::new("http://localhost:8081");
 ///     let result = client.fetch_packages(None, 100).await?;
 ///     if let FetchResult::Updated { packages, .. } = result {
 ///         println!("fetched {} packages", packages.len());
@@ -81,7 +81,7 @@ impl RegistryClient {
     /// ```no_run
     /// use wasm_meta_registry_client::RegistryClient;
     ///
-    /// let client = RegistryClient::new("http://localhost:3000");
+    /// let client = RegistryClient::new("http://localhost:8081");
     /// ```
     #[must_use]
     pub fn new(base_url: &str) -> Self {
@@ -115,7 +115,7 @@ impl RegistryClient {
     ///
     /// #[tokio::main]
     /// async fn main() -> anyhow::Result<()> {
-    ///     let client = RegistryClient::new("http://localhost:3000");
+    ///     let client = RegistryClient::new("http://localhost:8081");
     ///
     ///     // First fetch without an ETag.
     ///     let result = client.fetch_packages(None, 50).await?;

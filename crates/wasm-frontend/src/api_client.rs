@@ -9,7 +9,7 @@ use wasm_meta_registry_client::KnownPackage;
 use wstd::http::{Body, Client, Request};
 
 /// Default API base URL when no environment variable is set.
-const DEFAULT_API_BASE_URL: &str = "http://localhost:3000";
+const DEFAULT_API_BASE_URL: &str = "http://localhost:8081";
 
 /// An error returned when the meta-registry API is unreachable or returns
 /// an unexpected response.
@@ -44,7 +44,7 @@ impl ApiClient {
     /// Create a client using the API base URL.
     ///
     /// The URL is set at compile time via the `API_BASE_URL` environment
-    /// variable. Falls back to `http://localhost:3000` when unset.
+    /// variable. Falls back to `http://localhost:8081` when unset.
     #[must_use]
     pub(crate) fn from_env() -> Self {
         let base_url = option_env!("API_BASE_URL").unwrap_or(DEFAULT_API_BASE_URL);

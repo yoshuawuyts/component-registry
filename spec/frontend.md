@@ -55,7 +55,7 @@ to fetch package data, using outgoing HTTP requests via `wstd::http::Client`.
 
 r[frontend.api.base-url]
 The API base URL MUST be configurable via a compile-time environment variable
-(`API_BASE_URL`), falling back to `http://localhost:3000`.
+(`API_BASE_URL`), falling back to `http://localhost:8081`.
 
 ## Rendering
 
