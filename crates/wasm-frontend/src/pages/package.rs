@@ -84,7 +84,7 @@ pub(crate) fn render(
     grid.push(main_col.build());
 
     // Sidebar
-    grid.push(render_sidebar(pkg, version));
+    grid.push(render_sidebar(pkg, version, &display_name));
 
     body.push(grid.build());
 
@@ -94,8 +94,6 @@ pub(crate) fn render(
 /// Render the install command section with a copy button.
 fn render_install_command(display_name: &str, version: &str) -> Division {
     let command = format!("wasm install {display_name}@{version}");
-    let command_js =
-        serde_json::to_string(&command).expect("install command should serialize to a JS string");
 
     let copy_icon = "<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='9' y='9' width='13' height='13' rx='2' ry='2'/><path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/></svg>";
     let check_icon = "<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>";
@@ -107,7 +105,7 @@ fn render_install_command(display_name: &str, version: &str) -> Division {
         var checkIcon=\"{check_icon}\";\
         btn.innerHTML=copyIcon;\
         btn.addEventListener('click',function(){{\
-        navigator.clipboard.writeText({command_js}).then(function(){{\
+        navigator.clipboard.writeText('{command}').then(function(){{\
         btn.innerHTML=checkIcon;\
         setTimeout(function(){{btn.innerHTML=copyIcon}},2000)\
         }})}})}})()",
@@ -121,7 +119,7 @@ fn render_install_command(display_name: &str, version: &str) -> Division {
                  rounded-md px-3 py-2 font-mono text-xs text-fg",
             )
             .code(|code| {
-                code.class("flex-1 select-all overflow-hidden whitespace-nowrap text-ellipsis")
+                code.class("flex-1 select-all overflow-x-auto whitespace-nowrap")
                     .text(command)
             })
             .button(|btn| {
@@ -278,7 +276,7 @@ fn render_dependencies(pkg: &KnownPackage) -> Option<Section> {
 }
 
 /// Render the sidebar with metadata and version selector.
-fn render_sidebar(pkg: &KnownPackage, current_version: &str) -> Aside {
+fn render_sidebar(pkg: &KnownPackage, current_version: &str, display_name: &str) -> Aside {
     let url_name = match (&pkg.wit_namespace, &pkg.wit_name) {
         (Some(ns), Some(name)) => format!("{ns}/{name}"),
         _ => pkg.repository.clone(),
