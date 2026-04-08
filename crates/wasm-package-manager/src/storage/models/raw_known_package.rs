@@ -1,9 +1,22 @@
 use rusqlite::Connection;
+use semver::Version;
 
 use wasm_meta_registry_types::PackageKind;
 
 use crate::oci::OciRepository;
 use crate::storage::KnownPackageParams;
+
+/// Try to parse a tag as a semver version, accepting an optional leading `v` prefix.
+fn parse_tag_as_semver(tag: &str) -> Option<Version> {
+    if let Ok(v) = Version::parse(tag) {
+        return Some(v);
+    }
+    let stripped = tag.strip_prefix('v')?;
+    if !stripped.starts_with(|c: char| c.is_ascii_digit()) {
+        return None;
+    }
+    Version::parse(stripped).ok()
+}
 
 /// A raw known package that persists in the database even after local deletion.
 /// This is used to track packages the user has seen or searched for.
@@ -157,12 +170,15 @@ impl RawKnownPackage {
         Ok(())
     }
 
-    /// Fetch tags for a repository from `oci_tag`, ordered by most recent first.
+    /// Fetch tags for a repository from `oci_tag`, sorted by semver descending.
+    ///
+    /// Only returns tags that are valid semver versions (with an optional `v`
+    /// prefix). Hash-based tags (signatures, attestations) and non-version
+    /// tags like `latest` are excluded.
     fn fetch_tags(conn: &Connection, repo_id: i64) -> Vec<String> {
         let Ok(mut stmt) = conn.prepare(
             "SELECT t.tag FROM oci_tag t
-             WHERE t.oci_repository_id = ?1
-             ORDER BY t.updated_at DESC",
+             WHERE t.oci_repository_id = ?1",
         ) else {
             return Vec::new();
         };
@@ -171,7 +187,12 @@ impl RawKnownPackage {
             return Vec::new();
         };
 
-        rows.flatten().collect()
+        let mut versioned: Vec<(Version, String)> = rows
+            .flatten()
+            .filter_map(|tag| parse_tag_as_semver(&tag).map(|v| (v, tag)))
+            .collect();
+        versioned.sort_by(|(a, _), (b, _)| b.cmp(a));
+        versioned.into_iter().map(|(_, tag)| tag).collect()
     }
 
     /// Fetch the description from the first manifest that has one.
