@@ -194,6 +194,7 @@ impl RegistryClient {
     // ================================================================
 
     /// Fetch full detail for a package, including all versions and metadata.
+    // r[verify client.detail]
     pub async fn fetch_package_detail(
         &self,
         registry: &str,
@@ -209,6 +210,7 @@ impl RegistryClient {
     }
 
     /// Fetch all versions of a package.
+    // r[verify client.versions.list]
     pub async fn fetch_package_versions(
         &self,
         registry: &str,
@@ -224,6 +226,7 @@ impl RegistryClient {
     }
 
     /// Fetch a specific version of a package by tag.
+    // r[verify client.versions.get]
     pub async fn fetch_package_version(
         &self,
         registry: &str,
@@ -241,6 +244,7 @@ impl RegistryClient {
     }
 
     /// Search packages by imported interface.
+    // r[verify client.search.by-import]
     pub async fn search_packages_by_import(
         &self,
         interface: &str,
@@ -251,6 +255,7 @@ impl RegistryClient {
     }
 
     /// Search packages by exported interface.
+    // r[verify client.search.by-export]
     pub async fn search_packages_by_export(
         &self,
         interface: &str,

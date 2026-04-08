@@ -211,6 +211,7 @@ pub struct InterfaceSearchParams {
 }
 
 /// Search packages by imported interface.
+// r[verify server.search.by-import]
 async fn search_by_import(
     State(manager): State<AppState>,
     Query(params): Query<InterfaceSearchParams>,
@@ -224,6 +225,7 @@ async fn search_by_import(
 }
 
 /// Search packages by exported interface.
+// r[verify server.search.by-export]
 async fn search_by_export(
     State(manager): State<AppState>,
     Query(params): Query<InterfaceSearchParams>,
@@ -237,6 +239,7 @@ async fn search_by_export(
 }
 
 /// Get full package detail including all versions and metadata.
+// r[verify server.detail]
 async fn get_package_detail_nested(
     State(manager): State<AppState>,
     Path((registry, repository)): Path<(String, String)>,
@@ -252,6 +255,7 @@ async fn get_package_detail_nested(
 }
 
 /// List all versions of a package.
+// r[verify server.versions.list]
 async fn get_package_versions_nested(
     State(manager): State<AppState>,
     Path((registry, repository)): Path<(String, String)>,
@@ -265,6 +269,7 @@ async fn get_package_versions_nested(
 }
 
 /// Get a specific version of a package by tag.
+// r[verify server.versions.get]
 async fn get_package_version_reordered(
     State(manager): State<AppState>,
     Path((registry, version, repository)): Path<(String, String, String)>,

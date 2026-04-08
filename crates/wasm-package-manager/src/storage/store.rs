@@ -1025,6 +1025,7 @@ impl Store {
     /// `oci_repository → oci_manifest → oci_tag`.
     ///
     /// Results are ordered by manifest insertion order (newest first).
+    // r[verify db.package-versions.list]
     pub(crate) fn get_package_versions(
         &self,
         registry: &str,
@@ -1149,6 +1150,7 @@ impl Store {
     }
 
     /// Return a single version of a package by tag.
+    // r[verify db.package-versions.get]
     pub(crate) fn get_package_version(
         &self,
         registry: &str,
@@ -1384,6 +1386,7 @@ impl Store {
 
     /// Build a full [`PackageDetail`] for a package identified by OCI
     /// registry and repository.
+    // r[verify db.package-detail]
     pub(crate) fn get_package_detail(
         &self,
         registry: &str,
