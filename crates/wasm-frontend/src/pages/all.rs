@@ -23,13 +23,13 @@ fn render_packages(packages: &[KnownPackage]) -> String {
 
     // Page header with count
     body.division(|div| {
-        div.class("flex items-baseline justify-between pb-6 border-b border-gray-200 mb-6")
+        div.class("flex items-baseline justify-between pb-6 border-b border-border mb-6")
             .heading_1(|h1| {
                 h1.class("text-3xl font-bold tracking-tight")
                     .text("All Packages")
             })
             .span(|s| {
-                s.class("text-sm text-gray-400")
+                s.class("text-sm text-fg-faint")
                     .text(format!("{} packages", packages.len()))
             })
     });
@@ -37,21 +37,21 @@ fn render_packages(packages: &[KnownPackage]) -> String {
     if packages.is_empty() {
         body.division(|div| {
             div.class("py-16 text-center").paragraph(|p| {
-                p.class("text-gray-500")
+                p.class("text-fg-muted")
                     .text("No packages found. The registry may still be syncing.")
             })
         });
     } else {
         // Table-style header
         body.division(|div| {
-            div.class("hidden sm:flex items-baseline gap-3 px-2 pb-2 text-xs text-gray-400 uppercase tracking-wide")
+            div.class("hidden sm:flex items-baseline gap-3 px-2 pb-2 text-xs text-fg-faint uppercase tracking-wide")
                 .span(|s| s.class("w-48 shrink-0").text("Package"))
                 .span(|s| s.class("w-20 shrink-0").text("Version"))
                 .span(|s| s.text("Description"))
         });
 
         let mut list = Division::builder();
-        list.class("divide-y divide-gray-100");
+        list.class("divide-y divide-border-light");
         for pkg in packages {
             list.push(render_row(pkg));
         }
@@ -66,7 +66,7 @@ fn render_error(err: &ApiError) -> String {
     let mut body = Division::builder();
 
     body.division(|div| {
-        div.class("pb-6 border-b border-gray-200 mb-6")
+        div.class("pb-6 border-b border-border mb-6")
             .heading_1(|h1| {
                 h1.class("text-3xl font-bold tracking-tight")
                     .text("All Packages")
@@ -76,10 +76,10 @@ fn render_error(err: &ApiError) -> String {
     body.division(|div| {
         div.class("py-16 text-center")
             .paragraph(|p| {
-                p.class("text-gray-900 font-semibold")
+                p.class("text-fg font-semibold")
                     .text("Unable to load packages")
             })
-            .paragraph(|p| p.class("text-sm text-gray-500 mt-2").text(err.to_string()))
+            .paragraph(|p| p.class("text-sm text-fg-muted mt-2").text(err.to_string()))
     });
 
     layout::document("All Packages", &body.build().to_string())
@@ -104,18 +104,18 @@ fn render_row(pkg: &KnownPackage) -> Anchor {
     Anchor::builder()
         .href(href)
         .class(
-            "flex items-baseline gap-3 py-3 hover:bg-gray-50 -mx-2 px-2 rounded transition-colors",
+            "flex items-baseline gap-3 py-3 hover:bg-surface -mx-2 px-2 rounded transition-colors",
         )
         .span(|s| {
             s.class("w-48 shrink-0 font-semibold text-accent truncate")
                 .text(display_name)
         })
         .span(|s| {
-            s.class("w-20 shrink-0 text-sm text-gray-400")
+            s.class("w-20 shrink-0 text-sm text-fg-faint")
                 .text(version.to_owned())
         })
         .span(|s| {
-            s.class("text-sm text-gray-500 truncate")
+            s.class("text-sm text-fg-muted truncate")
                 .text(description.to_owned())
         })
         .build()

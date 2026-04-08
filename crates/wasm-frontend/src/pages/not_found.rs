@@ -12,14 +12,14 @@ pub(crate) fn render() -> String {
     let body = Division::builder()
         .class("text-center py-20")
         .heading_1(|h1| h1.class("text-6xl font-bold tracking-tighter text-accent").text("404"))
-        .paragraph(|p| p.class("text-lg text-gray-600 mt-4").text("Page not found"))
+        .paragraph(|p| p.class("text-lg text-fg-secondary mt-4").text("Page not found"))
         .paragraph(|p| {
-            p.class("text-gray-500 mt-2")
+            p.class("text-fg-muted mt-2")
                 .text("The page you're looking for doesn't exist or has been moved.")
         })
         .anchor(|a| {
             a.href("/")
-                .class("inline-block mt-8 px-6 py-3 bg-accent text-white rounded-lg font-medium hover:opacity-90 transition-opacity")
+                .class("inline-block mt-8 px-6 py-3 bg-accent text-white rounded-lg font-medium hover:bg-accent-hover transition-colors")
                 .text("Go to Home")
         })
         .build();

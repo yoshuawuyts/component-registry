@@ -6,14 +6,14 @@ use html::content::Footer;
 #[must_use]
 pub(crate) fn render() -> String {
     Footer::builder()
-        .class("border-t border-gray-200 mt-16")
+        .class("border-t border-border mt-16")
         .division(|div| {
-            div.class("max-w-5xl mx-auto px-4 py-6 text-center text-sm text-gray-500")
+            div.class("max-w-5xl mx-auto px-4 py-6 text-center text-sm text-fg-muted")
                 .paragraph(|p| {
                     p.text("wasm registry — a ")
                         .anchor(|a| {
                             a.href("https://bytecodealliance.org")
-                                .class("text-accent hover:underline")
+                                .class("text-accent hover:underline transition-colors")
                                 .text("Bytecode Alliance")
                         })
                         .text(" project")

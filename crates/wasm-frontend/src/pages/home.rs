@@ -41,7 +41,7 @@ fn render_packages(packages: &[KnownPackage]) -> String {
     if packages.is_empty() {
         body.division(|div| {
             div.class("py-16 text-center").paragraph(|p| {
-                p.class("text-gray-500")
+                p.class("text-fg-muted")
                     .text("No packages found. The registry may still be syncing.")
             })
         });
@@ -57,10 +57,10 @@ fn render_error(err: &ApiError) -> String {
     body.division(|div| {
         div.class("py-16 text-center")
             .paragraph(|p| {
-                p.class("text-gray-900 font-semibold")
+                p.class("text-fg font-semibold")
                     .text("Unable to load packages")
             })
-            .paragraph(|p| p.class("text-sm text-gray-500 mt-2").text(err.to_string()))
+            .paragraph(|p| p.class("text-sm text-fg-muted mt-2").text(err.to_string()))
     });
     layout::document("Home", &body.build().to_string())
 }
@@ -68,18 +68,18 @@ fn render_error(err: &ApiError) -> String {
 /// Render the hero area with title, subtitle, and package count.
 fn render_hero(total: usize) -> Division {
     let mut hero = Division::builder();
-    hero.class("pb-12 border-b border-gray-200 mb-12");
+    hero.class("pb-12 border-b border-border mb-12");
     hero.heading_1(|h1| {
         h1.class("text-3xl font-bold tracking-tight")
             .text("WebAssembly Package Registry")
     });
     hero.paragraph(|p| {
-        p.class("text-gray-500 mt-3 max-w-[50ch]")
+        p.class("text-fg-secondary mt-3 max-w-[50ch]")
             .text("Browse WebAssembly components and WIT interfaces published to OCI registries.")
     });
     if total > 0 {
         hero.paragraph(|p| {
-            p.class("text-sm text-gray-400 mt-4")
+            p.class("text-sm text-fg-faint mt-4")
                 .text(format!("{total} packages indexed"))
         });
     }
@@ -124,14 +124,14 @@ fn render_section(heading: &str, packages: &[&KnownPackage]) -> Option<Section> 
         div.class("flex items-baseline justify-between mb-4")
             .heading_2(|h2| h2.class("text-lg font-semibold").text(heading.to_owned()))
             .span(|s| {
-                s.class("text-sm text-gray-400")
+                s.class("text-sm text-fg-faint")
                     .text(format!("{}", packages.len()))
             })
     });
 
     // Package list — compact rows instead of card grid
     let mut list = Division::builder();
-    list.class("divide-y divide-gray-100");
+    list.class("divide-y divide-border-light");
     for pkg in visible {
         list.push(render_row(pkg));
     }
@@ -173,18 +173,18 @@ fn render_row(pkg: &KnownPackage) -> Anchor {
     Anchor::builder()
         .href(href)
         .class(
-            "flex items-baseline gap-3 py-3 hover:bg-gray-50 -mx-2 px-2 rounded transition-colors",
+            "flex items-baseline gap-3 py-3 hover:bg-surface -mx-2 px-2 rounded transition-colors",
         )
         .span(|s| {
             s.class("font-semibold text-accent shrink-0")
                 .text(display_name)
         })
         .span(|s| {
-            s.class("text-sm text-gray-400 shrink-0")
+            s.class("text-sm text-fg-faint shrink-0")
                 .text(version.to_owned())
         })
         .span(|s| {
-            s.class("text-sm text-gray-500 truncate")
+            s.class("text-sm text-fg-muted truncate")
                 .text(description.to_owned())
         })
         .build()

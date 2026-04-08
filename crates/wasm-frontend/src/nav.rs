@@ -1,30 +1,44 @@
 //! Navigation bar component.
 
 /// Render the site navigation bar.
+///
+/// `current_path` is used to mark the active link with `aria-current="page"`.
 #[must_use]
-pub(crate) fn render() -> String {
-    String::from(
+pub(crate) fn render(current_path: &str) -> String {
+    let all_aria = if current_path == "/all" {
+        r#" aria-current="page""#
+    } else {
+        ""
+    };
+    let about_aria = if current_path == "/about" {
+        r#" aria-current="page""#
+    } else {
+        ""
+    };
+
+    format!(
         r#"<header class="bg-accent text-white">
-  <nav class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-    <a href="/" class="text-xl font-bold tracking-tight hover:opacity-90">wasm</a>
+  <nav class="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between" aria-label="Main">
+    <a href="/" class="text-xl font-bold tracking-tight hover:text-white/80 transition-colors">wasm</a>
     <div class="hidden sm:flex gap-6 text-sm font-medium">
-      <a href="/all" class="hover:opacity-80">All Packages</a>
-      <a href="/about" class="hover:opacity-80">About</a>
+      <a href="/all" class="underline-offset-4 hover:underline transition-colors"{all_aria}>All Packages</a>
+      <a href="/about" class="underline-offset-4 hover:underline transition-colors"{about_aria}>About</a>
     </div>
     <button
-      class="sm:hidden p-1"
-      onclick="document.getElementById('mobile-nav').classList.toggle('hidden')"
+      class="sm:hidden p-2 -mr-2 rounded hover:bg-white/10 transition-colors"
+      onclick="const nav=document.getElementById('mobile-nav');const open=!nav.classList.contains('hidden');nav.classList.toggle('hidden');this.setAttribute('aria-expanded',!open)"
       aria-label="Toggle menu"
+      aria-expanded="false"
+      aria-controls="mobile-nav"
     >
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M4 6h16M4 12h16M4 18h16"/>
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
       </svg>
     </button>
   </nav>
-  <div id="mobile-nav" class="hidden sm:hidden px-4 pb-3 space-y-2 text-sm font-medium">
-    <a href="/all" class="block hover:opacity-80">All Packages</a>
-    <a href="/about" class="block hover:opacity-80">About</a>
+  <div id="mobile-nav" class="hidden sm:hidden px-4 pb-3 space-y-1 text-sm font-medium">
+    <a href="/all" class="block py-2 px-2 rounded hover:bg-white/10 transition-colors"{all_aria}>All Packages</a>
+    <a href="/about" class="block py-2 px-2 rounded hover:bg-white/10 transition-colors"{about_aria}>About</a>
   </div>
 </header>"#,
     )

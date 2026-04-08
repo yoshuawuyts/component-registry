@@ -35,7 +35,7 @@ pub(crate) fn render(pkg: &KnownPackage, version: &str) -> String {
                     .text(display_name.clone())
             })
             .paragraph(|p| {
-                p.class("text-lg text-gray-600 mt-2")
+                p.class("text-lg text-fg-secondary mt-2")
                     .text(description.to_owned())
             })
     });
@@ -66,8 +66,12 @@ pub(crate) fn render(pkg: &KnownPackage, version: &str) -> String {
 /// Render the breadcrumb navigation.
 fn render_breadcrumb(display_name: &str) -> Navigation {
     Navigation::builder()
-        .class("text-sm text-gray-500 mb-4")
-        .anchor(|a| a.href("/").class("hover:text-accent").text("Home"))
+        .class("text-sm text-fg-muted mb-4")
+        .anchor(|a| {
+            a.href("/")
+                .class("hover:text-accent transition-colors")
+                .text("Home")
+        })
         .span(|s| s.class("mx-1").text("/"))
         .span(|s| s.text(display_name.to_owned()))
         .build()
@@ -94,7 +98,7 @@ fn render_tags(pkg: &KnownPackage, current_version: &str) -> Option<Section> {
         let classes = if is_current {
             "px-3 py-1 rounded-full text-sm bg-accent text-white"
         } else {
-            "px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700 hover:bg-gray-200"
+            "px-3 py-1 rounded-full text-sm bg-surface-muted text-fg-secondary hover:bg-border-light transition-colors"
         };
         let href = format!("/{url_name}/{tag}");
         let anchor = Anchor::builder()
@@ -130,7 +134,7 @@ fn render_dependencies(pkg: &KnownPackage) -> Option<Section> {
         li.push(dep_span);
         if let Some(v) = &dep.version {
             let version_span = Span::builder()
-                .class("text-gray-400")
+                .class("text-fg-faint")
                 .text(v.clone())
                 .build();
             li.push(version_span);
@@ -148,7 +152,7 @@ fn render_sidebar(pkg: &KnownPackage) -> Aside {
     aside.class("space-y-4");
 
     let mut card = Division::builder();
-    card.class("border border-gray-200 rounded-lg p-5 space-y-4 text-sm");
+    card.class("bg-surface border border-border rounded-lg p-5 space-y-4 text-sm");
     card.push(sidebar_row("Registry", &pkg.registry));
     card.push(sidebar_row("Repository", &pkg.repository));
     card.push(sidebar_row("Created", &pkg.created_at));
@@ -162,12 +166,9 @@ fn render_sidebar(pkg: &KnownPackage) -> Aside {
 fn sidebar_row(label: &str, value: &str) -> Division {
     Division::builder()
         .division(|dt| {
-            dt.class("text-gray-500 text-xs uppercase tracking-wide")
+            dt.class("text-fg-muted text-xs uppercase tracking-wide")
                 .text(label.to_owned())
         })
-        .division(|dd| {
-            dd.class("text-gray-900 mt-0.5 break-all")
-                .text(value.to_owned())
-        })
+        .division(|dd| dd.class("text-fg mt-0.5 break-all").text(value.to_owned()))
         .build()
 }

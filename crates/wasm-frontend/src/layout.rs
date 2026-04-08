@@ -23,12 +23,20 @@ pub(crate) const ACCENT_COLOR: &str = "#512FEB";
 /// color CSS variables, and footer.
 #[must_use]
 pub(crate) fn document(title: &str, body_content: &str) -> String {
+    let current_path = match title {
+        "Home" => "/",
+        "All Packages" => "/all",
+        "About" => "/about",
+        _ => "",
+    };
+
     format!(
         r#"<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Browse and discover WebAssembly components and WIT interfaces published to OCI registries.">
   <title>{title} — wasm registry</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -37,6 +45,22 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
         extend: {{
           colors: {{
             accent: '{ACCENT_COLOR}',
+            'accent-hover': '#6a4bf0',
+            // Violet-tinted neutrals (hue 260)
+            surface: {{
+              DEFAULT: '#f8f7fb',  // faint violet tint for sections
+              muted:   '#f1eff6',  // slightly stronger for cards/wells
+            }},
+            border: {{
+              DEFAULT: '#e4e0ed', // tinted border
+              light:   '#eeeaf5', // tinted divider
+            }},
+            fg: {{
+              DEFAULT:   '#1a1625', // tinted near-black
+              secondary: '#534e63', // tinted gray-600
+              muted:     '#7c7691', // tinted gray-500
+              faint:     '#a9a3bc', // tinted gray-400
+            }},
           }},
           fontFamily: {{
             mono: ['ui-monospace', 'Cascadia Code', 'Source Code Pro', 'Menlo', 'Consolas', 'DejaVu Sans Mono', 'monospace'],
@@ -49,9 +73,18 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
     :root {{
       --accent: {ACCENT_COLOR};
     }}
+    /* Consistent focus ring for keyboard navigation */
+    :focus-visible {{
+      outline: 2px solid {ACCENT_COLOR};
+      outline-offset: 2px;
+    }}
+    /* Remove default outline when not keyboard-navigating */
+    :focus:not(:focus-visible) {{
+      outline: none;
+    }}
   </style>
 </head>
-<body class="bg-white text-gray-900 min-h-screen flex flex-col font-mono leading-relaxed">
+<body class="bg-white text-fg min-h-screen flex flex-col font-mono leading-relaxed">
   {nav}
   <main class="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-10">
     {body_content}
@@ -60,7 +93,7 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
 </body>
 </html>"#,
         title = title,
-        nav = nav::render(),
+        nav = nav::render(current_path),
         footer = footer::render(),
         body_content = body_content,
     )
