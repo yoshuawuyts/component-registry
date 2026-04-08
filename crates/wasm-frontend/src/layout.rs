@@ -37,7 +37,10 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
         extend: {{
           colors: {{
             accent: '{ACCENT_COLOR}',
-          }}
+          }},
+          fontFamily: {{
+            mono: ['ui-monospace', 'Cascadia Code', 'Source Code Pro', 'Menlo', 'Consolas', 'DejaVu Sans Mono', 'monospace'],
+          }},
         }}
       }}
     }}
@@ -48,7 +51,7 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
     }}
   </style>
 </head>
-<body class="bg-white text-gray-900 min-h-screen flex flex-col">
+<body class="bg-white text-gray-900 min-h-screen flex flex-col font-mono leading-relaxed">
   {nav}
   <main class="flex-1 w-full max-w-5xl mx-auto px-4 py-8">
     {body_content}

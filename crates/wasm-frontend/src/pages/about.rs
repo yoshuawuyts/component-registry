@@ -8,8 +8,8 @@ use crate::layout;
 #[must_use]
 pub(crate) fn render() -> String {
     let body = Division::builder()
-        .class("max-w-2xl")
-        .heading_1(|h1| h1.class("text-3xl font-bold mb-6").text("About"))
+        .class("max-w-[65ch]")
+        .heading_1(|h1| h1.class("text-3xl font-bold tracking-tight mb-6").text("About"))
         .paragraph(|p| {
             p.class("text-gray-600 leading-relaxed")
                 .text("The WebAssembly Package Registry is a discovery service for WebAssembly components and interfaces. It indexes packages from OCI registries and provides a browsable frontend for exploring the ecosystem.")

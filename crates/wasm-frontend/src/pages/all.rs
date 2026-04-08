@@ -15,7 +15,10 @@ pub(crate) async fn render(client: &ApiClient) -> String {
 
     let mut body = Division::builder();
 
-    body.heading_1(|h1| h1.class("text-3xl font-bold mb-8").text("All Packages"));
+    body.heading_1(|h1| {
+        h1.class("text-3xl font-bold tracking-tight mb-8")
+            .text("All Packages")
+    });
 
     if packages.is_empty() {
         body.paragraph(|p| {
@@ -56,7 +59,7 @@ fn render_row(pkg: &KnownPackage) -> Anchor {
         .span(|outer| {
             outer
                 .class("block")
-                .span(|s| s.class("font-mono font-semibold text-accent").text(display_name))
+                .span(|s| s.class("font-semibold text-accent").text(display_name))
                 .span(|s| s.class("text-sm text-gray-500 ml-2").text(version.to_owned()))
                 .span(|s| {
                     s.class("block text-sm text-gray-600 mt-0.5 line-clamp-1")

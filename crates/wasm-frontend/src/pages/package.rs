@@ -31,7 +31,7 @@ pub(crate) fn render(pkg: &KnownPackage, version: &str) -> String {
     body.division(|div| {
         div.class("mb-8")
             .heading_1(|h1| {
-                h1.class("text-3xl font-bold font-mono text-accent")
+                h1.class("text-3xl font-bold tracking-tight text-accent")
                     .text(display_name.clone())
             })
             .paragraph(|p| {
@@ -92,9 +92,9 @@ fn render_tags(pkg: &KnownPackage, current_version: &str) -> Option<Section> {
     for tag in &pkg.tags {
         let is_current = tag == current_version;
         let classes = if is_current {
-            "px-3 py-1 rounded-full text-sm font-mono bg-accent text-white"
+            "px-3 py-1 rounded-full text-sm bg-accent text-white"
         } else {
-            "px-3 py-1 rounded-full text-sm font-mono bg-gray-100 text-gray-700 hover:bg-gray-200"
+            "px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700 hover:bg-gray-200"
         };
         let href = format!("/{url_name}/{tag}");
         let anchor = Anchor::builder()
@@ -122,7 +122,7 @@ fn render_dependencies(pkg: &KnownPackage) -> Option<Section> {
     ul.class("space-y-1");
     for dep in &pkg.dependencies {
         let mut li = ListItem::builder();
-        li.class("font-mono text-sm");
+        li.class("text-sm");
         let dep_span = Span::builder()
             .class("text-accent")
             .text(dep.package.clone())
@@ -166,7 +166,7 @@ fn sidebar_row(label: &str, value: &str) -> Division {
                 .text(label.to_owned())
         })
         .division(|dd| {
-            dd.class("font-mono text-gray-900 mt-0.5 break-all")
+            dd.class("text-gray-900 mt-0.5 break-all")
                 .text(value.to_owned())
         })
         .build()

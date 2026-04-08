@@ -11,8 +11,8 @@ use crate::layout;
 pub(crate) fn render() -> String {
     let body = Division::builder()
         .class("text-center py-20")
-        .heading_1(|h1| h1.class("text-6xl font-bold text-accent").text("404"))
-        .paragraph(|p| p.class("text-xl text-gray-600 mt-4").text("Page not found"))
+        .heading_1(|h1| h1.class("text-6xl font-bold tracking-tighter text-accent").text("404"))
+        .paragraph(|p| p.class("text-lg text-gray-600 mt-4").text("Page not found"))
         .paragraph(|p| {
             p.class("text-gray-500 mt-2")
                 .text("The page you're looking for doesn't exist or has been moved.")

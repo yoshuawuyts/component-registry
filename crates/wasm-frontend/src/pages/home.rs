@@ -19,7 +19,7 @@ pub(crate) async fn render(client: &ApiClient) -> String {
     let mut body = Division::builder();
 
     body.heading_1(|h1| {
-        h1.class("text-3xl font-bold mb-8")
+        h1.class("text-3xl font-bold tracking-tight mb-8")
             .text("WebAssembly Package Registry")
     });
 
@@ -106,7 +106,7 @@ fn render_card(pkg: &KnownPackage) -> Anchor {
     Anchor::builder()
         .href(href)
         .class("block border border-gray-200 rounded-lg p-4 hover:border-accent hover:shadow-sm transition-colors")
-        .span(|s| s.class("block font-mono font-semibold text-accent").text(display_name))
+        .span(|s| s.class("block font-semibold text-accent").text(display_name))
         .span(|s| s.class("block text-sm text-gray-500 mt-1").text(version.to_owned()))
         .span(|s| {
             s.class("block text-sm text-gray-600 mt-2 line-clamp-2")
