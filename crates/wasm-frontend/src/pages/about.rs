@@ -8,7 +8,7 @@ use crate::layout;
 #[must_use]
 pub(crate) fn render() -> String {
     let body = Division::builder()
-        .class("max-w-[65ch]")
+        .class("pt-8 max-w-[65ch]")
         .heading_1(|h1| h1.class("text-3xl font-bold tracking-tight mb-6").text("About"))
         .paragraph(|p| {
             p.class("text-fg-secondary leading-relaxed")

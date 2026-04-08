@@ -23,7 +23,7 @@ fn render_results(query: &str, packages: &[KnownPackage]) -> String {
 
     // Page header
     body.division(|div| {
-        div.class("pb-6 border-b border-border mb-6")
+        div.class("pt-8 pb-6 border-b border-border mb-6")
             .heading_1(|h1| {
                 h1.class("text-3xl font-bold tracking-tight")
                     .text(format!("Results for \u{201c}{query}\u{201d}"))
@@ -80,7 +80,7 @@ fn render_error(query: &str, err: &ApiError) -> String {
     let mut body = Division::builder();
 
     body.division(|div| {
-        div.class("pb-6 border-b border-border mb-6")
+        div.class("pt-8 pb-6 border-b border-border mb-6")
             .heading_1(|h1| {
                 h1.class("text-3xl font-bold tracking-tight")
                     .text(format!("Results for \u{201c}{query}\u{201d}"))

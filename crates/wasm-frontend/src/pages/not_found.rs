@@ -10,7 +10,7 @@ use crate::layout;
 #[must_use]
 pub(crate) fn render() -> String {
     let body = Division::builder()
-        .class("text-center py-20")
+        .class("text-center pt-28 pb-20")
         .heading_1(|h1| h1.class("text-6xl font-bold tracking-tighter text-accent").text("404"))
         .paragraph(|p| p.class("text-lg text-fg-secondary mt-4").text("Page not found"))
         .paragraph(|p| {

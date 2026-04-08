@@ -34,6 +34,7 @@ fn app() -> Router {
         .route("/all", get(all_packages))
         .route("/search", get(search))
         .route("/about", get(about))
+        .route("/docs", get(docs))
         .route("/health", get(health))
         .route("/{namespace}/{name}", get(package_redirect))
         .route("/{namespace}/{name}/{version}", get(package_detail))
@@ -106,6 +107,12 @@ async fn all_packages(Query(params): Query<AllPackagesParams>) -> Response {
 /// About page (placeholder).
 async fn about() -> Response {
     let html = pages::about::render();
+    with_cache_control(html, "public, max-age=3600")
+}
+
+/// Documentation page.
+async fn docs() -> Response {
+    let html = pages::docs::render();
     with_cache_control(html, "public, max-age=3600")
 }
 

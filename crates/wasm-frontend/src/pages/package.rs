@@ -24,6 +24,8 @@ pub(crate) fn render(pkg: &KnownPackage, version: &str) -> String {
 
     let mut body = Division::builder();
 
+    body.class("pt-8");
+
     // Breadcrumb
     body.push(render_breadcrumb(&display_name));
 

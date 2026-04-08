@@ -29,6 +29,7 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
         "Home" => "/",
         "All Packages" => "/all",
         "About" => "/about",
+        "Docs" => "/docs",
         "Search" => "/search",
         _ => "",
     };
@@ -118,7 +119,7 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
 </head>
 <body class="bg-page text-fg min-h-screen flex flex-col leading-relaxed">
   {nav}
-  <main class="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-10">
+  <main class="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 pb-10">
     {body_content}
   </main>
   {footer}

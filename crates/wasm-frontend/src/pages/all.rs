@@ -22,7 +22,7 @@ fn render_packages(packages: &[KnownPackage], offset: u32, limit: u32) -> String
 
     // Page header with count
     body.division(|div| {
-        div.class("flex items-baseline justify-between pb-6 border-b border-border mb-6")
+        div.class("pt-8 flex items-baseline justify-between pb-6 border-b border-border mb-6")
             .heading_1(|h1| {
                 h1.class("text-3xl font-bold tracking-tight")
                     .text("All Packages")
