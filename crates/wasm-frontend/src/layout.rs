@@ -15,8 +15,8 @@ use crate::nav;
 
 /// Accent color used throughout the UI.
 ///
-/// RGB: R81 G47 B235 → `#512FEB`.
-pub(crate) const ACCENT_COLOR: &str = "#512FEB";
+/// Wasm logo purple in OKLCH: L=0.49, C=0.257, H=280.
+pub(crate) const ACCENT_COLOR: &str = "oklch(0.49 0.257 280)";
 
 /// Render a complete HTML document with the given title and body content.
 ///
@@ -74,31 +74,35 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
     }}
   </script>
   <style>
+    /* Color system: OKLCH, rooted in Wasm logo purple (hue 280).
+       Neutrals use hue 290 for a violet tint. All text tokens
+       pass WCAG AA (4.5:1) against bg. */
     :root {{
-      --color-bg: #ffffff;
+      --color-bg: oklch(1 0 290);
       --color-accent: {ACCENT_COLOR};
-      --color-accent-hover: #6a4bf0;
-      --color-surface: #f8f7fb;
-      --color-surface-muted: #f1eff6;
-      --color-border: #e4e0ed;
-      --color-border-light: #eeeaf5;
-      --color-fg: #1a1625;
-      --color-fg-secondary: #534e63;
-      --color-fg-muted: #7c7691;
-      --color-fg-faint: #a9a3bc;
+      --color-accent-hover: oklch(0.42 0.257 280);
+      --color-surface: oklch(0.975 0.006 290);
+      --color-surface-muted: oklch(0.955 0.01 290);
+      --color-border: oklch(0.91 0.018 290);
+      --color-border-light: oklch(0.94 0.014 290);
+      --color-fg: oklch(0.20 0.03 290);
+      --color-fg-secondary: oklch(0.40 0.03 290);
+      --color-fg-muted: oklch(0.54 0.025 290);
+      --color-fg-faint: oklch(0.56 0.02 290);
     }}
     @media (prefers-color-scheme: dark) {{
       :root {{
-        --color-bg: #13111d;
-        --color-accent-hover: #9678ff;
-        --color-surface: #1e1b2e;
-        --color-surface-muted: #252238;
-        --color-border: #352f4a;
-        --color-border-light: #2d2842;
-        --color-fg: #eae8f0;
-        --color-fg-secondary: #b8b3c8;
-        --color-fg-muted: #8e88a3;
-        --color-fg-faint: #6b6580;
+        --color-bg: oklch(0.185 0.025 290);
+        --color-accent: oklch(0.70 0.16 280);
+        --color-accent-hover: oklch(0.76 0.13 280);
+        --color-surface: oklch(0.23 0.03 290);
+        --color-surface-muted: oklch(0.26 0.035 290);
+        --color-border: oklch(0.32 0.04 290);
+        --color-border-light: oklch(0.29 0.038 290);
+        --color-fg: oklch(0.94 0.01 290);
+        --color-fg-secondary: oklch(0.78 0.025 290);
+        --color-fg-muted: oklch(0.66 0.03 290);
+        --color-fg-faint: oklch(0.62 0.025 290);
       }}
     }}
     /* Consistent focus ring for keyboard navigation */
