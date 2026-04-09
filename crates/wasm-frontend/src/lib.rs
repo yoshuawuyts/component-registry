@@ -47,6 +47,18 @@ fn app() -> Router {
             "/{namespace}/{name}/{version}/dependents",
             get(package_dependents),
         )
+        .route(
+            "/{namespace}/{name}/{version}/interface/{iface}",
+            get(interface_detail),
+        )
+        .route(
+            "/{namespace}/{name}/{version}/interface/{iface}/{item}",
+            get(item_detail),
+        )
+        .route(
+            "/{namespace}/{name}/{version}/world/{world_name}",
+            get(world_detail),
+        )
         .fallback(not_found)
 }
 
@@ -216,6 +228,109 @@ async fn package_dependents(
     };
     let html = pages::package::render(&pkg, &version, &tab);
     with_cache_control(html, "public, max-age=300")
+}
+
+/// Interface detail page at `/<namespace>/<name>/<version>/interface/<iface>`.
+async fn interface_detail(
+    Path((namespace, name, version, iface)): Path<(String, String, String, String)>,
+) -> Response {
+    let client = RegistryClient::from_env();
+    let Some(pkg) = fetch_package_or_404(&client, &namespace, &name, &version).await else {
+        return not_found_response();
+    };
+    let Some(doc) = fetch_wit_doc(&client, &pkg, &version).await else {
+        return not_found_response();
+    };
+    let Some(iface_doc) = doc.interfaces.iter().find(|i| i.name == iface) else {
+        return not_found_response();
+    };
+    let display_name = format!("{namespace}:{name}");
+    let html = pages::interface::render(&display_name, &version, iface_doc);
+    with_cache_control(html, "public, max-age=300")
+}
+
+/// Item detail page at `/<namespace>/<name>/<version>/interface/<iface>/<item>`.
+async fn item_detail(
+    Path((namespace, name, version, iface, item_name)): Path<(
+        String,
+        String,
+        String,
+        String,
+        String,
+    )>,
+) -> Response {
+    let client = RegistryClient::from_env();
+    let Some(pkg) = fetch_package_or_404(&client, &namespace, &name, &version).await else {
+        return not_found_response();
+    };
+    let Some(doc) = fetch_wit_doc(&client, &pkg, &version).await else {
+        return not_found_response();
+    };
+    let Some(iface_doc) = doc.interfaces.iter().find(|i| i.name == iface) else {
+        return not_found_response();
+    };
+    let display_name = format!("{namespace}:{name}");
+
+    // Try types first, then functions.
+    if let Some(ty) = iface_doc.types.iter().find(|t| t.name == item_name) {
+        let html = pages::item::render_type(&display_name, &version, &iface, ty);
+        return with_cache_control(html, "public, max-age=300");
+    }
+    if let Some(func) = iface_doc.functions.iter().find(|f| f.name == item_name) {
+        let html = pages::item::render_function(&display_name, &version, &iface, func);
+        return with_cache_control(html, "public, max-age=300");
+    }
+
+    not_found_response()
+}
+
+/// World detail page at `/<namespace>/<name>/<version>/world/<world_name>`.
+async fn world_detail(
+    Path((namespace, name, version, world_name)): Path<(String, String, String, String)>,
+) -> Response {
+    let client = RegistryClient::from_env();
+    let Some(pkg) = fetch_package_or_404(&client, &namespace, &name, &version).await else {
+        return not_found_response();
+    };
+    let Some(doc) = fetch_wit_doc(&client, &pkg, &version).await else {
+        return not_found_response();
+    };
+    let Some(world_doc) = doc.worlds.iter().find(|w| w.name == world_name) else {
+        return not_found_response();
+    };
+    let display_name = format!("{namespace}:{name}");
+    let html = pages::world::render(&display_name, &version, world_doc);
+    with_cache_control(html, "public, max-age=300")
+}
+
+/// Fetch and parse the WIT document for a package version.
+async fn fetch_wit_doc(
+    client: &RegistryClient,
+    pkg: &KnownPackage,
+    version: &str,
+) -> Option<wasm_wit_doc::WitDocument> {
+    let detail = client
+        .fetch_package_version(&pkg.registry, &pkg.repository, version)
+        .await
+        .ok()
+        .flatten()?;
+    let wit_text = detail.wit_text.as_deref()?;
+    let dep_urls: std::collections::HashMap<String, String> = detail
+        .dependencies
+        .iter()
+        .filter_map(|dep| {
+            let v = dep.version.as_deref()?;
+            let url = format!("/{}/{v}", dep.package.replace(':', "/"));
+            Some((dep.package.clone(), url))
+        })
+        .collect();
+    let url_base = format!(
+        "/{}/{}/{}",
+        pkg.wit_namespace.as_deref().unwrap_or("_"),
+        pkg.wit_name.as_deref().unwrap_or(&pkg.repository),
+        version
+    );
+    wasm_wit_doc::parse_wit_doc(wit_text, &url_base, &dep_urls).ok()
 }
 
 /// Fetch a package by WIT namespace/name, validating the version exists.
