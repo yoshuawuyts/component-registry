@@ -159,15 +159,15 @@ fn render_type_row(ty: &TypeDoc) -> ListItem {
     let color_class = kind_color_class(&ty.kind);
 
     let mut li = ListItem::builder();
-    li.class("py-2.5 flex gap-4");
+    li.class("py-3 flex gap-6");
 
     // Left: kind-colored name
     li.division(|left| {
-        left.class("shrink-0 w-48")
+        left.class("shrink-0 w-52")
             .anchor(|a| {
                 a.href(ty.url.clone())
                     .class(format!(
-                        "font-mono font-semibold hover:underline {color_class}"
+                        "font-mono text-sm font-semibold hover:underline {color_class}"
                     ))
                     .text(ty.name.clone())
             })
@@ -177,7 +177,7 @@ fn render_type_row(ty: &TypeDoc) -> ListItem {
     if let Some(docs) = &ty.docs {
         li.division(|right| {
             right
-                .class("text-sm text-fg-secondary line-clamp-2 min-w-0")
+                .class("text-sm leading-relaxed text-fg-secondary line-clamp-2 min-w-0")
                 .text(first_sentence(docs))
         });
     }
@@ -207,15 +207,15 @@ fn render_function_row(func: &FunctionDoc) -> ListItem {
     let color_class = "text-wit-func";
 
     let mut li = ListItem::builder();
-    li.class("py-2.5 flex gap-4");
+    li.class("py-3 flex gap-6");
 
     // Left: function name
     li.division(|left| {
-        left.class("shrink-0 w-48")
+        left.class("shrink-0 w-52")
             .anchor(|a| {
                 a.href(func.url.clone())
                     .class(format!(
-                        "font-mono font-semibold hover:underline {color_class}"
+                        "font-mono text-sm font-semibold hover:underline {color_class}"
                     ))
                     .text(func.name.clone())
             })
@@ -225,7 +225,7 @@ fn render_function_row(func: &FunctionDoc) -> ListItem {
     if let Some(docs) = &func.docs {
         li.division(|right| {
             right
-                .class("text-sm text-fg-secondary line-clamp-2 min-w-0")
+                .class("text-sm leading-relaxed text-fg-secondary line-clamp-2 min-w-0")
                 .text(first_sentence(docs))
         });
     }
