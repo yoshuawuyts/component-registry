@@ -410,8 +410,7 @@ fn render_sidebar(
     if let Some(size) = version_detail.and_then(|d| d.size_bytes) {
         card.push(sidebar_row("Size", &format_size(size)));
     }
-    card.push(sidebar_row("Created", &pkg.created_at));
-    card.push(sidebar_row("Last updated", &pkg.last_seen_at));
+    card.push(sidebar_row("Published on", &pkg.created_at));
     aside.push(card.build());
 
     aside.build()
