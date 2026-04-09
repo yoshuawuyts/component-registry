@@ -825,6 +825,17 @@ impl Manager {
     /// Index a package from the registry, also extracting WIT dependency
     /// metadata from the package's wasm layer.
     ///
+    /// Re-extract WIT metadata for all cached packages.
+    ///
+    /// Reads the original wasm bytes from the content-addressable cache and
+    /// re-derives `wit_text` and related metadata using the current
+    /// extraction logic.  OCI data (manifests, layers, blobs) is untouched.
+    ///
+    /// Returns the number of packages that were re-indexed.
+    pub async fn reindex_wit(&self) -> anyhow::Result<u64> {
+        self.store.reindex_wit_packages().await
+    }
+
     /// Fetches the manifest and config to extract metadata (description from
     /// OCI annotations), lists all tags, and upserts into the known packages
     /// table. Also pulls the wasm layer for the most recent tag to extract

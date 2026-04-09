@@ -588,6 +588,56 @@ impl Store {
         Ok(())
     }
 
+    /// Re-extract WIT metadata for every package that has a cached OCI layer.
+    ///
+    /// This reads the raw wasm bytes back from the cacache store, deletes
+    /// the existing `wit_package` row (cascading to worlds, imports, exports,
+    /// and dependencies), and re-runs `try_extract_wit_package` so that
+    /// derived fields like `wit_text` pick up any improvements to the
+    /// extraction logic.
+    ///
+    /// Original OCI data (manifests, layers, blobs) is never modified.
+    pub(crate) async fn reindex_wit_packages(&self) -> anyhow::Result<u64> {
+        // Collect (wit_package.id, oci_manifest_id, layer_digest) tuples.
+        let mut stmt = self.conn.prepare(
+            "SELECT wp.id, wp.oci_manifest_id, ol.digest
+             FROM wit_package wp
+             JOIN oci_layer ol ON ol.id = wp.oci_layer_id",
+        )?;
+        let rows: Vec<(i64, i64, String)> = stmt
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let store_dir = self.state_info.store_dir().to_path_buf();
+        let mut reindexed = 0u64;
+
+        for (wit_id, manifest_id, digest) in &rows {
+            // Read the raw bytes from cacache.
+            let bytes = match cacache::read(&store_dir, digest).await {
+                Ok(b) => b,
+                Err(e) => {
+                    tracing::warn!("reindex: failed to read layer {digest} from cache: {e}");
+                    continue;
+                }
+            };
+
+            // Delete the old wit_package row (cascades to worlds, etc.).
+            if let Err(e) = self
+                .conn
+                .execute("DELETE FROM wit_package WHERE id = ?1", [wit_id])
+            {
+                tracing::warn!("reindex: failed to delete wit_package {wit_id}: {e}");
+                continue;
+            }
+
+            // Re-extract with the current extraction logic.
+            self.try_extract_wit_package(*manifest_id, None, &bytes);
+            reindexed += 1;
+        }
+
+        Ok(reindexed)
+    }
+
     /// Returns all currently stored images and their metadata.
     pub(crate) fn list_all(&self) -> anyhow::Result<Vec<RawImageEntry>> {
         RawImageEntry::get_all(&self.conn)

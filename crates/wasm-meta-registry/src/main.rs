@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use clap::Parser;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use wasm_package_manager::manager::Manager;
 
 use wasm_meta_registry::{Config, Indexer, router};
@@ -59,6 +59,16 @@ async fn main() -> anyhow::Result<()> {
 
     // Open the Manager for the HTTP server with its own data directory
     let server_manager = Manager::open_at(&data_dir).await?;
+
+    // Re-derive WIT metadata from cached OCI layers so that existing
+    // packages pick up any improvements to the extraction logic (e.g.
+    // switching from the lossy hand-rolled formatter to WitPrinter).
+    match server_manager.reindex_wit().await {
+        Ok(n) if n > 0 => info!(count = n, "Re-indexed WIT packages"),
+        Ok(_) => {}
+        Err(e) => warn!(error = %e, "WIT re-index failed (non-fatal)"),
+    }
+
     let state = Arc::new(std::sync::Mutex::new(server_manager));
 
     // Start background indexer on a dedicated thread (Manager is !Sync)
