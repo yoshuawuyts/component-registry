@@ -1121,6 +1121,24 @@ fn format_size(bytes: i64) -> String {
     }
 }
 
+/// Abbreviate a URL for display (strip scheme and trailing slash).
+fn abbreviate_url(url: &str) -> String {
+    url.strip_prefix("https://")
+        .or_else(|| url.strip_prefix("http://"))
+        .unwrap_or(url)
+        .trim_end_matches('/')
+        .to_owned()
+}
+
+/// Format an ISO 8601 timestamp as a short date (YYYY-MM-DD).
+fn format_date(iso: &str) -> String {
+    // Take just the date portion of "2026-03-05T23:36:11Z"
+    iso.split('T')
+        .next()
+        .unwrap_or(iso)
+        .to_owned()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
