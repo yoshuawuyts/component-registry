@@ -44,9 +44,12 @@ fn render_error(err: &ApiError) -> String {
         div.class("py-16 text-center")
             .paragraph(|p| {
                 p.class("text-fg font-semibold")
-                    .text("Unable to load packages")
+                    .text("Could not load packages")
             })
-            .paragraph(|p| p.class("text-sm text-fg-muted mt-2").text(err.to_string()))
+            .paragraph(|p| {
+                p.class("text-sm text-fg-muted mt-2")
+                    .text("The registry may be temporarily unavailable. Try refreshing the page.")
+            })
     });
     layout::document("Home", &body.build().to_string())
 }
@@ -69,7 +72,7 @@ fn render_hero(total: usize) -> Division {
     });
     hero.paragraph(|p| {
         p.class("mt-2 text-sm text-fg-muted flex items-center gap-2 flex-wrap")
-            .text("Get started: ")
+            .text("Install a package: ")
             .code(|code| {
                 code.class(
                     "font-mono text-fg-secondary bg-surface-muted px-1.5 py-0.5 rounded text-xs copy-hint",
@@ -142,9 +145,9 @@ fn render_section(heading: &str, packages: &[&KnownPackage]) -> Section {
     let (icon, subtitle) = match heading {
         "Interfaces" => (
             "⬡",
-            "WIT interface definitions for composable WebAssembly modules",
+            "WIT interfaces for composing WebAssembly modules",
         ),
-        "Components" => ("◈", "Standalone WebAssembly components ready to use"),
+        "Components" => ("◈", "Ready-to-use WebAssembly components"),
         _ => ("", ""),
     };
 
@@ -175,7 +178,12 @@ fn render_section(heading: &str, packages: &[&KnownPackage]) -> Section {
         // Empty state
         section.paragraph(|p| {
             p.class("py-8 text-sm text-fg-faint")
-                .text(format!("No {heading} found yet."))
+                .text(format!("No {heading} published yet. "))
+                .anchor(|a| {
+                    a.href("/docs")
+                        .class("text-accent hover:underline")
+                        .text("Learn how to publish")
+                })
         });
     } else {
         // Package grid — card layout
@@ -212,7 +220,7 @@ fn render_card(pkg: &KnownPackage, index: usize) -> Division {
     let description = pkg
         .description
         .as_deref()
-        .unwrap_or("No description available");
+        .unwrap_or("No description");
 
     let version = pkg.tags.first().map_or("—", String::as_str);
 
