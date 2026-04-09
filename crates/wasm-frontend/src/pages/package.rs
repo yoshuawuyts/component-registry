@@ -296,6 +296,10 @@ fn render_tab_bar(url_base: &str, active: &ActiveTab<'_>) -> Division {
 /// Render the dependencies panel showing forward dependencies.
 fn render_dependencies_panel(pkg: &KnownPackage) -> Division {
     let mut div = Division::builder();
+    div.paragraph(|p| {
+        p.class("text-fg-muted text-sm mb-4")
+            .text("Interfaces this component depends on.")
+    });
 
     if pkg.dependencies.is_empty() {
         div.paragraph(|p| {
@@ -343,6 +347,12 @@ fn render_dependents_panel(importers: &[KnownPackage], exporters: &[KnownPackage
     let filter_base = "px-3 py-1.5 text-xs cursor-pointer transition-colors";
 
     let mut container = Division::builder();
+    container.paragraph(|p| {
+        p.class("text-fg-muted text-sm mb-4").text(
+            "Importers consume this interface. \
+             Exporters implement it.",
+        )
+    });
 
     // Sub-filter bar
     container.division(|div| {
