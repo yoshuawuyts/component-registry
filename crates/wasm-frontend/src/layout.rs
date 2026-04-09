@@ -11,7 +11,6 @@
 // r[impl frontend.styling.responsive]
 
 use crate::footer;
-use crate::nav;
 
 /// Accent color used throughout the UI.
 ///
@@ -25,14 +24,6 @@ pub(crate) const ACCENT_COLOR: &str = "oklch(0.49 0.257 280)";
 #[must_use]
 pub(crate) fn document(title: &str, body_content: &str) -> String {
     let escaped_title = escape_html_text(title);
-    let current_path = match title {
-        "Home" => "/",
-        "All Packages" => "/all",
-        "About" => "/about",
-        "Docs" => "/docs",
-        "Search" => "/search",
-        _ => "",
-    };
 
     format!(
         r#"<!DOCTYPE html>
@@ -250,10 +241,31 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
       opacity: 0;
       pointer-events: none;
     }}
+    /* Tab buttons */
+    .tab-btn {{
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      color: var(--color-fg-muted);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      margin-bottom: -1px;
+    }}
+    .tab-btn:hover {{
+      color: var(--color-fg);
+    }}
+    .tab-btn[aria-selected="true"] {{
+      color: var(--color-fg);
+      border-bottom-color: var(--color-accent);
+    }}
+    @media (prefers-reduced-motion: reduce) {{
+      .tab-btn {{ transition: none; }}
+    }}
   </style>
 </head>
 <body class="bg-page text-fg min-h-screen flex flex-col leading-relaxed">
-  {nav}
   <main class="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 pb-10">
     {body_content}
   </main>
@@ -281,11 +293,30 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
         }});
       }}
     }});
+    // Tab switching
+    document.addEventListener('click', function(e) {{
+      var btn = e.target.closest('.tab-btn');
+      if (!btn) return;
+      var group = btn.closest('.tab-group');
+      if (!group) return;
+      var tab = btn.getAttribute('data-tab');
+      // Update tab buttons
+      group.querySelectorAll('.tab-btn').forEach(function(b) {{
+        b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+      }});
+      // Show/hide panels
+      group.querySelectorAll('.tab-panel').forEach(function(p) {{
+        if (p.id === 'panel-' + tab) {{
+          p.style.display = '';
+        }} else {{
+          p.style.display = 'none';
+        }}
+      }});
+    }});
   </script>
 </body>
 </html>"#,
         escaped_title = escaped_title,
-        nav = nav::render(current_path),
         footer = footer::render(),
         body_content = body_content,
     )

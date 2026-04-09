@@ -420,7 +420,7 @@ fn with_cache_control(html: String, cache_control: &'static str) -> Response {
 }
 
 #[must_use]
-fn pick_redirect_version(tags: &[String]) -> Option<String> {
+pub(crate) fn pick_redirect_version(tags: &[String]) -> Option<String> {
     tags.iter()
         .filter_map(|tag| {
             semver::Version::parse(tag)

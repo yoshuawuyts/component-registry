@@ -2,15 +2,15 @@
 
 // r[impl frontend.pages.home]
 
-use html::content::Section;
 use html::text_content::Division;
+use html::text_content::builders::DivisionBuilder;
 use wasm_meta_registry_client::KnownPackage;
 
 use crate::layout;
 use wasm_meta_registry_client::{ApiError, RegistryClient};
 
-/// Maximum number of packages to show per section on the home page.
-const HOME_SECTION_LIMIT: usize = 6;
+/// Maximum number of packages to show per tab on the home page (4 cols × 10 rows).
+const HOME_SECTION_LIMIT: usize = 40;
 
 /// Fetch recent packages and render the home page.
 pub(crate) async fn render(client: &RegistryClient) -> String {
@@ -29,15 +29,14 @@ fn render_packages(packages: &[KnownPackage]) -> String {
     // Hero area
     body.push(render_hero(packages.len()));
 
-    // Package sections with generous separation
-    body.push(render_section(SectionKind::Interfaces, &interfaces));
-    body.push(render_section(SectionKind::Components, &components));
+    // Tabbed package listing
+    body.push(render_tabs(packages, &interfaces, &components));
 
     layout::document("Home", &body.build().to_string())
 }
 
 /// Render the home page with an API error message.
-fn render_error(err: &ApiError) -> String {
+fn render_error(_err: &ApiError) -> String {
     let mut body = Division::builder();
     body.push(render_hero(0));
     body.division(|div| {
@@ -131,103 +130,108 @@ fn split_by_kind(packages: &[KnownPackage]) -> (Vec<&KnownPackage>, Vec<&KnownPa
     (components, interfaces)
 }
 
-/// Kind of package section on the home page.
-enum SectionKind {
-    Interfaces,
-    Components,
+/// Render the tabbed package listing with All / Interfaces / Components tabs.
+fn render_tabs(
+    all: &[KnownPackage],
+    interfaces: &[&KnownPackage],
+    components: &[&KnownPackage],
+) -> Division {
+    let all_refs: Vec<&KnownPackage> = all.iter().collect();
+
+    let tabs: &[(&str, &str, &[&KnownPackage])] = &[
+        ("all", "All", &all_refs),
+        ("interfaces", "Interfaces", interfaces),
+        ("components", "Components", components),
+    ];
+
+    let mut wrapper = Division::builder();
+    wrapper.class("tab-group");
+
+    // Tab bar
+    let mut bar = Division::builder();
+    bar.class("flex gap-1 border-b border-border mb-6");
+    bar.role("tablist");
+    for (i, &(id, label, pkgs)) in tabs.iter().enumerate() {
+        let count = pkgs.len();
+        let selected = i == 0;
+        bar.button(|btn| {
+            btn.type_("button")
+                .role("tab")
+                .class("tab-btn")
+                .data("tab", id)
+                .aria_selected(selected)
+                .aria_controls_elements(format!("panel-{id}"))
+                .span(|s: &mut html::inline_text::builders::SpanBuilder| {
+                    s.text(label.to_owned())
+                })
+                .span(|s: &mut html::inline_text::builders::SpanBuilder| {
+                    s.class("ml-1.5 text-xs text-fg-faint")
+                        .text(format!("{count}"))
+                })
+        });
+    }
+    wrapper.push(bar.build());
+
+    // Panels
+    for (i, &(id, _label, pkgs)) in tabs.iter().enumerate() {
+        let mut panel = Division::builder();
+        panel
+            .id(format!("panel-{id}"))
+            .role("tabpanel")
+            .class("tab-panel");
+        if i != 0 {
+            panel.style("display:none");
+        }
+        render_card_grid(&mut panel, pkgs);
+        wrapper.push(panel.build());
+    }
+
+    wrapper.build()
 }
 
-impl SectionKind {
-    /// Display label for the section heading.
-    fn label(&self) -> &'static str {
-        match self {
-            Self::Interfaces => "WebAssembly Interface Types",
-            Self::Components => "WebAssembly Components",
-        }
-    }
-
-    /// Icon prefix for the section heading.
-    fn icon(&self) -> &'static str {
-        match self {
-            Self::Interfaces => "⬡",
-            Self::Components => "◈",
-        }
-    }
-
-    /// Subtitle describing the section.
-    fn subtitle(&self) -> &'static str {
-        match self {
-            Self::Interfaces => "Interfaces to connect programs, libraries, and runtimes.",
-            Self::Components => "Ready-to-use programs and libraries.",
-        }
-    }
-}
-
-/// Render a section with a heading, a grid of package rows, and a "view all" link.
-fn render_section(kind: SectionKind, packages: &[&KnownPackage]) -> Section {
-    let has_more = packages.len() > HOME_SECTION_LIMIT;
-    let visible = packages.get(..HOME_SECTION_LIMIT).unwrap_or(packages);
-
-    let icon = kind.icon();
-    let heading = kind.label();
-    let subtitle = kind.subtitle();
-
-    let mut section = Section::builder();
-    section.class("mb-10");
-
-    // Section header with icon, description, and count
-    section.division(|div| {
-        div.class("mb-5")
-            .division(|row| {
-                row.class("flex items-baseline justify-between")
-                    .heading_2(|h2| {
-                        h2.class("text-lg font-semibold")
-                            .text(format!("{icon} {heading}"))
-                    })
-                    .span(|s| {
-                        s.class("text-sm text-fg-faint")
-                            .text(format!("{}", packages.len()))
-                    })
-            })
-            .paragraph(|p| {
-                p.class("text-sm text-fg-muted mt-1")
-                    .text(subtitle.to_owned())
-            })
-    });
-
+/// Render a grid of package cards into a container, with a "view all" link
+/// when the list is truncated.
+fn render_card_grid(container: &mut DivisionBuilder, packages: &[&KnownPackage]) {
     if packages.is_empty() {
-        // Empty state
-        section.paragraph(|p| {
+        container.paragraph(|p| {
             p.class("py-8 text-sm text-fg-faint")
-                .text(format!("No {heading} published yet. "))
+                .text("No packages published yet. ")
                 .anchor(|a| {
                     a.href("/docs")
                         .class("text-accent hover:underline")
                         .text("Learn how to publish")
                 })
         });
-    } else {
-        // Package grid — card layout
-        let mut grid = Division::builder();
-        grid.class("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4");
-        for (i, pkg) in visible.iter().enumerate() {
-            grid.push(render_card(pkg, i));
-        }
-        section.push(grid.build());
-
-        // "View all" link
-        if has_more {
-            section.paragraph(|p| {
-                p.class("mt-4").anchor(|a| {
-                    a.href("/all")
-                        .class("text-sm text-accent hover:underline")
-                        .text(format!("View all {heading} →"))
-                })
-            });
-        }
+        return;
     }
 
-    section.build()
+    let has_more = packages.len() > HOME_SECTION_LIMIT;
+    let visible = packages.get(..HOME_SECTION_LIMIT).unwrap_or(packages);
+
+    let mut grid = Division::builder();
+    grid.class("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4");
+    for (i, pkg) in visible.iter().enumerate() {
+        grid.push(render_card(pkg, i));
+    }
+    container.push(grid.build());
+
+    if has_more {
+        container.paragraph(|p| {
+            p.class("mt-4").anchor(|a| {
+                a.href("/all")
+                    .class("text-sm text-accent hover:underline")
+                    .text("View all packages →")
+            })
+        });
+    }
+}
+
+/// Icon for a package kind.
+fn kind_icon(kind: Option<wasm_meta_registry_client::PackageKind>) -> &'static str {
+    match kind {
+        Some(wasm_meta_registry_client::PackageKind::Interface) => "⬡",
+        _ => "◈",
+    }
 }
 
 /// Render a single package as a card.
@@ -239,8 +243,9 @@ fn render_card(pkg: &KnownPackage, index: usize) -> Division {
     };
 
     let description = pkg.description.as_deref().unwrap_or("No description");
-
-    let version = pkg.tags.first().map_or("—", String::as_str);
+    let version = crate::pick_redirect_version(&pkg.tags)
+        .unwrap_or_else(|| pkg.tags.first().cloned().unwrap_or_else(|| "\u{2014}".to_owned()));
+    let icon = kind_icon(pkg.kind);
 
     match (&pkg.wit_namespace, &pkg.wit_name) {
         (Some(ns), Some(name)) => Division::builder()
@@ -249,14 +254,23 @@ fn render_card(pkg: &KnownPackage, index: usize) -> Division {
             .anchor(|a| {
                 a.href(format!("/{ns}/{name}"))
                     .class(
-                        "block border border-border rounded-lg p-4 hover:border-accent/40 hover:bg-surface card-lift",
+                        "flex flex-col h-full border border-border rounded-lg p-4 hover:border-accent/40 hover:bg-surface card-lift",
                     )
                     .span(|s| {
-                        s.class("block font-semibold text-accent truncate")
-                            .text(display_name)
+                        s.class("flex items-start justify-between gap-2")
+                            .span(|name_span| {
+                                name_span
+                                    .class("font-semibold text-accent truncate")
+                                    .text(display_name)
+                            })
+                            .span(|badge| {
+                                badge
+                                    .class("text-xs text-fg-faint shrink-0")
+                                    .text(icon.to_owned())
+                            })
                     })
                     .span(|s| {
-                        s.class("block text-sm text-fg-muted mt-1 line-clamp-2")
+                        s.class("block text-sm text-fg-muted mt-1 line-clamp-2 flex-1")
                             .text(description.to_owned())
                     })
                     .span(|s| {
@@ -268,18 +282,31 @@ fn render_card(pkg: &KnownPackage, index: usize) -> Division {
         _ => Division::builder()
             .class("card-enter")
             .style(delay)
-            .class("border border-border rounded-lg p-4 card-lift")
+            .class("flex flex-col h-full border border-border rounded-lg p-4 card-lift")
             .span(|s| {
-                s.class("block font-semibold text-fg truncate")
-                    .text(display_name)
+                s.class("flex items-start justify-between gap-2")
+                    .span(|name_span| {
+                        name_span
+                            .class("font-semibold text-fg truncate")
+                            .text(display_name)
+                    })
+                    .span(|badge| {
+                        badge
+                            .class("text-xs text-fg-faint shrink-0")
+                            .text(icon.to_owned())
+                    })
             })
             .span(|s| {
-                s.class("block text-sm text-fg-muted mt-1 line-clamp-2")
+                s.class("block text-sm text-fg-muted mt-1 line-clamp-2 flex-1")
                     .text(description.to_owned())
             })
             .span(|s| {
                 s.class("block text-xs text-fg-faint mt-3 font-mono")
                     .text(version.to_owned())
+            })
+            .build(),
+                            .text(format!("{icon} {label}"))
+                    })
             })
             .build(),
     }
