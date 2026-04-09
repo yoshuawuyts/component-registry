@@ -663,7 +663,7 @@ fn render_page_header(
 
         // Metadata rows
         let mut meta = Division::builder();
-        meta.class("space-y-1.5 text-xs");
+        meta.class("space-y-2 text-xs leading-relaxed");
 
         // Source/repository
         if let Some(source) = annotations.and_then(|a| a.source.as_deref()) {
