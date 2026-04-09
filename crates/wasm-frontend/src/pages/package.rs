@@ -398,12 +398,11 @@ fn render_world_row(world: &wasm_wit_doc::WorldDoc) -> ListItem {
     li.class("py-3 flex gap-6");
 
     li.division(|left| {
-        left.class("shrink-0 w-52")
-            .anchor(|a| {
-                a.href(world.url.clone())
-                    .class("font-mono text-sm font-semibold text-accent hover:underline")
-                    .text(world.name.clone())
-            })
+        left.class("shrink-0 w-52").anchor(|a| {
+            a.href(world.url.clone())
+                .class("font-mono text-sm font-semibold text-accent hover:underline")
+                .text(world.name.clone())
+        })
     });
 
     // Right: doc excerpt
@@ -448,9 +447,8 @@ fn render_world_summaries(detail: &PackageVersion) -> Division {
             });
 
             if let Some(desc) = &world.description {
-                world_div.paragraph(|p| {
-                    p.class("text-fg-secondary text-sm mb-3").text(desc.clone())
-                });
+                world_div
+                    .paragraph(|p| p.class("text-fg-secondary text-sm mb-3").text(desc.clone()));
             }
 
             if !world.imports.is_empty() {
@@ -479,7 +477,7 @@ fn render_iface_ref_list(
     });
 
     let mut ul = UnorderedList::builder();
-    ul.class("divide-y divide-border/50");
+    ul.class("space-y-0.5");
     for iface in interfaces {
         let display = format_iface_ref(iface);
         ul.list_item(|li| {
