@@ -394,40 +394,26 @@ fn format_iface_ref(iface: &wasm_meta_registry_client::WitInterfaceRef) -> Strin
 
 /// Render a single world row in the overview list.
 fn render_world_row(world: &wasm_wit_doc::WorldDoc) -> ListItem {
-    let import_count = world.imports.len();
-    let export_count = world.exports.len();
-
     let mut li = ListItem::builder();
-    li.class(
-        "border border-border rounded-lg px-4 py-3 \
-         hover:border-accent/50 transition-colors",
-    );
+    li.class("py-3 flex gap-6");
 
-    li.anchor(|a| {
-        a.href(world.url.clone())
-            .class("block group")
-            .division(|div| {
-                div.class("flex items-baseline gap-2")
-                    .span(|s| {
-                        s.class(
-                            "font-mono font-semibold text-accent \
-                             group-hover:underline",
-                        )
-                        .text(world.name.clone())
-                    })
-                    .span(|s| {
-                        s.class("text-xs text-fg-secondary bg-surface-muted px-1.5 py-0.5 rounded")
-                            .text(world_counts_label(import_count, export_count))
-                    })
-            });
-        if let Some(docs) = &world.docs {
-            a.paragraph(|p| {
-                p.class("text-sm leading-relaxed text-fg-secondary mt-1 line-clamp-2")
-                    .text(first_sentence(docs))
-            });
-        }
-        a
+    li.division(|left| {
+        left.class("shrink-0 w-52")
+            .anchor(|a| {
+                a.href(world.url.clone())
+                    .class("font-mono text-sm font-semibold text-accent hover:underline")
+                    .text(world.name.clone())
+            })
     });
+
+    // Right: doc excerpt
+    if let Some(docs) = &world.docs {
+        li.division(|right| {
+            right
+                .class("text-sm leading-relaxed text-fg-secondary line-clamp-2 min-w-0")
+                .text(first_sentence(docs))
+        });
+    }
 
     li.build()
 }
@@ -517,50 +503,6 @@ fn format_iface_ref(iface: &wasm_meta_registry_client::WitInterfaceRef) -> Strin
         s.push_str(v);
     }
     s
-}
-
-/// Format a counts label like "3 types, 2 functions".
-fn item_counts_label(types: usize, funcs: usize) -> String {
-    let mut parts = Vec::new();
-    if types > 0 {
-        parts.push(format!(
-            "{types} {}",
-            if types == 1 { "type" } else { "types" }
-        ));
-    }
-    if funcs > 0 {
-        parts.push(format!(
-            "{funcs} {}",
-            if funcs == 1 { "function" } else { "functions" }
-        ));
-    }
-    if parts.is_empty() {
-        "empty".to_owned()
-    } else {
-        parts.join(", ")
-    }
-}
-
-/// Format a counts label like "2 imports, 1 export".
-fn world_counts_label(imports: usize, exports: usize) -> String {
-    let mut parts = Vec::new();
-    if imports > 0 {
-        parts.push(format!(
-            "{imports} {}",
-            if imports == 1 { "import" } else { "imports" }
-        ));
-    }
-    if exports > 0 {
-        parts.push(format!(
-            "{exports} {}",
-            if exports == 1 { "export" } else { "exports" }
-        ));
-    }
-    if parts.is_empty() {
-        "empty".to_owned()
-    } else {
-        parts.join(", ")
-    }
 }
 
 /// Extract the first sentence from a doc comment for summary display.
