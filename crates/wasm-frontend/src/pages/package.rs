@@ -7,6 +7,7 @@ use html::content::Section;
 use html::inline_text::Span;
 use html::text_content::{Division, ListItem, UnorderedList};
 use wasm_meta_registry_client::{KnownPackage, PackageVersion};
+use wasm_wit_doc::WitDocument;
 
 use crate::layout;
 
@@ -373,8 +374,8 @@ fn render_iface_ref_list(
                 .span(|s| s.class("text-sm font-mono text-accent").text(display))
         });
     }
-    div.push(ul.build());
-    div.build()
+    container.push(ul.build());
+    container.build()
 }
 
 /// Format a WIT interface reference as a display string.
@@ -384,11 +385,114 @@ fn format_iface_ref(iface: &wasm_meta_registry_client::WitInterfaceRef) -> Strin
         s.push('/');
         s.push_str(name);
     }
-    if let Some(v) = &iface.version {
-        s.push('@');
-        s.push_str(v);
+    container.push(ul.build());
+    container.build()
+}
+
+/// Render a single world row in the overview list.
+fn render_world_row(world: &wasm_wit_doc::WorldDoc) -> ListItem {
+    let import_count = world.imports.len();
+    let export_count = world.exports.len();
+
+    let mut li = ListItem::builder();
+    li.class(
+        "border border-border rounded-lg p-4 \
+         hover:border-accent/50 transition-colors",
+    );
+
+    li.anchor(|a| {
+        a.href(world.url.clone())
+            .class("block group")
+            .division(|div| {
+                div.class("flex items-baseline gap-2")
+                    .span(|s| {
+                        s.class(
+                            "font-mono font-semibold text-accent \
+                             group-hover:underline",
+                        )
+                        .text(world.name.clone())
+                    })
+                    .span(|s| {
+                        s.class("text-xs text-fg-muted")
+                            .text(world_counts_label(import_count, export_count))
+                    })
+            });
+        if let Some(docs) = &world.docs {
+            a.paragraph(|p| {
+                p.class("text-sm text-fg-secondary mt-1 line-clamp-2")
+                    .text(first_sentence(docs))
+            });
+        }
+        a
+    });
+
+    li.build()
+}
+
+/// Render raw WIT text in a pre-formatted code block (fallback).
+fn render_raw_wit(wit_text: &str) -> Division {
+    Division::builder()
+        .heading_2(|h2| {
+            h2.class("text-lg font-semibold mb-3")
+                .text("WIT Definition")
+        })
+        .push(
+            html::text_content::PreformattedText::builder()
+                .class("bg-surface-muted border border-border rounded-lg p-4 overflow-x-auto text-sm leading-relaxed")
+                .code(|code| code.class("text-fg").text(wit_text.to_owned()))
+                .build(),
+        )
+        .build()
+}
+
+/// Format a counts label like "3 types, 2 functions".
+fn item_counts_label(types: usize, funcs: usize) -> String {
+    let mut parts = Vec::new();
+    if types > 0 {
+        parts.push(format!(
+            "{types} {}",
+            if types == 1 { "type" } else { "types" }
+        ));
     }
-    s
+    if funcs > 0 {
+        parts.push(format!(
+            "{funcs} {}",
+            if funcs == 1 { "function" } else { "functions" }
+        ));
+    }
+    if parts.is_empty() {
+        "empty".to_owned()
+    } else {
+        parts.join(", ")
+    }
+}
+
+/// Format a counts label like "2 imports, 1 export".
+fn world_counts_label(imports: usize, exports: usize) -> String {
+    let mut parts = Vec::new();
+    if imports > 0 {
+        parts.push(format!(
+            "{imports} {}",
+            if imports == 1 { "import" } else { "imports" }
+        ));
+    }
+    if exports > 0 {
+        parts.push(format!(
+            "{exports} {}",
+            if exports == 1 { "export" } else { "exports" }
+        ));
+    }
+    if parts.is_empty() {
+        "empty".to_owned()
+    } else {
+        parts.join(", ")
+    }
+}
+
+/// Extract the first sentence from a doc comment for summary display.
+fn first_sentence(text: &str) -> String {
+    text.split_once(". ")
+        .map_or_else(|| text.to_owned(), |(first, _)| format!("{first}."))
 }
 
 /// Extract the first sentence from a doc comment for summary display.
