@@ -104,6 +104,8 @@ pub(crate) fn render(pkg: &KnownPackage, version: &str, tab: &ActiveTab<'_>) -> 
 /// Render the install command section with a copy button.
 fn render_install_command(display_name: &str, version: &str) -> Division {
     let command = format!("wasm install {display_name}@{version}");
+    let command_js =
+        serde_json::to_string(&command).expect("install command should serialize to a JS string");
 
     let copy_icon = "<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='9' y='9' width='13' height='13' rx='2' ry='2'/><path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/></svg>";
     let check_icon = "<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>";
@@ -115,7 +117,7 @@ fn render_install_command(display_name: &str, version: &str) -> Division {
         var checkIcon=\"{check_icon}\";\
         btn.innerHTML=copyIcon;\
         btn.addEventListener('click',function(){{\
-        navigator.clipboard.writeText('{command}').then(function(){{\
+        navigator.clipboard.writeText({command_js}).then(function(){{\
         btn.innerHTML=checkIcon;\
         setTimeout(function(){{btn.innerHTML=copyIcon}},2000)\
         }})}})}})()",
@@ -257,16 +259,20 @@ fn render_tab_bar(url_base: &str, active: &ActiveTab<'_>) -> Division {
     let inactive_class = "text-fg-muted hover:text-fg";
     let tab_base = "px-4 py-2 text-sm transition-colors inline-block";
 
-    let tabs: &[(&str, &str, bool)] = &[
-        ("Docs", url_base, matches!(active, ActiveTab::Docs { .. })),
+    let tabs = vec![
         (
-            "Dependencies",
-            &format!("{url_base}/dependencies"),
+            "Docs".to_string(),
+            url_base.to_string(),
+            matches!(active, ActiveTab::Docs { .. }),
+        ),
+        (
+            "Dependencies".to_string(),
+            format!("{url_base}/dependencies"),
             matches!(active, ActiveTab::Dependencies),
         ),
         (
-            "Dependents",
-            &format!("{url_base}/dependents"),
+            "Dependents".to_string(),
+            format!("{url_base}/dependents"),
             matches!(active, ActiveTab::Dependents { .. }),
         ),
     ];
@@ -276,16 +282,16 @@ fn render_tab_bar(url_base: &str, active: &ActiveTab<'_>) -> Division {
         .push({
             let mut nav = Division::builder();
             nav.class("flex");
-            for &(label, href, is_active) in tabs {
+            for (label, href, is_active) in tabs {
                 let style = if is_active {
                     active_class
                 } else {
                     inactive_class
                 };
                 nav.anchor(|a| {
-                    a.href(href.to_owned())
+                    a.href(href)
                         .class(format!("{tab_base} {style}"))
-                        .text(label.to_owned())
+                        .text(label)
                 });
             }
             nav.build()
@@ -424,28 +430,38 @@ fn render_filterable_package_list(id: &str, packages: &[&KnownPackage], visible:
             (Some(ns), Some(n)) => format!("{ns}:{n}"),
             _ => pkg.repository.clone(),
         };
-        let href = match (&pkg.wit_namespace, &pkg.wit_name) {
-            (Some(ns), Some(n)) => format!("/{ns}/{n}"),
-            _ => "#".to_string(),
-        };
         let desc = pkg
             .description
             .as_deref()
             .unwrap_or("No description available");
 
         ul.list_item(|li| {
-            li.class("text-sm")
-                .anchor(|a| {
-                    a.href(href)
-                        .class("text-accent hover:underline font-medium")
-                        .text(name)
-                })
-                .push(
-                    Span::builder()
-                        .class("text-fg-secondary ml-2")
-                        .text(format!("— {desc}"))
-                        .build(),
-                )
+            let li = li.class("text-sm");
+            match (&pkg.wit_namespace, &pkg.wit_name) {
+                (Some(ns), Some(n)) => {
+                    let href = format!("/{ns}/{n}");
+                    li.anchor(|a| {
+                        a.href(href)
+                            .class("text-accent hover:underline font-medium")
+                            .text(name)
+                    });
+                }
+                _ => {
+                    li.push(
+                        Span::builder()
+                            .class("text-accent font-medium")
+                            .text(name)
+                            .build(),
+                    );
+                }
+            }
+
+            li.push(
+                Span::builder()
+                    .class("text-fg-secondary ml-2")
+                    .text(format!("— {desc}"))
+                    .build(),
+            )
         });
     }
     div.push(ul.build());
@@ -497,6 +513,8 @@ fn render_sidebar(
 
 /// Render the version selector dropdown.
 fn render_version_select(pkg: &KnownPackage, current_version: &str, url_name: &str) -> Division {
+    let url_name_js =
+        serde_json::to_string(url_name).expect("url_name should serialize to a JS string");
     let mut select = html::forms::Select::builder();
     select
         .id("version-select")
@@ -513,7 +531,7 @@ fn render_version_select(pkg: &KnownPackage, current_version: &str, url_name: &s
     }
 
     let script_body = format!(
-        "document.getElementById('version-select').addEventListener('change',function(){{window.location.href='/{url_name}/'+this.value}})"
+        "document.getElementById('version-select').addEventListener('change',function(){{window.location.href='/' + {url_name_js} + '/' + this.value}})"
     );
 
     let version_count = pkg.tags.len();
@@ -569,20 +587,25 @@ fn sidebar_link_row(label: &str, text: &str, href: &str) -> Division {
 
 /// Format a byte count as a human-readable size string.
 fn format_size(bytes: i64) -> String {
-    const KIB: f64 = 1024.0;
-    const MIB: f64 = KIB * 1024.0;
-    const GIB: f64 = MIB * 1024.0;
+    const KIB: u64 = 1024;
+    const MIB: u64 = KIB * 1024;
+    const GIB: u64 = MIB * 1024;
 
-    let bytes = bytes as f64;
+    let bytes = bytes.max(0).cast_unsigned();
     if bytes < KIB {
         format!("{bytes} B")
     } else if bytes < MIB {
-        format!("{:.1} KiB", bytes / KIB)
+        format_size_with_decimal(bytes, KIB, "KiB")
     } else if bytes < GIB {
-        format!("{:.1} MiB", bytes / MIB)
+        format_size_with_decimal(bytes, MIB, "MiB")
     } else {
-        format!("{:.1} GiB", bytes / GIB)
+        format_size_with_decimal(bytes, GIB, "GiB")
     }
+}
+
+fn format_size_with_decimal(bytes: u64, unit: u64, suffix: &str) -> String {
+    let tenths = (u128::from(bytes) * 10 + u128::from(unit) / 2) / u128::from(unit);
+    format!("{}.{} {suffix}", tenths / 10, tenths % 10)
 }
 
 #[cfg(test)]
@@ -613,5 +636,35 @@ mod tests {
         let html = render_dependencies_panel(&pkg).to_string();
         assert!(html.contains("wasi:io"));
         assert!(html.contains("@ 0.2.0"));
+    }
+
+    #[test]
+    fn dependents_without_wit_metadata_render_non_link_name() {
+        let pkg = KnownPackage {
+            registry: "ghcr.io".to_string(),
+            repository: "example/no-wit".to_string(),
+            kind: None,
+            description: Some("No WIT package".to_string()),
+            tags: vec!["1.0.0".to_string()],
+            signature_tags: vec![],
+            attestation_tags: vec![],
+            last_seen_at: "2026-01-01T00:00:00Z".to_string(),
+            created_at: "2026-01-01T00:00:00Z".to_string(),
+            wit_namespace: None,
+            wit_name: None,
+            dependencies: vec![],
+        };
+
+        let html = render_filterable_package_list("list-all", &[&pkg], true).to_string();
+        assert!(!html.contains("href=\"#\""));
+        assert!(html.contains("example/no-wit"));
+    }
+
+    #[test]
+    fn install_command_script_escapes_javascript_string() {
+        let html = render_install_command("ns:pkg'\\name", "1.0.0").to_string();
+        assert!(html.contains("writeText("));
+        assert!(!html.contains("writeText('wasm install"));
+        assert!(html.contains("\\\\name@1.0.0"));
     }
 }

@@ -2497,6 +2497,43 @@ mod tests {
         assert!(manifest_id > 0);
     }
 
+    #[test]
+    fn get_package_version_resolves_each_tag_when_multiple_tags_share_manifest() {
+        let conn = setup_test_db();
+        let repo_id = OciRepository::upsert(&conn, "ghcr.io", "test/pkg").unwrap();
+        let annotations = HashMap::new();
+        OciManifest::upsert(
+            &conn,
+            repo_id,
+            "sha256:shared",
+            Some("application/vnd.oci.image.manifest.v1+json"),
+            Some("{}"),
+            Some(1024),
+            None,
+            None,
+            None,
+            &annotations,
+        )
+        .unwrap();
+        OciTag::upsert(&conn, repo_id, "1.0.0", "sha256:shared").unwrap();
+        OciTag::upsert(&conn, repo_id, "latest", "sha256:shared").unwrap();
+
+        let store = Store::from_conn(conn);
+        let stable = store
+            .get_package_version("ghcr.io", "test/pkg", "1.0.0")
+            .unwrap()
+            .expect("expected 1.0.0 tag");
+        let latest = store
+            .get_package_version("ghcr.io", "test/pkg", "latest")
+            .unwrap()
+            .expect("expected latest tag");
+
+        assert_eq!(stable.digest, "sha256:shared");
+        assert_eq!(latest.digest, "sha256:shared");
+        assert_eq!(stable.tag.as_deref(), Some("1.0.0"));
+        assert_eq!(latest.tag.as_deref(), Some("latest"));
+    }
+
     // r[verify db.package-versions.list]
     // r[verify db.package-versions.get]
     // r[verify db.package-detail]

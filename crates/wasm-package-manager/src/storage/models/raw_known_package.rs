@@ -752,6 +752,43 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_fetch_tags_filters_non_semver_and_sorts_descending() {
+        use crate::oci::{OciManifest, OciRepository as OciRepo, OciTag};
+        use std::collections::HashMap;
+
+        let conn = setup_test_db();
+        let repo_id = OciRepo::upsert(&conn, "ghcr.io", "user/repo").unwrap();
+        for digest in ["sha256:1", "sha256:2", "sha256:3", "sha256:4", "sha256:5"] {
+            OciManifest::upsert(
+                &conn,
+                repo_id,
+                digest,
+                Some("application/vnd.oci.image.manifest.v1+json"),
+                Some("{}"),
+                Some(1024),
+                None,
+                None,
+                None,
+                &HashMap::new(),
+            )
+            .unwrap();
+        }
+        OciTag::upsert(&conn, repo_id, "latest", "sha256:1").unwrap();
+        OciTag::upsert(&conn, repo_id, "sha256:abc123", "sha256:2").unwrap();
+        OciTag::upsert(&conn, repo_id, "v1.2.0", "sha256:3").unwrap();
+        OciTag::upsert(&conn, repo_id, "1.10.0", "sha256:4").unwrap();
+        OciTag::upsert(&conn, repo_id, "1.2.0", "sha256:5").unwrap();
+
+        let pkg = RawKnownPackage::get(&conn, "ghcr.io", "user/repo")
+            .unwrap()
+            .expect("package should exist");
+        assert_eq!(pkg.tags.len(), 3);
+        assert_eq!(pkg.tags[0], "1.10.0");
+        assert!(pkg.tags[1..].contains(&"v1.2.0".to_string()));
+        assert!(pkg.tags[1..].contains(&"1.2.0".to_string()));
+    }
+
     // r[verify db.known-packages.search-by-wit-name]
     #[test]
     fn test_known_package_search_by_wit_name() {

@@ -174,7 +174,7 @@ mod tests {
     #[test]
     fn document_includes_expected_rendering_and_styling_primitives() {
         let html = document("Home", "<p>Body</p>");
-        assert!(html.contains("<html lang=\"en\">"));
+        assert!(html.contains("<html lang=\"en\""));
         assert!(html.contains("https://cdn.tailwindcss.com"));
         assert!(html.contains(ACCENT_COLOR));
         assert!(html.contains("<meta name=\"viewport\""));

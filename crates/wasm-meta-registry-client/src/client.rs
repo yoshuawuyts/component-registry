@@ -576,6 +576,19 @@ mod tests {
         );
     }
 
+    #[test]
+    fn percent_encoding_path_component_preserves_slashes_and_encodes_reserved_chars() {
+        assert_eq!(percent_encode_path_component("user/repo"), "user/repo");
+        assert_eq!(
+            percent_encode_path_component("user name/repo?frag#v1"),
+            "user%20name/repo%3Ffrag%23v1"
+        );
+        assert_eq!(
+            percent_encode_path_component("percent%tag"),
+            "percent%25tag"
+        );
+    }
+
     #[cfg(not(all(target_os = "wasi", target_env = "p2")))]
     fn spawn_single_response_server(status_line: &str, body: &str, content_type: &str) -> String {
         let listener = TcpListener::bind("127.0.0.1:0").expect("bind test listener");

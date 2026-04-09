@@ -165,8 +165,10 @@ async fn package_detail(
     Path((namespace, name, version)): Path<(String, String, String)>,
 ) -> Response {
     let client = RegistryClient::from_env();
-    let Some(pkg) = fetch_package_or_404(&client, &namespace, &name, &version).await else {
-        return not_found_response();
+    let pkg = match fetch_package_or_response(&client, &namespace, &name, &version).await {
+        Ok(Some(pkg)) => pkg,
+        Ok(None) => return not_found_response(),
+        Err(response) => return response,
     };
     let version_detail = client
         .fetch_package_version(&pkg.registry, &pkg.repository, &version)
@@ -185,8 +187,10 @@ async fn package_dependencies(
     Path((namespace, name, version)): Path<(String, String, String)>,
 ) -> Response {
     let client = RegistryClient::from_env();
-    let Some(pkg) = fetch_package_or_404(&client, &namespace, &name, &version).await else {
-        return not_found_response();
+    let pkg = match fetch_package_or_response(&client, &namespace, &name, &version).await {
+        Ok(Some(pkg)) => pkg,
+        Ok(None) => return not_found_response(),
+        Err(response) => return response,
     };
     let tab = ActiveTab::Dependencies;
     let html = pages::package::render(&pkg, &version, &tab);
@@ -198,8 +202,10 @@ async fn package_dependents(
     Path((namespace, name, version)): Path<(String, String, String)>,
 ) -> Response {
     let client = RegistryClient::from_env();
-    let Some(pkg) = fetch_package_or_404(&client, &namespace, &name, &version).await else {
-        return not_found_response();
+    let pkg = match fetch_package_or_response(&client, &namespace, &name, &version).await {
+        Ok(Some(pkg)) => pkg,
+        Ok(None) => return not_found_response(),
+        Err(response) => return response,
     };
     let display_name = format!("{namespace}:{name}");
     let importers = client
@@ -220,33 +226,33 @@ async fn package_dependents(
 
 /// Fetch a package by WIT namespace/name, validating the version exists.
 ///
-/// Returns `None` (and logs) if the namespace is reserved, the package is
-/// not found, or the version tag doesn't exist.
-async fn fetch_package_or_404(
+/// Returns `Ok(None)` when the package/version doesn't exist, and `Err(Response)`
+/// when the upstream registry cannot be reached.
+async fn fetch_package_or_response(
     client: &RegistryClient,
     namespace: &str,
     name: &str,
     version: &str,
-) -> Option<KnownPackage> {
+) -> Result<Option<KnownPackage>, Response> {
     if is_reserved(namespace) {
-        return None;
+        return Ok(None);
     }
     match client.fetch_package_by_wit(namespace, name).await {
         Ok(Some(pkg)) => {
             if pkg.tags.iter().any(|tag| tag == version) {
-                Some(pkg)
+                Ok(Some(pkg))
             } else {
                 eprintln!("wasm-frontend: version not found for {namespace}/{name}: {version}");
-                None
+                Ok(None)
             }
         }
         Ok(None) => {
             eprintln!("wasm-frontend: package not found: {namespace}/{name}@{version}");
-            None
+            Ok(None)
         }
         Err(e) => {
             eprintln!("wasm-frontend: API error looking up {namespace}/{name}@{version}: {e}");
-            None
+            Err(error_response(&e.to_string()))
         }
     }
 }
