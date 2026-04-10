@@ -807,30 +807,128 @@ fn format_date(iso: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wasm_meta_registry_client::PackageDependencyRef;
+    use wasm_meta_registry_client::{
+        PackageDependencyRef, PackageVersion, WitInterfaceRef, WitWorldSummary,
+    };
+    use wasm_wit_doc::{InterfaceDoc, WitDocument, WorldDoc};
 
-    #[test]
-    fn dependency_versions_include_separator() {
-        let pkg = KnownPackage {
+    fn sample_known_package(wit: bool) -> KnownPackage {
+        KnownPackage {
             registry: "ghcr.io".to_string(),
             repository: "example/pkg".to_string(),
             kind: None,
-            description: None,
+            description: Some("Example package".to_string()),
             tags: vec!["1.0.0".to_string()],
             signature_tags: vec![],
             attestation_tags: vec![],
             last_seen_at: "2026-01-01T00:00:00Z".to_string(),
             created_at: "2026-01-01T00:00:00Z".to_string(),
-            wit_namespace: Some("wasi".to_string()),
-            wit_name: Some("demo".to_string()),
-            dependencies: vec![PackageDependencyRef {
-                package: "wasi:io".to_string(),
-                version: Some("0.2.0".to_string()),
-            }],
-        };
+            wit_namespace: wit.then(|| "wasi".to_string()),
+            wit_name: wit.then(|| "demo".to_string()),
+            dependencies: vec![],
+        }
+    }
+
+    fn sample_version(wit_text: Option<&str>) -> PackageVersion {
+        PackageVersion {
+            tag: Some("1.0.0".to_string()),
+            digest: "sha256:abc".to_string(),
+            size_bytes: Some(123),
+            created_at: Some("2026-01-01T00:00:00Z".to_string()),
+            synced_at: Some("2026-01-02T00:00:00Z".to_string()),
+            annotations: None,
+            worlds: vec![],
+            components: vec![],
+            dependencies: vec![],
+            referrers: vec![],
+            wit_text: wit_text.map(str::to_string),
+        }
+    }
+
+    #[test]
+    fn dependency_versions_include_separator() {
+        let mut pkg = sample_known_package(true);
+        pkg.dependencies = vec![PackageDependencyRef {
+            package: "wasi:io".to_string(),
+            version: Some("0.2.0".to_string()),
+        }];
 
         let html = render_dependencies_panel(&pkg).to_string();
         assert!(html.contains("wasi:io"));
         assert!(html.contains("@ 0.2.0"));
+    }
+
+    #[test]
+    fn docs_tab_renders_world_and_interface_overviews_from_wit_doc() {
+        let version = sample_version(None);
+        let doc = WitDocument {
+            package_name: "wasi:demo".to_string(),
+            version: Some("1.0.0".to_string()),
+            docs: None,
+            interfaces: vec![InterfaceDoc {
+                name: "types".to_string(),
+                docs: Some("Interface docs. Extra details.".to_string()),
+                types: vec![],
+                functions: vec![],
+                url: "/wasi/demo/1.0.0/interface/types".to_string(),
+            }],
+            worlds: vec![WorldDoc {
+                name: "command".to_string(),
+                docs: Some("World docs. More context.".to_string()),
+                imports: vec![],
+                exports: vec![],
+                url: "/wasi/demo/1.0.0/world/command".to_string(),
+            }],
+        };
+
+        let html =
+            render_wit_content_with_doc(&version, "/wasi/demo/1.0.0", Some(&doc)).to_string();
+        assert!(html.contains("Worlds"));
+        assert!(html.contains("Interfaces"));
+        assert!(html.contains("command"));
+        assert!(html.contains("types"));
+        assert!(html.contains("World docs."));
+        assert!(html.contains("Interface docs."));
+    }
+
+    #[test]
+    fn docs_tab_fallback_renders_world_summary_and_raw_wit_for_parseable_text() {
+        let mut version = sample_version(Some("package wasi:demo@1.0.0;\nworld command {}"));
+        version.worlds = vec![WitWorldSummary {
+            name: "command".to_string(),
+            description: Some("Fallback world summary".to_string()),
+            imports: vec![WitInterfaceRef {
+                package: "wasi:io".to_string(),
+                interface: Some("streams".to_string()),
+                version: Some("0.2.0".to_string()),
+            }],
+            exports: vec![],
+        }];
+
+        let html = render_wit_content_with_doc(&version, "/wasi/demo/1.0.0", None).to_string();
+        assert!(html.contains("world command"));
+        assert!(html.contains("Imports"));
+        assert!(html.contains("wasi:io/streams@0.2.0"));
+        assert!(html.contains("WIT Definition"));
+    }
+
+    #[test]
+    fn docs_tab_fallback_hides_raw_wit_for_lossy_text() {
+        let version = sample_version(Some("type foo: \"type\"\ninterface-Id { idx: 0 }"));
+        let html = render_wit_content_with_doc(&version, "/wasi/demo/1.0.0", None).to_string();
+        assert!(!html.contains("WIT Definition"));
+    }
+
+    #[test]
+    fn dependents_list_renders_non_wit_packages_without_anchor() {
+        let non_wit = sample_known_package(false);
+        let wit = sample_known_package(true);
+        let html = render_filterable_package_list("list-all", &[&non_wit, &wit], false).to_string();
+
+        assert!(html.contains("display:none"));
+        assert!(html.contains("wasi:demo"));
+        assert!(html.contains("href=\"/wasi/demo\""));
+        assert!(!html.contains("href=\"#\""));
+        assert!(html.contains("example/pkg"));
     }
 }
