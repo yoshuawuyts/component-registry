@@ -24,9 +24,10 @@ jobs:
           - runner: macos-latest
             target: aarch64-apple-darwin
             archive: tar.gz
-          - runner: macos-13
+          - runner: macos-latest
             target: x86_64-apple-darwin
             archive: tar.gz
+            cross: true
           - runner: windows-latest
             target: x86_64-pc-windows-msvc
             archive: zip
@@ -36,6 +37,8 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.cross && matrix.target || '' }}
 
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.9
@@ -47,14 +50,13 @@ jobs:
           echo "RUSTC_WRAPPER=sccache" >> "$GITHUB_ENV"
 
       - name: Build release binary
-        run: cargo build --release --package wasm
+        run: cargo build --release --package wasm ${{ matrix.cross && format('--target {0}', matrix.target) || '' }}
 
       - name: Package binary (unix)
         if: matrix.archive == 'tar.gz'
         run: |
-          cd target/release
-          tar czf ../../wasm-${{ matrix.target }}.tar.gz wasm
-          cd ../..
+          BIN_DIR=${{ matrix.cross && format('target/{0}/release', matrix.target) || 'target/release' }}
+          tar czf wasm-${{ matrix.target }}.tar.gz -C "$BIN_DIR" wasm
 
       - name: Package binary (windows)
         if: matrix.archive == 'zip'
