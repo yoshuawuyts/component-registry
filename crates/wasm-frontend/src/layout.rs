@@ -12,7 +12,7 @@
 use crate::footer;
 
 /// Accent color used throughout the UI.
-pub(crate) const ACCENT_COLOR: &str = "#fcfdf7";
+pub(crate) const ACCENT_COLOR: &str = "#232cf4";
 
 /// Render a complete HTML document with the given title and body content.
 ///
@@ -110,24 +110,24 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
     /* Color system: two-tone, inspired by charcuterie.elastiq.ch.
        Warm off-white background, vivid blue foreground. */
     :root {{
-      --color-bg: #232cf4;
+      --color-bg: #fcfdf7;
       --color-accent: {ACCENT_COLOR};
-      --color-accent-hover: #e8e9e3;
-      --color-surface: rgba(252, 253, 247, 0.08);
-      --color-surface-muted: rgba(252, 253, 247, 0.05);
-      --color-border: {ACCENT_COLOR};
-      --color-border-light: rgba(252, 253, 247, 0.2);
+      --color-accent-hover: #1a22c0;
+      --color-surface: #f4f5ef;
+      --color-surface-muted: #eceee7;
+      --color-border: rgba(35, 44, 244, 0.25);
+      --color-border-light: rgba(35, 44, 244, 0.12);
       --color-fg: {ACCENT_COLOR};
-      --color-fg-secondary: {ACCENT_COLOR};
-      --color-fg-muted: {ACCENT_COLOR};
-      --color-fg-faint: {ACCENT_COLOR};
+      --color-fg-secondary: rgba(35, 44, 244, 0.75);
+      --color-fg-muted: rgba(35, 44, 244, 0.55);
+      --color-fg-faint: rgba(35, 44, 244, 0.4);
       /* WIT item kind colors */
-      --color-wit-struct: {ACCENT_COLOR};
-      --color-wit-enum: {ACCENT_COLOR};
-      --color-wit-resource: {ACCENT_COLOR};
-      --color-wit-func: {ACCENT_COLOR};
-      --color-wit-world: {ACCENT_COLOR};
-      --color-wit-iface: {ACCENT_COLOR};
+      --color-wit-struct: #4338ca;
+      --color-wit-enum: #0d7377;
+      --color-wit-resource: #b45309;
+      --color-wit-func: #1d4ed8;
+      --color-wit-world: #9333ea;
+      --color-wit-iface: #0369a1;
     }}
     html, body {{
       background-color: var(--color-bg);
