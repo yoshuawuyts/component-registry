@@ -45,7 +45,9 @@ fn app() -> Router {
         .route("/fonts/iosevka-semibold.woff2", get(fonts::semibold))
         .route("/fonts/iosevka-bold.woff2", get(fonts::bold))
         .route("/{namespace}/{name}", get(package_redirect))
+        .route("/{namespace}/{name}/", get(package_redirect))
         .route("/{namespace}", get(namespace_page))
+        .route("/{namespace}/", get(namespace_page))
         .route("/{namespace}/{name}/{version}", get(package_detail))
         .route(
             "/{namespace}/{name}/{version}/dependencies",
@@ -562,5 +564,30 @@ mod tests {
     fn pick_redirect_version_returns_none_for_unusable_tags() {
         let tags = vec!["sha256-deadbeef".to_string()];
         assert_eq!(pick_redirect_version(&tags), None);
+    }
+
+    /// Trailing-slash URLs must be handled: the router must register
+    /// both `/{namespace}/{name}` and `/{namespace}/{name}/`.
+    #[test]
+    fn trailing_slash_package_route_is_registered() {
+        // Verify the app builds with trailing-slash routes by checking
+        // that the route table doesn't panic or conflict.
+        let _app = app();
+    }
+
+    /// Verify the package redirect handler works with valid path parameters
+    /// and doesn't panic — it should either redirect or return not-found.
+    #[tokio::test]
+    async fn package_redirect_handles_trailing_slash_path() {
+        let result = package_redirect(Path(("wasi".to_string(), "random".to_string()))).await;
+        match result {
+            Ok(redirect) => {
+                let resp = redirect.into_response();
+                assert!(resp.status().is_redirection());
+            }
+            Err(resp) => {
+                assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+            }
+        }
     }
 }

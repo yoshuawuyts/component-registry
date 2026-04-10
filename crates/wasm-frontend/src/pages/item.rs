@@ -60,7 +60,18 @@ pub(crate) fn render_type(
     outer.push(grid.build());
 
     let tab = ActiveTab::Docs { version_detail };
-    package_shell::render_page(pkg, version, &tab, &title, outer.build())
+    let pkg_url = format!("/{}/{version}", display_name.replace(':', "/"));
+    let extra = vec![
+        crate::nav::Crumb {
+            label: iface_name.to_owned(),
+            href: Some(format!("{pkg_url}/interface/{iface_name}")),
+        },
+        crate::nav::Crumb {
+            label: ty.name.clone(),
+            href: None,
+        },
+    ];
+    package_shell::render_page_with_crumbs(pkg, version, &tab, &title, outer.build(), extra)
 }
 
 /// Render the item detail page for a freestanding function.
@@ -113,7 +124,18 @@ pub(crate) fn render_function(
     outer.push(grid.build());
 
     let tab = ActiveTab::Docs { version_detail };
-    package_shell::render_page(pkg, version, &tab, &title, outer.build())
+    let pkg_url = format!("/{}/{version}", display_name.replace(':', "/"));
+    let extra = vec![
+        crate::nav::Crumb {
+            label: iface_name.to_owned(),
+            href: Some(format!("{pkg_url}/interface/{iface_name}")),
+        },
+        crate::nav::Crumb {
+            label: func.name.clone(),
+            href: None,
+        },
+    ];
+    package_shell::render_page_with_crumbs(pkg, version, &tab, &title, outer.build(), extra)
 }
 
 /// Render the WIT definition code block for a type, with linked type refs.

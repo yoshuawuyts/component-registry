@@ -37,6 +37,31 @@ pub(crate) fn render_page(
     title: &str,
     body_content: Division,
 ) -> String {
+    render_page_inner(pkg, version, tab, title, body_content, vec![])
+}
+
+/// Render the page shell with extra breadcrumb segments after the package name.
+#[must_use]
+pub(crate) fn render_page_with_crumbs(
+    pkg: &KnownPackage,
+    version: &str,
+    tab: &ActiveTab<'_>,
+    title: &str,
+    body_content: Division,
+    extra_crumbs: Vec<crate::nav::Crumb>,
+) -> String {
+    render_page_inner(pkg, version, tab, title, body_content, extra_crumbs)
+}
+
+/// Inner page shell renderer.
+fn render_page_inner(
+    pkg: &KnownPackage,
+    version: &str,
+    tab: &ActiveTab<'_>,
+    title: &str,
+    body_content: Division,
+    extra_crumbs: Vec<crate::nav::Crumb>,
+) -> String {
     let display_name = display_name_for(pkg);
     let description = pkg
         .description
@@ -71,17 +96,20 @@ pub(crate) fn render_page(
         label: ns.clone(),
         href: Some(format!("/{ns}")),
     });
-    let pkg_label = pkg
-        .wit_name
-        .as_deref()
-        .unwrap_or(&display_name);
+    let pkg_label = pkg.wit_name.as_deref().unwrap_or(&display_name);
+    let url_base_for_crumb = url_base_for(pkg, version);
     let pkg_crumb = crate::nav::Crumb {
         label: pkg_label.to_owned(),
-        href: None,
+        href: if extra_crumbs.is_empty() {
+            None
+        } else {
+            Some(url_base_for_crumb)
+        },
     };
     let crumbs: Vec<crate::nav::Crumb> = ns_crumb
         .into_iter()
         .chain(std::iter::once(pkg_crumb))
+        .chain(extra_crumbs)
         .collect();
 
     layout::document_with_breadcrumbs(title, &body.build().to_string(), &crumbs)

@@ -13,10 +13,12 @@ pub(crate) struct Crumb {
 pub(crate) fn render(crumbs: &[Crumb]) -> String {
     let mut breadcrumb_html = String::new();
     for (i, crumb) in crumbs.iter().enumerate() {
-        if i > 0 {
+        if i == 0 {
+            breadcrumb_html.push(' ');
+        } else if i == 1 {
             breadcrumb_html.push_str(r#" <span class="text-fg-faint mx-1">:</span> "#);
         } else {
-            breadcrumb_html.push(' ');
+            breadcrumb_html.push_str(r#" <span class="text-fg-faint mx-1">/</span> "#);
         }
         if let Some(href) = &crumb.href {
             use std::fmt::Write;
@@ -38,8 +40,8 @@ pub(crate) fn render(crumbs: &[Crumb]) -> String {
     }
 
     format!(
-        r#"<nav class="w-full max-w-6xl mx-auto px-6 sm:px-8 pt-6 pb-4 flex items-center justify-between gap-4" aria-label="Main">
-  <div class="flex items-baseline text-2xl font-light tracking-display min-w-0">
+        r#"<nav class="w-full max-w-6xl mx-auto px-6 sm:px-8 pt-6 pb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2" aria-label="Main">
+  <div class="flex flex-wrap items-baseline text-2xl font-light tracking-display">
     <a href="/" id="bunny" class="text-lg font-medium text-fg hover:text-accent transition-colors shrink-0 inline-block text-left" style="cursor:pointer;min-width:10ch">(๑╹ᆺ╹)</a>{breadcrumb_html}
   </div>
   <div class="flex items-center gap-5 shrink-0">

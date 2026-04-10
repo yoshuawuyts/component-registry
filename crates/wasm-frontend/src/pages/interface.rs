@@ -22,18 +22,10 @@ pub(crate) fn render(
     // Interface header + content grid
     let mut outer = Division::builder();
 
-    // Header
-    outer.division(|div| {
-        div.class("mb-6").heading_2(|h2| {
-            h2.class("text-2xl font-normal tracking-display font-mono")
-                .span(|s| s.class("text-fg-muted").text(format!("{display_name} / ")))
-                .span(|s| s.class("text-accent").text(iface.name.clone()))
-        });
-        if let Some(docs) = &iface.docs {
-            div.paragraph(|p| p.class("text-lg text-fg-secondary mt-2").text(docs.clone()));
-        }
-        div
-    });
+    // Docs
+    if let Some(docs) = &iface.docs {
+        outer.paragraph(|p| p.class("text-sm text-fg-muted mb-6").text(docs.clone()));
+    }
 
     // Grid: main content + sidebar
     let mut grid = Division::builder();
@@ -110,7 +102,11 @@ pub(crate) fn render(
     outer.push(grid.build());
 
     let tab = ActiveTab::Docs { version_detail };
-    package_shell::render_page(pkg, version, &tab, &title, outer.build())
+    let extra = vec![crate::nav::Crumb {
+        label: iface.name.clone(),
+        href: None,
+    }];
+    package_shell::render_page_with_crumbs(pkg, version, &tab, &title, outer.build(), extra)
 }
 
 /// Render a section of types grouped by kind.

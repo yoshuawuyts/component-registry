@@ -63,7 +63,11 @@ pub(crate) fn render(
     outer.push(grid.build());
 
     let tab = ActiveTab::Docs { version_detail };
-    package_shell::render_page(pkg, version, &tab, &title, outer.build())
+    let extra = vec![crate::nav::Crumb {
+        label: world.name.clone(),
+        href: None,
+    }];
+    package_shell::render_page_with_crumbs(pkg, version, &tab, &title, outer.build(), extra)
 }
 
 /// Render an imports or exports section, grouped by package namespace.
