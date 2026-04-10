@@ -38,7 +38,7 @@ pub(crate) fn render(
         version_detail,
         importers: &[],
         exporters: &[],
-        description_override: world.docs.as_deref(),
+        description_override: Some(world.docs.as_deref().unwrap_or("")),
     };
     let extra = vec![crate::nav::Crumb {
         label: world.name.clone(),
