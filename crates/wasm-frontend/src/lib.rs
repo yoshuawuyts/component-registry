@@ -16,6 +16,7 @@ mod layout;
 mod nav;
 mod pages;
 mod reserved;
+mod wit_doc;
 
 use axum::extract::{Path, Query};
 use axum::http::{HeaderValue, StatusCode, Uri, header};
@@ -320,7 +321,7 @@ async fn fetch_wit_doc(
     client: &RegistryClient,
     pkg: &KnownPackage,
     version: &str,
-) -> Option<wasm_wit_doc::WitDocument> {
+) -> Option<wit_doc::WitDocument> {
     let detail = client
         .fetch_package_version(&pkg.registry, &pkg.repository, version)
         .await
@@ -342,7 +343,7 @@ async fn fetch_wit_doc(
         pkg.wit_name.as_deref().unwrap_or(&pkg.repository),
         version
     );
-    wasm_wit_doc::parse_wit_doc(wit_text, &url_base, &dep_urls).ok()
+    wit_doc::parse_wit_doc(wit_text, &url_base, &dep_urls).ok()
 }
 
 /// Fetch a package by WIT namespace/name, validating the version exists.

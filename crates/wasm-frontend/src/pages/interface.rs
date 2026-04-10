@@ -1,8 +1,8 @@
 //! Interface detail page.
 
+use crate::wit_doc::{FunctionDoc, InterfaceDoc, TypeDoc, TypeKind, WitDocument};
 use html::content::Navigation;
 use html::text_content::{Division, ListItem, UnorderedList};
-use wasm_wit_doc::{FunctionDoc, InterfaceDoc, TypeDoc, TypeKind, WitDocument};
 
 use super::sidebar::{SidebarActive, SidebarContext, render_sidebar};
 use crate::layout;

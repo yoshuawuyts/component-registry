@@ -1,8 +1,8 @@
 //! World detail page.
 
+use crate::wit_doc::{WitDocument, WorldDoc, WorldItemDoc};
 use html::content::Navigation;
 use html::text_content::{Division, ListItem, UnorderedList};
-use wasm_wit_doc::{WitDocument, WorldDoc, WorldItemDoc};
 
 use super::sidebar::{SidebarActive, SidebarContext, render_sidebar};
 use crate::layout;
@@ -213,7 +213,7 @@ fn render_world_item_row(item: &WorldItemDoc) -> ListItem {
 }
 
 /// Format a function signature.
-fn format_function_signature(func: &wasm_wit_doc::FunctionDoc) -> String {
+fn format_function_signature(func: &crate::wit_doc::FunctionDoc) -> String {
     let params: Vec<String> = func
         .params
         .iter()
@@ -229,18 +229,17 @@ fn format_function_signature(func: &wasm_wit_doc::FunctionDoc) -> String {
 }
 
 /// Format a `TypeRef` as a short inline string.
-fn format_type_ref_short(ty: &wasm_wit_doc::TypeRef) -> String {
+fn format_type_ref_short(ty: &crate::wit_doc::TypeRef) -> String {
     match ty {
-        wasm_wit_doc::TypeRef::Primitive { name } | wasm_wit_doc::TypeRef::Named { name, .. } => {
-            name.clone()
-        }
-        wasm_wit_doc::TypeRef::List { ty } => {
+        crate::wit_doc::TypeRef::Primitive { name }
+        | crate::wit_doc::TypeRef::Named { name, .. } => name.clone(),
+        crate::wit_doc::TypeRef::List { ty } => {
             format!("list<{}>", format_type_ref_short(ty))
         }
-        wasm_wit_doc::TypeRef::Option { ty } => {
+        crate::wit_doc::TypeRef::Option { ty } => {
             format!("option<{}>", format_type_ref_short(ty))
         }
-        wasm_wit_doc::TypeRef::Result { ok, err } => {
+        crate::wit_doc::TypeRef::Result { ok, err } => {
             let ok_s = ok
                 .as_ref()
                 .map_or_else(|| "_".to_owned(), |t| format_type_ref_short(t));
@@ -249,23 +248,23 @@ fn format_type_ref_short(ty: &wasm_wit_doc::TypeRef) -> String {
                 .map_or_else(|| "_".to_owned(), |t| format_type_ref_short(t));
             format!("result<{ok_s}, {err_s}>")
         }
-        wasm_wit_doc::TypeRef::Tuple { types } => {
+        crate::wit_doc::TypeRef::Tuple { types } => {
             let inner: Vec<String> = types.iter().map(format_type_ref_short).collect();
             format!("tuple<{}>", inner.join(", "))
         }
-        wasm_wit_doc::TypeRef::Handle {
+        crate::wit_doc::TypeRef::Handle {
             handle_kind,
             resource_name,
             ..
         } => match handle_kind {
-            wasm_wit_doc::HandleKind::Own => resource_name.clone(),
-            wasm_wit_doc::HandleKind::Borrow => format!("borrow<{resource_name}>"),
+            crate::wit_doc::HandleKind::Own => resource_name.clone(),
+            crate::wit_doc::HandleKind::Borrow => format!("borrow<{resource_name}>"),
         },
-        wasm_wit_doc::TypeRef::Future { ty } => match ty {
+        crate::wit_doc::TypeRef::Future { ty } => match ty {
             Some(t) => format!("future<{}>", format_type_ref_short(t)),
             None => "future".to_owned(),
         },
-        wasm_wit_doc::TypeRef::Stream { ty } => match ty {
+        crate::wit_doc::TypeRef::Stream { ty } => match ty {
             Some(t) => format!("stream<{}>", format_type_ref_short(t)),
             None => "stream".to_owned(),
         },

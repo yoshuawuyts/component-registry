@@ -1,9 +1,9 @@
 //! Item detail page (type or function within an interface).
 
+use crate::wit_doc::{FunctionDoc, HandleKind, TypeDoc, TypeKind, TypeRef, WitDocument};
 use html::content::Navigation;
 use html::tables::{Table, TableRow};
 use html::text_content::Division;
-use wasm_wit_doc::{FunctionDoc, HandleKind, TypeDoc, TypeKind, TypeRef, WitDocument};
 
 use super::sidebar::{SidebarActive, SidebarContext, render_sidebar};
 use crate::layout;
@@ -308,7 +308,7 @@ fn render_type_body(kind: &TypeKind) -> Division {
 }
 
 /// Render a table of record fields.
-fn render_field_table(heading: &str, fields: &[wasm_wit_doc::FieldDoc]) -> Division {
+fn render_field_table(heading: &str, fields: &[crate::wit_doc::FieldDoc]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
         h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3")
@@ -354,7 +354,7 @@ fn render_field_row(name: &str, ty: &TypeRef, docs: Option<&str>) -> TableRow {
 }
 
 /// Render a variant cases table.
-fn render_variant_table(cases: &[wasm_wit_doc::CaseDoc]) -> Division {
+fn render_variant_table(cases: &[crate::wit_doc::CaseDoc]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
         h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3")
@@ -392,7 +392,7 @@ fn render_variant_table(cases: &[wasm_wit_doc::CaseDoc]) -> Division {
 }
 
 /// Render an enum cases list.
-fn render_enum_list(cases: &[wasm_wit_doc::EnumCaseDoc]) -> Division {
+fn render_enum_list(cases: &[crate::wit_doc::EnumCaseDoc]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
         h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3")
@@ -423,7 +423,7 @@ fn render_enum_list(cases: &[wasm_wit_doc::EnumCaseDoc]) -> Division {
 }
 
 /// Render a flags list.
-fn render_flags_list(flags: &[wasm_wit_doc::FlagDoc]) -> Division {
+fn render_flags_list(flags: &[crate::wit_doc::FlagDoc]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
         h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3")

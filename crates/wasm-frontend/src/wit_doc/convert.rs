@@ -8,7 +8,7 @@ use wit_parser::{
     WorldItem, WorldKey,
 };
 
-use crate::types::{
+use super::types::{
     CaseDoc, EnumCaseDoc, FieldDoc, FlagDoc, FunctionDoc, HandleKind, InterfaceDoc, ParamDoc,
     Stability, TypeDoc, TypeKind, TypeRef, WitDocument, WorldDoc, WorldItemDoc,
 };

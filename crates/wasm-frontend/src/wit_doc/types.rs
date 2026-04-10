@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 /// Contains all interfaces and worlds defined in the package, with
 /// pre-resolved URLs for navigation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WitDocument {
+pub(crate) struct WitDocument {
     /// The WIT package name (e.g. `"wasi:http"`).
     pub package_name: String,
     /// The package version, if any (e.g. `"0.2.11"`).
@@ -27,7 +27,7 @@ pub struct WitDocument {
 
 /// Documentation for a single WIT interface.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct InterfaceDoc {
+pub(crate) struct InterfaceDoc {
     /// The interface name (e.g. `"types"`, `"outgoing-handler"`).
     pub name: String,
     /// Documentation comment for this interface.
@@ -43,7 +43,7 @@ pub struct InterfaceDoc {
 
 /// Documentation for a single type definition.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TypeDoc {
+pub(crate) struct TypeDoc {
     /// The type name (e.g. `"outgoing-request"`, `"method"`).
     pub name: String,
     /// Documentation comment for this type.
@@ -61,7 +61,7 @@ pub struct TypeDoc {
 /// The structural kind of a type definition.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind")]
-pub enum TypeKind {
+pub(crate) enum TypeKind {
     /// A record type with named fields.
     Record {
         /// The record's fields.
@@ -100,7 +100,7 @@ pub enum TypeKind {
 /// A reference to a type, used in fields, parameters, and return types.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind")]
-pub enum TypeRef {
+pub(crate) enum TypeRef {
     /// A WIT primitive type (`bool`, `u8`, `string`, etc.).
     Primitive {
         /// The primitive type name.
@@ -168,7 +168,7 @@ pub enum TypeRef {
 
 /// The kind of a handle type.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum HandleKind {
+pub(crate) enum HandleKind {
     /// `own<T>` — exclusive ownership.
     Own,
     /// `borrow<T>` — borrowed reference.
@@ -177,7 +177,7 @@ pub enum HandleKind {
 
 /// A record field.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FieldDoc {
+pub(crate) struct FieldDoc {
     /// The field name.
     pub name: String,
     /// The field's type.
@@ -190,7 +190,7 @@ pub struct FieldDoc {
 
 /// A variant case (may have a payload type).
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CaseDoc {
+pub(crate) struct CaseDoc {
     /// The case name.
     pub name: String,
     /// The payload type, if any.
@@ -204,7 +204,7 @@ pub struct CaseDoc {
 
 /// An enum case (no payload).
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EnumCaseDoc {
+pub(crate) struct EnumCaseDoc {
     /// The case name.
     pub name: String,
     /// Documentation comment for this case.
@@ -214,7 +214,7 @@ pub struct EnumCaseDoc {
 
 /// A flag definition.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FlagDoc {
+pub(crate) struct FlagDoc {
     /// The flag name.
     pub name: String,
     /// Documentation comment for this flag.
@@ -224,7 +224,7 @@ pub struct FlagDoc {
 
 /// Documentation for a function.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FunctionDoc {
+pub(crate) struct FunctionDoc {
     /// The function name (e.g. `"handle"`, `"new"`, `"method"`).
     pub name: String,
     /// Documentation comment for this function.
@@ -244,7 +244,7 @@ pub struct FunctionDoc {
 
 /// A function parameter.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ParamDoc {
+pub(crate) struct ParamDoc {
     /// The parameter name.
     pub name: String,
     /// The parameter type.
@@ -254,7 +254,7 @@ pub struct ParamDoc {
 
 /// Documentation for a WIT world.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WorldDoc {
+pub(crate) struct WorldDoc {
     /// The world name (e.g. `"proxy"`, `"command"`).
     pub name: String,
     /// Documentation comment for this world.
@@ -271,7 +271,7 @@ pub struct WorldDoc {
 /// An item imported or exported by a world.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind")]
-pub enum WorldItemDoc {
+pub(crate) enum WorldItemDoc {
     /// A named interface import/export.
     Interface {
         /// The interface name as declared (e.g.
@@ -290,7 +290,7 @@ pub enum WorldItemDoc {
 /// API stability metadata.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(tag = "level")]
-pub enum Stability {
+pub(crate) enum Stability {
     /// Stability is not specified.
     #[default]
     Unknown,

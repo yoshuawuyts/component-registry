@@ -3,9 +3,9 @@
 //! Provides a navigation sidebar showing sibling interfaces/worlds and
 //! package metadata, matching the layout of the package detail page.
 
+use crate::wit_doc::WitDocument;
 use html::content::Aside;
 use html::text_content::{Division, UnorderedList};
-use wasm_wit_doc::WitDocument;
 
 /// Context needed to render the detail page sidebar.
 pub(crate) struct SidebarContext<'a> {

@@ -2,11 +2,11 @@
 
 // r[impl frontend.pages.package-detail]
 
+use crate::wit_doc::WitDocument;
 use html::content::Section;
 use html::inline_text::Span;
 use html::text_content::{Division, ListItem, UnorderedList};
 use wasm_meta_registry_client::{KnownPackage, PackageVersion};
-use wasm_wit_doc::WitDocument;
 
 use crate::layout;
 
@@ -200,7 +200,7 @@ fn render_wit_content_with_doc(
 fn try_parse_wit(detail: &PackageVersion, url_base: &str) -> Option<WitDocument> {
     let wit_text = detail.wit_text.as_deref()?;
     let dep_urls = build_dep_urls(&detail.dependencies);
-    wasm_wit_doc::parse_wit_doc(wit_text, url_base, &dep_urls).ok()
+    crate::wit_doc::parse_wit_doc(wit_text, url_base, &dep_urls).ok()
 }
 
 /// Build the `dep_urls` mapping from a package's declared dependencies.
@@ -238,7 +238,7 @@ fn render_interface_overview(doc: &WitDocument) -> Division {
 }
 
 /// Render a single interface row: linked name + doc excerpt.
-fn render_interface_row(iface: &wasm_wit_doc::InterfaceDoc) -> ListItem {
+fn render_interface_row(iface: &crate::wit_doc::InterfaceDoc) -> ListItem {
     let mut li = ListItem::builder();
     li.class("py-3 flex gap-6");
 
@@ -281,7 +281,7 @@ fn render_world_overview(doc: &WitDocument) -> Division {
 }
 
 /// Render a single world row: linked name + doc excerpt.
-fn render_world_row(world: &wasm_wit_doc::WorldDoc) -> ListItem {
+fn render_world_row(world: &crate::wit_doc::WorldDoc) -> ListItem {
     let mut li = ListItem::builder();
     li.class("py-3 flex gap-6");
 
@@ -807,10 +807,10 @@ fn format_date(iso: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::wit_doc::{InterfaceDoc, WitDocument, WorldDoc};
     use wasm_meta_registry_client::{
         PackageDependencyRef, PackageVersion, WitInterfaceRef, WitWorldSummary,
     };
-    use wasm_wit_doc::{InterfaceDoc, WitDocument, WorldDoc};
 
     fn sample_known_package(wit: bool) -> KnownPackage {
         KnownPackage {
