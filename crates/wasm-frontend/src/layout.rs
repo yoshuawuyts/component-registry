@@ -264,27 +264,29 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
     .carousel-word {{
       display: inline-block;
       opacity: 0;
-      transform: translateY(-0.25em);
-      filter: blur(2px);
-      transition:
-        opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1),
-        transform 0.35s cubic-bezier(0.25, 1, 0.5, 1),
-        filter 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+      transform: translateY(-0.6em);
     }}
+    /* Exit: slow start, then accelerate down and away */
     .carousel-word.out {{
       opacity: 0;
-      transform: translateY(0.25em);
-      filter: blur(2px);
+      transform: translateY(0.6em);
+      transition:
+        opacity 0.25s cubic-bezier(0.55, 0, 1, 0.45),
+        transform 0.25s cubic-bezier(0.55, 0, 1, 0.45);
     }}
+    /* Enter: fly in fast from above, overshoot slightly, settle back */
     .carousel-word.in {{
       opacity: 1;
       transform: translateY(0);
-      filter: blur(0);
+      transition:
+        opacity 0.3s cubic-bezier(0.22, 1.15, 0.36, 1),
+        transform 0.3s cubic-bezier(0.22, 1.15, 0.36, 1);
     }}
     @media (prefers-reduced-motion: reduce) {{
-      .carousel-word {{
+      .carousel-word,
+      .carousel-word.out,
+      .carousel-word.in {{
         transition: none;
-        filter: none;
       }}
     }}
     /* Tab buttons */
@@ -383,7 +385,7 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
         el.classList.remove('in');
         el.classList.add('out');
         // Swap text after exit completes, then fade in
-        var swapDelay = reducedMotion ? 0 : 600;
+        var swapDelay = reducedMotion ? 0 : 250;
         setTimeout(function() {{
           var next = idx;
           while (next === idx) next = Math.floor(Math.random() * words.length);

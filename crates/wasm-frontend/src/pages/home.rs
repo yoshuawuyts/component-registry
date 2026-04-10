@@ -240,22 +240,6 @@ fn kind_icon(kind: Option<wasm_meta_registry_client::PackageKind>) -> &'static s
     }
 }
 
-/// CSS class for the kind-colored left border.
-fn kind_card_class(kind: Option<wasm_meta_registry_client::PackageKind>) -> &'static str {
-    match kind {
-        Some(wasm_meta_registry_client::PackageKind::Interface) => "card-interface",
-        _ => "card-component",
-    }
-}
-
-/// Tailwind color class for the kind badge icon.
-fn kind_icon_color(kind: Option<wasm_meta_registry_client::PackageKind>) -> &'static str {
-    match kind {
-        Some(wasm_meta_registry_client::PackageKind::Interface) => "text-wit-iface",
-        _ => "text-accent",
-    }
-}
-
 /// Render a single package as a card.
 fn render_card(pkg: &KnownPackage, index: usize) -> Division {
     let delay = format!("animation-delay:{}ms", index * 30);
