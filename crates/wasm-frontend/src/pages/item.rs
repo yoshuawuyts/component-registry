@@ -34,7 +34,7 @@ pub(crate) fn render_type(
         version_detail,
         importers: &[],
         exporters: &[],
-        description: "",
+        description: ty.docs.as_deref().unwrap_or(""),
     };
     let pkg_url = format!("/{}/{version}", display_name.replace(':', "/"));
     let extra = vec![
@@ -77,7 +77,7 @@ pub(crate) fn render_function(
         version_detail,
         importers: &[],
         exporters: &[],
-        description: "",
+        description: func.docs.as_deref().unwrap_or(""),
     };
     let pkg_url = format!("/{}/{version}", display_name.replace(':', "/"));
     let extra = vec![
