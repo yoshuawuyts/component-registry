@@ -125,11 +125,6 @@ fn render_wit_content_with_doc(
         }
     }
 
-    // OCI layout (layers).
-    if !detail.layers.is_empty() {
-        section.push(render_oci_layers(&detail.layers));
-    }
-
     section.build()
 }
 
