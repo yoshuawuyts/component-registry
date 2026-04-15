@@ -22,6 +22,7 @@ pub(crate) async fn render(client: &RegistryClient) -> String {
 
 /// Packages pinned to the top of the home page, in display order.
 const PINNED_PACKAGES: &[(&str, &str)] = &[
+    ("ba", "sample-wasi-http-rust"),
     ("wasi", "http"),
     ("wasi", "cli"),
     ("wasi", "io"),
