@@ -604,20 +604,36 @@ impl Store {
     ///
     /// Original OCI data (manifests, layers, blobs) is never modified.
     pub(crate) async fn reindex_wit_packages(&self) -> anyhow::Result<u64> {
-        // Collect (wit_package.id, oci_manifest_id, layer_digest) tuples.
+        // Collect (wit_package.id, oci_manifest_id, oci_layer_id, layer_digest)
+        // tuples.  Two sources:
+        //   1. wit_package rows that already have an oci_layer_id.
+        //   2. wit_package rows with only an oci_manifest_id (legacy data) —
+        //      we resolve the layer via the manifest's first wasm layer.
         let mut stmt = self.conn.prepare(
-            "SELECT wp.id, wp.oci_manifest_id, ol.digest
+            "SELECT wp.id, wp.oci_manifest_id, ol.id, ol.digest
              FROM wit_package wp
-             JOIN oci_layer ol ON ol.id = wp.oci_layer_id",
+             JOIN oci_layer ol ON ol.id = wp.oci_layer_id
+             UNION ALL
+             SELECT wp.id, wp.oci_manifest_id, ol.id, ol.digest
+             FROM wit_package wp
+             JOIN oci_layer ol ON ol.oci_manifest_id = wp.oci_manifest_id
+             WHERE wp.oci_layer_id IS NULL
+               AND wp.oci_manifest_id IS NOT NULL
+               AND ol.position = (
+                   SELECT MIN(ol2.position) FROM oci_layer ol2
+                   WHERE ol2.oci_manifest_id = wp.oci_manifest_id
+               )",
         )?;
-        let rows: Vec<(i64, i64, String)> = stmt
-            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
+        let rows: Vec<(i64, i64, i64, String)> = stmt
+            .query_map([], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+            })?
             .collect::<Result<Vec<_>, _>>()?;
 
         let store_dir = self.state_info.store_dir().to_path_buf();
         let mut reindexed = 0u64;
 
-        for (wit_id, manifest_id, digest) in &rows {
+        for (wit_id, manifest_id, layer_id, digest) in &rows {
             // Read the raw bytes from cacache.
             let bytes = match cacache::read(&store_dir, digest).await {
                 Ok(b) => b,
@@ -641,7 +657,7 @@ impl Store {
                         tracing::warn!("reindex: failed to delete wit_package {wit_id}: {e}");
                         false
                     },
-                    |_| self.try_extract_wit_package(*manifest_id, None, &bytes),
+                    |_| self.try_extract_wit_package(*manifest_id, Some(*layer_id), &bytes),
                 );
 
             let savepoint_sql = if replaced {

@@ -6,5 +6,3 @@ registry = "ghcr.io/wasmcloud"
 [[component]]
 name = "hello-world"
 repository = "components/hello-world"
-
-
