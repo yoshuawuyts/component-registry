@@ -488,6 +488,9 @@ pub struct BomEntry {
     pub name: String,
     /// Dependency version.
     pub version: String,
+    /// Source kind (e.g. "crates.io", "git", "local", "registry").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
 }
 
 /// A single producer toolchain entry (e.g. `language = "Rust" [1.82.0]`).

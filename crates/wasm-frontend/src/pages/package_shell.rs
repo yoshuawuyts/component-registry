@@ -665,28 +665,52 @@ pub(crate) fn render_import_export_section(heading: &str, items: &[ImportExportE
     let mut ul = html::text_content::UnorderedList::builder();
     for item in items {
         let link_class = match item.item_kind {
-            WorldItemKind::Interface => "block font-mono text-wit-iface hover:underline text-base",
-            WorldItemKind::Function => "block font-mono text-wit-func hover:underline text-base",
-            WorldItemKind::Resource => {
-                "block font-mono text-wit-resource hover:underline text-base"
-            }
+            WorldItemKind::Interface => "text-wit-iface",
+            WorldItemKind::Function => "text-wit-func",
+            WorldItemKind::Resource => "text-wit-resource",
         };
         ul.list_item(|li| {
             li.class("py-1 flex gap-4");
+            let (name_part, ver_part) = match item.label.split_once('@') {
+                Some((n, v)) => (n.to_owned(), Some(v.to_owned())),
+                None => (item.label.clone(), None),
+            };
             li.division(|left| {
                 left.class("shrink-0 w-64");
+                // Split "wasi:cli/stdin" into prefix "wasi:cli/" (muted) + "stdin" (colored).
+                let (prefix, highlight) = match name_part.rfind('/') {
+                    Some(pos) => (
+                        Some(name_part[..=pos].to_owned()),
+                        name_part[pos + 1..].to_owned(),
+                    ),
+                    None => (None, name_part.clone()),
+                };
                 match &item.url {
                     Some(url) => {
                         left.anchor(|a| {
                             a.href(url.clone())
-                                .class(link_class.to_owned())
-                                .text(item.label.clone())
+                                .class("block font-mono hover:underline text-base");
+                            if let Some(pfx) = &prefix {
+                                a.span(|s| s.class("text-fg-muted").text(pfx.clone()));
+                            }
+                            a.span(|s| s.class(link_class).text(highlight.clone()));
+                            if let Some(v) = &ver_part {
+                                a.span(|s| s.class("text-fg-faint ml-1").text(format!("@{v}")));
+                            }
+                            a
                         });
                     }
                     None => {
                         left.span(|s| {
-                            s.class("block font-mono text-fg text-base")
-                                .text(item.label.clone())
+                            s.class("block font-mono text-base");
+                            if let Some(pfx) = &prefix {
+                                s.span(|ps| ps.class("text-fg-muted").text(pfx.clone()));
+                            }
+                            s.span(|hs| hs.class("text-fg").text(highlight.clone()));
+                            if let Some(v) = &ver_part {
+                                s.span(|vs| vs.class("text-fg-faint ml-1").text(format!("@{v}")));
+                            }
+                            s
                         });
                     }
                 }

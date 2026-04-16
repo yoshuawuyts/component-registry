@@ -133,7 +133,7 @@ fn render_producers_section(producers: &[wasm_meta_registry_client::ProducerEntr
     div.build().to_string()
 }
 
-/// Render dependencies as a list with links to crates.io.
+/// Render dependencies as package URLs with links to crates.io.
 fn render_bom_section(deps: &[wasm_meta_registry_client::BomEntry]) -> String {
     let mut div = Division::builder();
     div.heading_2(|h2| {
@@ -145,15 +145,42 @@ fn render_bom_section(deps: &[wasm_meta_registry_client::BomEntry]) -> String {
     for dep in deps {
         let name = dep.name.clone();
         let version = dep.version.clone();
-        let href = format!("https://crates.io/crates/{name}");
+        let source = dep.source.as_deref().unwrap_or("crates.io");
+        let (purl_type, href) = match source {
+            "crates.io" => (
+                "cargo",
+                Some(format!("https://crates.io/crates/{name}/{version}")),
+            ),
+            "registry" => (
+                "cargo",
+                Some(format!("https://crates.io/crates/{name}/{version}")),
+            ),
+            "git" => ("generic", None),
+            "local" => ("generic", None),
+            _ => ("generic", None),
+        };
+        let purl = format!("pkg:{purl_type}/{name}@{version}");
         ul.list_item(|li| {
-            li.class("py-1 flex justify-between");
-            li.anchor(|a| {
-                a.href(href)
-                    .class("font-mono text-base text-accent hover:underline")
-                    .text(name)
-            });
-            li.span(|s| s.class("font-mono text-sm text-fg-muted").text(version));
+            li.class("py-1");
+            if let Some(url) = href {
+                li.anchor(|a| {
+                    a.href(url).class("font-mono text-base hover:underline");
+                    a.span(|s| s.class("text-fg-muted").text(format!("pkg:{purl_type}/")));
+                    a.span(|s| s.class("text-accent").text(name));
+                    a.span(|s| s.class("text-fg-faint ml-1").text(format!("@{version}")));
+                    a
+                })
+                .title(purl);
+            } else {
+                li.span(|s| {
+                    s.class("font-mono text-base");
+                    s.span(|ps| ps.class("text-fg-muted").text(format!("pkg:{purl_type}/")));
+                    s.span(|ns| ns.class("text-fg").text(name));
+                    s.span(|vs| vs.class("text-fg-faint ml-1").text(format!("@{version}")));
+                    s
+                })
+                .title(purl);
+            }
             li
         });
     }

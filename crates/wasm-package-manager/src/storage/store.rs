@@ -1989,6 +1989,7 @@ fn payload_to_summary(
                 .map(|p| BomEntry {
                     name: p.name.clone(),
                     version: p.version.to_string(),
+                    source: Some(format!("{:?}", p.source).to_lowercase()),
                 })
                 .collect()
         })
