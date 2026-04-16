@@ -1249,6 +1249,7 @@ impl Store {
             let referrers = self.get_referrers_for_manifest(m.id)?;
             let layers = self.get_layers_for_manifest(m.id)?;
             let wit_text = self.get_wit_text_for_manifest(m.id)?;
+            let type_docs = self.build_type_docs(&dependencies);
 
             versions.push(PackageVersion {
                 tag,
@@ -1263,6 +1264,7 @@ impl Store {
                 referrers,
                 layers,
                 wit_text,
+                type_docs,
             });
         }
 
@@ -1383,6 +1385,7 @@ impl Store {
         let referrers = self.get_referrers_for_manifest(m.id)?;
         let layers = self.get_layers_for_manifest(m.id)?;
         let wit_text = self.get_wit_text_for_manifest(m.id)?;
+        let type_docs = self.build_type_docs(&dependencies);
 
         Ok(Some(PackageVersion {
             tag: Some(version_tag.to_string()),
@@ -1397,6 +1400,7 @@ impl Store {
             referrers,
             layers,
             wit_text,
+            type_docs,
         }))
     }
 
@@ -1592,15 +1596,66 @@ impl Store {
 
             // Parse the WIT text and find the interface's docs.
             if let Ok(pkg) = wit_parser::UnresolvedPackageGroup::parse("lookup.wit", &wit_text) {
-                for (_, iface) in pkg.main.interfaces.iter() {
-                    if iface.name.as_deref() == Some(iface_name.as_str()) {
-                        if let Some(doc) = &iface.docs.contents {
-                            iface_ref.docs = Some(first_doc_sentence(doc));
-                        }
+                for (_, iface) in &pkg.main.interfaces {
+                    if iface.name.as_deref() == Some(iface_name.as_str())
+                        && let Some(doc) = &iface.docs.contents
+                    {
+                        iface_ref.docs = Some(first_doc_sentence(doc));
                     }
                 }
             }
         }
+    }
+
+    /// Build a map of cross-package type documentation.
+    ///
+    /// For each dependency that has stored WIT text, parse it and extract
+    /// docs for all types in all interfaces. Returns a map from
+    /// `"package/interface/type"` → doc string.
+    fn build_type_docs(
+        &self,
+        deps: &[wasm_meta_registry_types::PackageDependencyRef],
+    ) -> HashMap<String, String> {
+        let mut result = HashMap::new();
+
+        for dep in deps {
+            let wit_text: Option<String> = self
+                .conn
+                .query_row(
+                    "SELECT wit_text FROM wit_package
+                     WHERE package_name = ?1
+                       AND wit_text IS NOT NULL
+                     ORDER BY id DESC LIMIT 1",
+                    rusqlite::params![&dep.package],
+                    |row| row.get(0),
+                )
+                .ok();
+
+            let Some(wit_text) = wit_text else { continue };
+            let Ok(pkg) = wit_parser::UnresolvedPackageGroup::parse("dep.wit", &wit_text) else {
+                continue;
+            };
+
+            for (_, iface) in &pkg.main.interfaces {
+                let Some(iface_name) = &iface.name else {
+                    continue;
+                };
+                for (type_name, type_id) in &iface.types {
+                    if let Some(type_def) = pkg.main.types.get(*type_id)
+                        && let Some(docs) = &type_def.docs.contents
+                        && !docs.is_empty()
+                    {
+                        let key = format!("{}/{iface_name}/{type_name}", dep.package);
+                        let first = docs
+                            .split_once("\n\n")
+                            .map_or_else(|| docs.trim().to_owned(), |(f, _)| f.trim().to_owned());
+                        result.insert(key, first);
+                    }
+                }
+            }
+        }
+
+        result
     }
 
     /// Return the full OCI layout for a manifest: manifest descriptor,
@@ -1989,7 +2044,7 @@ fn payload_to_summary(
                 .map(|p| BomEntry {
                     name: p.name.clone(),
                     version: p.version.to_string(),
-                    source: Some(format!("{:?}", p.source).to_lowercase()),
+                    source: Some(String::from(p.source.clone())),
                 })
                 .collect()
         })

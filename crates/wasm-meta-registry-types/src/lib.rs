@@ -306,6 +306,10 @@ pub struct PackageVersion {
     /// The WIT source text, if available.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub wit_text: Option<String>,
+    /// Cross-package type documentation, keyed by fully qualified type name
+    /// (e.g. `"wasi:io/poll/pollable"` → `"A \"pollable\" handle..."`).
+    #[serde(default, skip_serializing_if = "std::collections::HashMap::is_empty")]
+    pub type_docs: std::collections::HashMap<String, String>,
 }
 
 /// Metadata for a single OCI layer.

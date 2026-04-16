@@ -363,7 +363,9 @@ async fn fetch_wit_doc(
         pkg.wit_name.as_deref().unwrap_or(&pkg.repository),
         version
     );
-    let doc = wit_doc::parse_wit_doc(wit_text, &url_base, &dep_urls).ok()?;
+    let doc =
+        wit_doc::parse_wit_doc_with_type_docs(wit_text, &url_base, &dep_urls, &detail.type_docs)
+            .ok()?;
     Some((doc, detail))
 }
 

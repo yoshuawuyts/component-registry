@@ -120,7 +120,7 @@ fn build_api_doc_lookup(
 fn render_item_section(
     heading: &str,
     items: &[WorldItemDoc],
-    is_import: bool,
+    _is_import: bool,
     api_docs: &std::collections::HashMap<String, String>,
 ) -> Division {
     // Separate interface items (shared rendering) from non-interface items

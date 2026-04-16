@@ -147,16 +147,10 @@ fn render_bom_section(deps: &[wasm_meta_registry_client::BomEntry]) -> String {
         let version = dep.version.clone();
         let source = dep.source.as_deref().unwrap_or("crates.io");
         let (purl_type, href) = match source {
-            "crates.io" => (
+            "crates.io" | "registry" => (
                 "cargo",
                 Some(format!("https://crates.io/crates/{name}/{version}")),
             ),
-            "registry" => (
-                "cargo",
-                Some(format!("https://crates.io/crates/{name}/{version}")),
-            ),
-            "git" => ("generic", None),
-            "local" => ("generic", None),
             _ => ("generic", None),
         };
         let purl = format!("pkg:{purl_type}/{name}@{version}");

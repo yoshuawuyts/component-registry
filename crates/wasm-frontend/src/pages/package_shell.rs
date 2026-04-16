@@ -597,6 +597,7 @@ pub(crate) fn url_base_for(pkg: &KnownPackage, version: &str) -> String {
 
 /// The kind of a world import/export item.
 #[derive(Debug, Clone, Copy, Default)]
+#[allow(dead_code)]
 pub(crate) enum WorldItemKind {
     /// An interface.
     #[default]
@@ -676,7 +677,7 @@ pub(crate) fn render_import_export_section(heading: &str, items: &[ImportExportE
                 None => (item.label.clone(), None),
             };
             li.division(|left| {
-                left.class("shrink-0 w-64");
+                left.class("shrink-0 w-80");
                 // Split "wasi:cli/stdin" into prefix "wasi:cli/" (muted) + "stdin" (colored).
                 let (prefix, highlight) = match name_part.rfind('/') {
                     Some(pos) => (

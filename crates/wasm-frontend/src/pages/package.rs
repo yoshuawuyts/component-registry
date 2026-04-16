@@ -70,7 +70,7 @@ pub(crate) fn render(
     };
 
     let body_html =
-        format!("{header}<div class=\"space-y-10 max-w-3xl pt-4 pb-12\">{wit_content}</div>");
+        format!("{header}<div class=\"space-y-10 max-w-4xl pt-4 pb-12\">{wit_content}</div>");
 
     let shell_ctx = package_shell::SidebarContext {
         pkg,
