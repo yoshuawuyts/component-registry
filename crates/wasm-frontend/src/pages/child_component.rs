@@ -47,12 +47,42 @@ pub(crate) fn render(
 
     let mut body = format!("{header}<div class=\"space-y-10 max-w-3xl pt-4 pb-12\">");
 
+    // WIT imports
+    if !child.imports.is_empty() {
+        let entries: Vec<package_shell::ImportExportEntry> = child
+            .imports
+            .iter()
+            .map(|iface| package_shell::ImportExportEntry {
+                label: format_iface_display(iface),
+                url: build_iface_url(iface),
+            })
+            .collect();
+        body.push_str(
+            &package_shell::render_import_export_section("Imports", &entries, true).to_string(),
+        );
+    }
+
+    // WIT exports
+    if !child.exports.is_empty() {
+        let entries: Vec<package_shell::ImportExportEntry> = child
+            .exports
+            .iter()
+            .map(|iface| package_shell::ImportExportEntry {
+                label: format_iface_display(iface),
+                url: build_iface_url(iface),
+            })
+            .collect();
+        body.push_str(
+            &package_shell::render_import_export_section("Exports", &entries, false).to_string(),
+        );
+    }
+
     // Producers
     if !child.producers.is_empty() {
         body.push_str(&render_producers_section(&child.producers));
     }
 
-    // Bill of materials
+    // Dependencies
     if !child.bill_of_materials.is_empty() {
         body.push_str(&render_bom_section(&child.bill_of_materials));
     }
@@ -135,4 +165,25 @@ fn render_bom_section(deps: &[wasm_meta_registry_client::BomEntry]) -> String {
     }
     div.push(ul.build());
     div.build().to_string()
+}
+
+/// Format a WIT interface ref for display (no version).
+fn format_iface_display(iface: &wasm_meta_registry_client::WitInterfaceRef) -> String {
+    let mut s = iface.package.clone();
+    if let Some(name) = &iface.interface {
+        s.push('/');
+        s.push_str(name);
+    }
+    s
+}
+
+/// Build a URL for a WIT interface ref.
+fn build_iface_url(iface: &wasm_meta_registry_client::WitInterfaceRef) -> Option<String> {
+    let (ns, name) = iface.package.split_once(':')?;
+    match (&iface.interface, &iface.version) {
+        (Some(iface_name), Some(v)) => Some(format!("/{ns}/{name}/{v}/interface/{iface_name}")),
+        (None, Some(v)) => Some(format!("/{ns}/{name}/{v}")),
+        (Some(iface_name), None) => Some(format!("/{ns}/{name}/interface/{iface_name}")),
+        (None, None) => Some(format!("/{ns}/{name}")),
+    }
 }

@@ -1430,6 +1430,7 @@ impl Store {
         manifest_id: i64,
     ) -> anyhow::Result<Vec<wasm_meta_registry_types::ComponentSummary>> {
         use wasm_meta_registry_types::{ComponentSummary, ComponentTargetRef};
+        type ComponentRow = (i64, Option<String>, Option<String>, Option<String>);
 
         let mut stmt = self.conn.prepare(
             "SELECT id, name, description, producers_json FROM wasm_component
@@ -1437,7 +1438,7 @@ impl Store {
              ORDER BY name ASC",
         )?;
 
-        let components: Vec<(i64, Option<String>, Option<String>, Option<String>)> = stmt
+        let components: Vec<ComponentRow> = stmt
             .query_map([manifest_id], |row| {
                 Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
             })?
@@ -1477,6 +1478,8 @@ impl Store {
                     revision: None,
                     component_version: None,
                     bill_of_materials: vec![],
+                    imports: vec![],
+                    exports: vec![],
                 });
 
             summary.targets = target_refs;
@@ -1845,12 +1848,14 @@ fn split_package_version(raw: &str) -> (&str, Option<&str>) {
 fn extract_component_metadata(
     wasm_bytes: &[u8],
 ) -> (Option<String>, Option<String>, Option<String>) {
-    let payload = match wasm_metadata::Payload::from_binary(wasm_bytes) {
-        Ok(p) => p,
-        Err(_) => return (None, None, None),
+    let Ok(payload) = wasm_metadata::Payload::from_binary(wasm_bytes) else {
+        return (None, None, None);
     };
 
-    let summary = payload_to_summary(&payload);
+    // Decode WIT once for the full component — used by all children.
+    let root_wit = wit_parser::decoding::decode(wasm_bytes).ok();
+
+    let summary = payload_to_summary(&payload, wasm_bytes, root_wit.as_ref());
     let name = summary.name.clone();
     let description = summary.description.clone();
     let json = serde_json::to_string(&summary).unwrap_or_default();
@@ -1859,8 +1864,15 @@ fn extract_component_metadata(
 }
 
 /// Convert a `wasm_metadata::Payload` tree into a `ComponentSummary` tree.
+///
+/// `parent_bytes` is the full wasm binary; child byte ranges are sliced from
+/// it to extract WIT imports/exports via `wit-parser`.
+/// `root_wit` is the decoded WIT from the full parent binary, used to resolve
+/// inner component names back to WIT-qualified names.
 fn payload_to_summary(
     payload: &wasm_metadata::Payload,
+    parent_bytes: &[u8],
+    root_wit: Option<&wit_parser::decoding::DecodedWasm>,
 ) -> wasm_meta_registry_types::ComponentSummary {
     use wasm_meta_registry_types::{BomEntry, ComponentSummary, ProducerEntry};
 
@@ -1869,7 +1881,10 @@ fn payload_to_summary(
     let (kind, children) = match payload {
         wasm_metadata::Payload::Component { children, .. } => (
             "component",
-            children.iter().map(payload_to_summary).collect(),
+            children
+                .iter()
+                .map(|c| payload_to_summary(c, parent_bytes, root_wit))
+                .collect(),
         ),
         wasm_metadata::Payload::Module(_) => ("module", vec![]),
     };
@@ -1880,9 +1895,9 @@ fn payload_to_summary(
         .flat_map(|p| {
             p.iter().flat_map(|(field, pairs)| {
                 pairs.iter().map(move |(tool, ver)| ProducerEntry {
-                    field: field.to_string(),
-                    name: tool.to_string(),
-                    version: ver.to_string(),
+                    field: field.clone(),
+                    name: tool.clone(),
+                    version: ver.clone(),
                 })
             })
         })
@@ -1916,22 +1931,184 @@ fn payload_to_summary(
         })
         .unwrap_or_default();
 
+    // Extract WIT imports/exports from this component's byte range.
+    let (imports, exports) = extract_wit_imports_exports(parent_bytes, &meta.range, root_wit);
+
     ComponentSummary {
         name: meta.name.clone(),
-        description: meta.description.as_ref().map(|d| d.to_string()),
+        description: meta.description.as_ref().map(ToString::to_string),
         targets: vec![],
         producers,
         kind: Some(kind.to_string()),
         size_bytes,
         languages,
         children,
-        source: meta.source.as_ref().map(|s| s.to_string()),
-        homepage: meta.homepage.as_ref().map(|h| h.to_string()),
-        licenses: meta.licenses.as_ref().map(|l| l.to_string()),
-        authors: meta.authors.as_ref().map(|a| a.to_string()),
-        revision: meta.revision.as_ref().map(|r| r.to_string()),
-        component_version: meta.version.as_ref().map(|v| v.to_string()),
+        source: meta.source.as_ref().map(ToString::to_string),
+        homepage: meta.homepage.as_ref().map(ToString::to_string),
+        licenses: meta.licenses.as_ref().map(ToString::to_string),
+        authors: meta.authors.as_ref().map(ToString::to_string),
+        revision: meta.revision.as_ref().map(ToString::to_string),
+        component_version: meta.version.as_ref().map(ToString::to_string),
         bill_of_materials,
+        imports,
+        exports,
+    }
+}
+
+/// Extract WIT imports and exports from a wasm binary at the given byte range.
+///
+/// First tries `wit-parser` for a full decode (works for self-contained
+/// components). Falls back to using the root component's decoded WIT to
+/// provide the correct WIT-qualified names. If neither works, uses
+/// `wasmparser` to read raw component import/export names.
+fn extract_wit_imports_exports(
+    parent_bytes: &[u8],
+    range: &std::ops::Range<usize>,
+    root_wit: Option<&wit_parser::decoding::DecodedWasm>,
+) -> (
+    Vec<wasm_meta_registry_types::WitInterfaceRef>,
+    Vec<wasm_meta_registry_types::WitInterfaceRef>,
+) {
+    let Some(bytes) = parent_bytes.get(range.start..range.end) else {
+        return (vec![], vec![]);
+    };
+
+    // Try wit-parser on the child's own bytes (works for self-contained components).
+    if let Ok(decoded) = wit_parser::decoding::decode(bytes) {
+        let resolve = decoded.resolve();
+        if let wit_parser::decoding::DecodedWasm::Component(_, world_id) = &decoded
+            && let Some(world) = resolve.worlds.get(*world_id)
+        {
+            let imports = world
+                .imports
+                .keys()
+                .filter_map(|k| world_key_to_iface_ref(resolve, k))
+                .collect();
+            let exports = world
+                .exports
+                .keys()
+                .filter_map(|k| world_key_to_iface_ref(resolve, k))
+                .collect();
+            return (imports, exports);
+        }
+    }
+
+    // For inner components that can't be decoded standalone, use the root
+    // component's already-decoded WIT world. The root world's imports/exports
+    // are the WIT-level view of what the inner component implements.
+    if let Some(decoded) = root_wit {
+        let resolve = decoded.resolve();
+        if let wit_parser::decoding::DecodedWasm::Component(_, world_id) = decoded
+            && let Some(world) = resolve.worlds.get(*world_id)
+        {
+            let imports = world
+                .imports
+                .keys()
+                .filter_map(|k| world_key_to_iface_ref(resolve, k))
+                .collect();
+            let exports = world
+                .exports
+                .keys()
+                .filter_map(|k| world_key_to_iface_ref(resolve, k))
+                .collect();
+            return (imports, exports);
+        }
+    }
+
+    // Last resort: raw wasmparser names.
+    extract_wit_imports_exports_wasmparser(bytes)
+}
+
+/// Use `wasmparser` to extract component import/export names from raw bytes.
+///
+/// This handles inner components that can't be decoded by `wit-parser` because
+/// they reference types from the outer component scope.
+fn extract_wit_imports_exports_wasmparser(
+    bytes: &[u8],
+) -> (
+    Vec<wasm_meta_registry_types::WitInterfaceRef>,
+    Vec<wasm_meta_registry_types::WitInterfaceRef>,
+) {
+    use wasmparser::{Parser, Payload};
+
+    let mut imports = Vec::new();
+    let mut exports = Vec::new();
+
+    for payload in Parser::new(0).parse_all(bytes) {
+        let Ok(payload) = payload else { continue };
+        match payload {
+            Payload::ComponentImportSection(reader) => {
+                for import in reader {
+                    let Ok(import) = import else { continue };
+                    imports.push(parse_component_extern_name(import.name.0));
+                }
+            }
+            Payload::ComponentExportSection(reader) => {
+                for export in reader {
+                    let Ok(export) = export else { continue };
+                    exports.push(parse_component_extern_name(export.name.0));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    (imports, exports)
+}
+
+/// Parse a component extern name like `"wasi:http/types@0.2.3"` into a
+/// `WitInterfaceRef`.
+fn parse_component_extern_name(name: &str) -> wasm_meta_registry_types::WitInterfaceRef {
+    // Component extern names follow the pattern:
+    //   "namespace:package/interface@version"
+    //   "namespace:package@version"
+    //   or just a plain name
+    if !name.contains(':') {
+        return wasm_meta_registry_types::WitInterfaceRef {
+            package: name.to_string(),
+            interface: None,
+            version: None,
+        };
+    }
+
+    let (name_part, version) = match name.rsplit_once('@') {
+        Some((n, v)) => (n, Some(v.to_string())),
+        None => (name, None),
+    };
+
+    let (package, interface) = match name_part.split_once('/') {
+        Some((pkg, iface)) => (pkg.to_string(), Some(iface.to_string())),
+        None => (name_part.to_string(), None),
+    };
+
+    wasm_meta_registry_types::WitInterfaceRef {
+        package,
+        interface,
+        version,
+    }
+}
+
+/// Convert a `wit_parser::WorldKey` to a `WitInterfaceRef`.
+fn world_key_to_iface_ref(
+    resolve: &wit_parser::Resolve,
+    key: &wit_parser::WorldKey,
+) -> Option<wasm_meta_registry_types::WitInterfaceRef> {
+    match key {
+        wit_parser::WorldKey::Name(name) => Some(wasm_meta_registry_types::WitInterfaceRef {
+            package: name.clone(),
+            interface: None,
+            version: None,
+        }),
+        wit_parser::WorldKey::Interface(id) => {
+            let iface = resolve.interfaces.get(*id)?;
+            let pkg_id = iface.package?;
+            let pkg = resolve.packages.get(pkg_id)?;
+            Some(wasm_meta_registry_types::WitInterfaceRef {
+                package: format!("{}:{}", pkg.name.namespace, pkg.name.name),
+                interface: iface.name.clone(),
+                version: pkg.name.version.as_ref().map(ToString::to_string),
+            })
+        }
     }
 }
 
@@ -2839,5 +3016,67 @@ mod tests {
             .get_package_detail("ghcr.io", "does/not/exist")
             .unwrap();
         assert!(detail.is_none());
+    }
+
+    #[test]
+    fn parse_component_extern_name_full() {
+        let ref_ = super::parse_component_extern_name("wasi:http/types@0.2.3");
+        assert_eq!(ref_.package, "wasi:http");
+        assert_eq!(ref_.interface.as_deref(), Some("types"));
+        assert_eq!(ref_.version.as_deref(), Some("0.2.3"));
+    }
+
+    #[test]
+    fn parse_component_extern_name_no_interface() {
+        let ref_ = super::parse_component_extern_name("wasi:http@0.2.3");
+        assert_eq!(ref_.package, "wasi:http");
+        assert_eq!(ref_.interface, None);
+        assert_eq!(ref_.version.as_deref(), Some("0.2.3"));
+    }
+
+    #[test]
+    fn parse_component_extern_name_no_version() {
+        let ref_ = super::parse_component_extern_name("wasi:http/types");
+        assert_eq!(ref_.package, "wasi:http");
+        assert_eq!(ref_.interface.as_deref(), Some("types"));
+        assert_eq!(ref_.version, None);
+    }
+
+    #[test]
+    fn parse_component_extern_name_plain() {
+        let ref_ = super::parse_component_extern_name("my-import");
+        assert_eq!(ref_.package, "my-import");
+        assert_eq!(ref_.interface, None);
+        assert_eq!(ref_.version, None);
+    }
+
+    #[test]
+    fn parse_component_extern_name_prerelease_version() {
+        let ref_ = super::parse_component_extern_name("wasi:cli/run@0.2.0-rc1");
+        assert_eq!(ref_.package, "wasi:cli");
+        assert_eq!(ref_.interface.as_deref(), Some("run"));
+        assert_eq!(ref_.version.as_deref(), Some("0.2.0-rc1"));
+    }
+
+    #[test]
+    fn extract_wit_imports_exports_returns_empty_for_non_wasm() {
+        let (imports, exports) = super::extract_wit_imports_exports(b"not wasm", &(0..8), None);
+        assert!(imports.is_empty());
+        assert!(exports.is_empty());
+    }
+
+    #[test]
+    fn extract_wit_imports_exports_returns_empty_for_out_of_range() {
+        let (imports, exports) = super::extract_wit_imports_exports(b"short", &(0..100), None);
+        assert!(imports.is_empty());
+        assert!(exports.is_empty());
+    }
+
+    #[test]
+    fn extract_component_metadata_returns_none_for_invalid_bytes() {
+        let (name, desc, json) = super::extract_component_metadata(b"not wasm");
+        assert!(name.is_none());
+        assert!(desc.is_none());
+        assert!(json.is_none());
     }
 }

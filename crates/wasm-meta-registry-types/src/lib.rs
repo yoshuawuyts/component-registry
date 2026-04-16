@@ -417,6 +417,8 @@ pub struct WitInterfaceRef {
 ///     revision: None,
 ///     component_version: None,
 ///     bill_of_materials: vec![],
+///     imports: vec![],
+///     exports: vec![],
 /// };
 ///
 /// assert_eq!(component.name.as_deref(), Some("my-handler"));
@@ -468,6 +470,12 @@ pub struct ComponentSummary {
     /// Source-level dependencies (bill of materials).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub bill_of_materials: Vec<BomEntry>,
+    /// WIT imports (interfaces this component/module depends on).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub imports: Vec<WitInterfaceRef>,
+    /// WIT exports (interfaces this component/module provides).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub exports: Vec<WitInterfaceRef>,
 }
 
 /// A source-level dependency from the component's bill of materials.
