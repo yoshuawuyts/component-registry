@@ -180,7 +180,11 @@ impl Converter<'_> {
 
         let url = format!("{}/interface/{iface_name}/{name}", self.url_base);
         let stability = convert_stability(&type_def.stability);
-        let docs = type_def.docs.contents.clone();
+        let docs = type_def
+            .docs
+            .contents
+            .clone()
+            .or_else(|| self.resolve_alias_docs(type_id));
 
         let kind = match &type_def.kind {
             TypeDefKind::Record(record) => TypeKind::Record {
@@ -268,6 +272,29 @@ impl Converter<'_> {
             kind,
             stability,
             url,
+        }
+    }
+
+    /// Follow an alias chain to find docs from the target type.
+    ///
+    /// If a type is a `Type(ty)` alias without its own docs, walk the
+    /// chain until we find a type that has docs or isn't an alias.
+    fn resolve_alias_docs(&self, type_id: TypeId) -> Option<String> {
+        let type_def = self.resolve.types.get(type_id)?;
+        match &type_def.kind {
+            TypeDefKind::Type(WitType::Id(target_id)) => {
+                let target = self.resolve.types.get(*target_id)?;
+                target
+                    .docs
+                    .contents
+                    .clone()
+                    .or_else(|| self.resolve_alias_docs(*target_id))
+            }
+            TypeDefKind::Handle(Handle::Own(target_id) | Handle::Borrow(target_id)) => {
+                let target = self.resolve.types.get(*target_id)?;
+                target.docs.contents.clone()
+            }
+            _ => None,
         }
     }
 
