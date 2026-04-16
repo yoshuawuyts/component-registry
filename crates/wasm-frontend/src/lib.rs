@@ -383,9 +383,32 @@ async fn module_detail(
         .ok()
         .flatten();
     let child = version_detail.as_ref().and_then(|d| {
-        d.components.iter().flat_map(|c| &c.children).find(|ch| {
-            ch.kind.as_deref() == Some("module") && ch.name.as_deref() == Some(child_name.as_str())
-        })
+        let modules: Vec<&wasm_meta_registry_client::ComponentSummary> = d
+            .components
+            .iter()
+            .flat_map(|c| &c.children)
+            .filter(|ch| ch.kind.as_deref() == Some("module"))
+            .collect();
+
+        // Try exact name match first.
+        if let Some(ch) = modules
+            .iter()
+            .find(|ch| ch.name.as_deref() == Some(child_name.as_str()))
+        {
+            return Some(*ch);
+        }
+
+        // Fall back to index match for unnamed modules (e.g. "module[1]").
+        if child_name.starts_with("module[") && child_name.ends_with(']') {
+            let idx_str = &child_name[7..child_name.len() - 1];
+            if let Ok(idx) = idx_str.parse::<usize>() {
+                // Only match unnamed modules at this index.
+                let unnamed: Vec<_> = modules.iter().filter(|ch| ch.name.is_none()).collect();
+                return unnamed.get(idx).map(|ch| **ch);
+            }
+        }
+
+        None
     });
     let Some(child) = child else {
         return not_found_response();
