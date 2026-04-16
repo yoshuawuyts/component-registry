@@ -137,6 +137,7 @@ fn render_item_section(
                     label: display.to_owned(),
                     url: url.clone(),
                     docs: effective_docs,
+                    item_kind: package_shell::WorldItemKind::Interface,
                 });
             }
             _ => other_items.push(item),
@@ -145,17 +146,11 @@ fn render_item_section(
 
     // If everything is an interface, use the shared renderer directly.
     if other_items.is_empty() {
-        return package_shell::render_import_export_section(heading, &iface_entries, is_import);
+        return package_shell::render_import_export_section(heading, &iface_entries);
     }
 
     // Mixed content: render heading + interfaces via shared code, then
     // append functions/types with custom rendering.
-    let link_color = if is_import {
-        package_shell::IMPORT_LINK_CLASS
-    } else {
-        package_shell::EXPORT_LINK_CLASS
-    };
-
     let mut div = Division::builder();
     if iface_entries.is_empty() {
         div.heading_2(|h2| {
@@ -166,13 +161,12 @@ fn render_item_section(
         div.push(package_shell::render_import_export_section(
             heading,
             &iface_entries,
-            is_import,
         ));
     }
 
     let mut ul = UnorderedList::builder();
     for item in other_items {
-        ul.push(render_world_item_row(item, link_color));
+        ul.push(render_world_item_row(item));
     }
     div.push(ul.build());
     div.build()
@@ -186,7 +180,7 @@ fn strip_version(name: &str) -> &str {
 }
 
 /// Render a single world item row.
-fn render_world_item_row(item: &WorldItemDoc, link_color: &str) -> ListItem {
+fn render_world_item_row(item: &WorldItemDoc) -> ListItem {
     let mut li = ListItem::builder();
     li.class("py-1");
 
@@ -199,7 +193,7 @@ fn render_world_item_row(item: &WorldItemDoc, link_color: &str) -> ListItem {
             let display = strip_version(name);
             li.anchor(|a| {
                 a.href(url.clone())
-                    .class(link_color.to_owned())
+                    .class("block font-mono text-wit-iface hover:underline text-base")
                     .text(display.to_owned())
             });
         }
@@ -214,7 +208,7 @@ fn render_world_item_row(item: &WorldItemDoc, link_color: &str) -> ListItem {
         }
         WorldItemDoc::Function(func) => {
             let sig = format_function_signature(func);
-            li.code(|c| c.class("block font-mono text-base text-accent").text(sig));
+            li.code(|c| c.class("block font-mono text-base text-wit-func").text(sig));
             if let Some(docs) = &func.docs {
                 li.paragraph(|p| {
                     p.class("text-base text-fg-secondary mt-1")

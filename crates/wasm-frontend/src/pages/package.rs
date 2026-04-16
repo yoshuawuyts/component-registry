@@ -115,10 +115,10 @@ fn render_wit_content_with_doc(
         if has_component_imports {
             for comp in &detail.components {
                 if !comp.imports.is_empty() {
-                    section.push(render_iface_ref_list("Imports", &comp.imports, true));
+                    section.push(render_iface_ref_list("Imports", &comp.imports));
                 }
                 if !comp.exports.is_empty() {
-                    section.push(render_iface_ref_list("Exports", &comp.exports, false));
+                    section.push(render_iface_ref_list("Exports", &comp.exports));
                 }
             }
         } else if !detail.worlds.is_empty() {
@@ -370,10 +370,10 @@ fn render_world_summaries(detail: &PackageVersion) -> Division {
             }
 
             if !world.imports.is_empty() {
-                world_div.push(render_iface_ref_list("Imports", &world.imports, true));
+                world_div.push(render_iface_ref_list("Imports", &world.imports));
             }
             if !world.exports.is_empty() {
-                world_div.push(render_iface_ref_list("Exports", &world.exports, false));
+                world_div.push(render_iface_ref_list("Exports", &world.exports));
             }
             world_div
         });
@@ -388,7 +388,6 @@ fn render_world_summaries(detail: &PackageVersion) -> Division {
 fn render_iface_ref_list(
     label: &str,
     interfaces: &[wasm_meta_registry_client::WitInterfaceRef],
-    is_import: bool,
 ) -> Division {
     let items: Vec<package_shell::ImportExportEntry> = interfaces
         .iter()
@@ -406,15 +405,14 @@ fn render_iface_ref_list(
                 label: display,
                 url: build_iface_href(iface),
                 docs: iface.docs.clone(),
+                item_kind: package_shell::WorldItemKind::Interface,
             }
         })
         .collect();
 
     let mut div = Division::builder();
     div.class("mb-4");
-    div.push(package_shell::render_import_export_section(
-        label, &items, is_import,
-    ));
+    div.push(package_shell::render_import_export_section(label, &items));
     div.build()
 }
 

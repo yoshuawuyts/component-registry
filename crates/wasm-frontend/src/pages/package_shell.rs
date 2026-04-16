@@ -595,6 +595,18 @@ pub(crate) fn url_base_for(pkg: &KnownPackage, version: &str) -> String {
     }
 }
 
+/// The kind of a world import/export item.
+#[derive(Debug, Clone, Copy, Default)]
+pub(crate) enum WorldItemKind {
+    /// An interface.
+    #[default]
+    Interface,
+    /// A function.
+    Function,
+    /// A resource.
+    Resource,
+}
+
 /// A single item in an imports or exports list.
 pub(crate) struct ImportExportEntry {
     /// Display text (e.g. "wasi:cli/environment").
@@ -603,40 +615,30 @@ pub(crate) struct ImportExportEntry {
     pub url: Option<String>,
     /// Optional doc excerpt for the interface.
     pub docs: Option<String>,
+    /// The kind of item (determines color).
+    pub item_kind: WorldItemKind,
 }
-
-/// CSS class for import links.
-pub(crate) const IMPORT_LINK_CLASS: &str =
-    "block font-mono text-wit-import hover:underline text-base";
-
-/// CSS class for export links.
-pub(crate) const EXPORT_LINK_CLASS: &str = "block font-mono text-accent hover:underline text-base";
-
-/// CSS class for unlinked items.
-pub(crate) const PLAIN_ITEM_CLASS: &str = "block font-mono text-fg text-base";
 
 /// Render a section heading + list of import/export entries.
 ///
 /// Shared between the world detail page and the component fallback page.
-pub(crate) fn render_import_export_section(
-    heading: &str,
-    items: &[ImportExportEntry],
-    is_import: bool,
-) -> Division {
+/// Item colors are determined by [`WorldItemKind`].
+pub(crate) fn render_import_export_section(heading: &str, items: &[ImportExportEntry]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
         h2.class("text-lg font-medium text-fg-muted mb-3 pb-2 border-b border-border")
             .text(heading.to_owned())
     });
 
-    let link_class = if is_import {
-        IMPORT_LINK_CLASS
-    } else {
-        EXPORT_LINK_CLASS
-    };
-
     let mut ul = html::text_content::UnorderedList::builder();
     for item in items {
+        let link_class = match item.item_kind {
+            WorldItemKind::Interface => "block font-mono text-wit-iface hover:underline text-base",
+            WorldItemKind::Function => "block font-mono text-wit-func hover:underline text-base",
+            WorldItemKind::Resource => {
+                "block font-mono text-wit-resource hover:underline text-base"
+            }
+        };
         ul.list_item(|li| {
             li.class("py-1 flex gap-4");
             li.division(|left| {
@@ -650,7 +652,10 @@ pub(crate) fn render_import_export_section(
                         });
                     }
                     None => {
-                        left.span(|s| s.class(PLAIN_ITEM_CLASS).text(item.label.clone()));
+                        left.span(|s| {
+                            s.class("block font-mono text-fg text-base")
+                                .text(item.label.clone())
+                        });
                     }
                 }
                 left

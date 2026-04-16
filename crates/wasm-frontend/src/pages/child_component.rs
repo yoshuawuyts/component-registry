@@ -56,10 +56,11 @@ pub(crate) fn render(
                 label: format_iface_display(iface),
                 url: build_iface_url(iface),
                 docs: iface.docs.clone(),
+                item_kind: package_shell::WorldItemKind::Interface,
             })
             .collect();
         body.push_str(
-            &package_shell::render_import_export_section("Imports", &entries, true).to_string(),
+            &package_shell::render_import_export_section("Imports", &entries).to_string(),
         );
     }
 
@@ -72,10 +73,11 @@ pub(crate) fn render(
                 label: format_iface_display(iface),
                 url: build_iface_url(iface),
                 docs: iface.docs.clone(),
+                item_kind: package_shell::WorldItemKind::Interface,
             })
             .collect();
         body.push_str(
-            &package_shell::render_import_export_section("Exports", &entries, false).to_string(),
+            &package_shell::render_import_export_section("Exports", &entries).to_string(),
         );
     }
 
