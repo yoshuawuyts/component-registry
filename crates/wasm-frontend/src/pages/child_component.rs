@@ -198,3 +198,121 @@ fn render_bom_section(deps: &[wasm_meta_registry_client::BomEntry]) -> String {
     div.push(ul.build());
     div.build().to_string()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wasm_meta_registry_client::{BomEntry, ProducerEntry, WitInterfaceRef};
+
+    fn sample_pkg() -> KnownPackage {
+        KnownPackage {
+            registry: "ghcr.io".to_string(),
+            repository: "example/pkg".to_string(),
+            kind: None,
+            description: None,
+            tags: vec!["1.0.0".to_string()],
+            signature_tags: vec![],
+            attestation_tags: vec![],
+            last_seen_at: "2026-01-01T00:00:00Z".to_string(),
+            created_at: "2026-01-01T00:00:00Z".to_string(),
+            wit_namespace: Some("example".to_string()),
+            wit_name: Some("pkg".to_string()),
+            dependencies: vec![],
+        }
+    }
+
+    fn sample_child(kind: &str) -> ComponentSummary {
+        ComponentSummary {
+            name: Some("child".into()),
+            description: None,
+            targets: vec![],
+            producers: vec![
+                ProducerEntry {
+                    field: "language".into(),
+                    name: "Rust".into(),
+                    version: "1.82.0".into(),
+                },
+                ProducerEntry {
+                    field: "processed-by".into(),
+                    name: "wit-component".into(),
+                    version: "0.220.0 (extra)".into(),
+                },
+            ],
+            kind: Some(kind.into()),
+            size_bytes: Some(4096),
+            languages: vec!["Rust".into()],
+            children: vec![],
+            source: None,
+            homepage: None,
+            licenses: None,
+            authors: None,
+            revision: None,
+            component_version: None,
+            bill_of_materials: vec![
+                BomEntry {
+                    name: "serde".into(),
+                    version: "1.0.0".into(),
+                    source: Some("crates.io".into()),
+                },
+                BomEntry {
+                    name: "custom".into(),
+                    version: "0.1.0".into(),
+                    source: Some("git".into()),
+                },
+            ],
+            imports: vec![WitInterfaceRef {
+                package: "wasi:io".into(),
+                interface: Some("streams".into()),
+                version: Some("0.2.0".into()),
+                docs: None,
+            }],
+            exports: vec![WitInterfaceRef {
+                package: "wasi:http".into(),
+                interface: Some("incoming-handler".into()),
+                version: Some("0.2.0".into()),
+                docs: None,
+            }],
+        }
+    }
+
+    #[test]
+    fn render_module_uses_module_color() {
+        let pkg = sample_pkg();
+        let child = sample_child("module");
+        let html = render(&pkg, "1.0.0", None, &child, "inner");
+        assert!(html.contains("text-wit-module"));
+        assert!(html.contains("inner"));
+        assert!(html.contains("Imports"));
+        assert!(html.contains("Exports"));
+        assert!(html.contains("Producers"));
+        assert!(html.contains("Dependencies"));
+    }
+
+    #[test]
+    fn render_component_uses_world_color() {
+        let pkg = sample_pkg();
+        let child = sample_child("component");
+        let html = render(&pkg, "1.0.0", None, &child, "inner");
+        assert!(html.contains("text-wit-world"));
+    }
+
+    #[test]
+    fn render_empty_sections_are_skipped() {
+        let pkg = sample_pkg();
+        let mut child = sample_child("module");
+        // Only language producers — filtered out of producers section.
+        child.producers = vec![ProducerEntry {
+            field: "language".into(),
+            name: "Rust".into(),
+            version: String::new(),
+        }];
+        child.bill_of_materials = vec![];
+        child.imports = vec![];
+        child.exports = vec![];
+        child.languages = vec![];
+        child.size_bytes = None;
+        let html = render(&pkg, "1.0.0", None, &child, "inner");
+        assert!(!html.contains(">Producers<"));
+        assert!(!html.contains(">Dependencies<"));
+    }
+}
