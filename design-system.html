@@ -48,6 +48,7 @@
               rule: "var(--c-rule)",
               positive: "var(--c-positive)",
               negative: "var(--c-negative)",
+              accent: "var(--c-accent)",
               cat: {
                 blue: "var(--c-cat-blue)",
                 blueInk: "var(--c-cat-blue-ink)",
@@ -107,6 +108,7 @@
         --c-line-soft:     #E4E4E7;
         --c-positive:      #1F8A4C;
         --c-negative:      #9B4F5E;
+        --c-accent:        #18181B;
 
         --c-cat-blue:      #D6E4FF;  --c-cat-blue-ink:   #3D5A99;
         --c-cat-pink:      #FBD9DF;  --c-cat-pink-ink:   #9B4F5E;
@@ -135,15 +137,18 @@
           --c-ink-900:       #ECECEE;
           --c-ink-700:       #B5B5BB;
           --c-ink-500:       #8B8B92;
-          --c-ink-400:       #65656C;
+          --c-ink-400:       #76767D;
           --c-ink-300:       #4A4A50;
           --c-line:          #3A3A40;
           --c-line-soft:     #323238;
-          --c-positive:      #4ADE80;
+          --c-positive:      #5EE99A;
           /* Negative needs to *pop* on dark canvas — the pastel
              pinkInk reads muddy. A brighter coral keeps it warm,
              not surgical-emergency-red. */
-          --c-negative:      #F87C90;
+          --c-negative:      #FF8A9D;
+          /* Focus / accent: a bright cool blue that pops without
+             going neon. Used for focus rings, link-on-dark, selection. */
+          --c-accent:        #7AA2FF;
 
           /* Categoricals: keep the *exact* light-mode pastels.
              Against the dark canvas they read like little colored
@@ -174,12 +179,13 @@
         --c-ink-900:       #ECECEE;
         --c-ink-700:       #B5B5BB;
         --c-ink-500:       #8B8B92;
-        --c-ink-400:       #65656C;
+        --c-ink-400:       #76767D;
         --c-ink-300:       #4A4A50;
         --c-line:          #3A3A40;
         --c-line-soft:     #323238;
-        --c-positive:      #4ADE80;
-        --c-negative:      #F87C90;
+        --c-positive:      #5EE99A;
+        --c-negative:      #FF8A9D;
+        --c-accent:        #7AA2FF;
 
         --c-cat-blue:      #D6E4FF;  --c-cat-blue-ink:   #3D5A99;
         --c-cat-pink:      #FBD9DF;  --c-cat-pink-ink:   #9B4F5E;
@@ -248,6 +254,11 @@
         .motion-target { transition: none !important; }
       }
 
+      ::selection {
+        background: color-mix(in oklab, var(--c-accent) 35%, transparent);
+        color: var(--c-ink-900);
+      }
+
       /* Theme toggle: show the icon for the *target* mode (i.e., the
          opposite of the currently active mode). */
       .theme-icon-sun  { display: none; }
@@ -308,7 +319,7 @@
       <!-- ============================== -->
       <!-- TABLE OF CONTENTS              -->
       <!-- ============================== -->
-      <nav class="py-6 grid grid-cols-2 md:grid-cols-4 gap-y-2 gap-x-6 text-[13px]">
+      <nav class="py-6 grid grid-flow-col grid-rows-12 md:grid-rows-6 gap-y-2 gap-x-6 text-[13px]">
         <a href="#colors" class="text-ink-700 hover:text-ink-900">01 — Color</a>
         <a href="#typography" class="text-ink-700 hover:text-ink-900">02 — Typography</a>
         <a href="#spacing" class="text-ink-700 hover:text-ink-900">03 — Spacing & Radius</a>
@@ -567,6 +578,65 @@
               <div>
                 <div class="text-[11px] text-ink-500">Tempor incididunt · ut labore</div>
                 <div class="text-[12px] text-ink-500 mt-1 mono">11 / 400</div>
+              </div>
+            </div>
+            <div class="py-5 grid grid-cols-[120px_1fr] gap-6 items-baseline">
+              <div class="text-[12px] text-ink-500 mono">Inline</div>
+              <div>
+                <div class="text-[15px] leading-relaxed text-ink-700">
+                  Read the <a href="#" class="text-ink-900 underline decoration-line decoration-1 underline-offset-[3px] hover:decoration-ink-900">installation guide</a>,
+                  then run <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">wasm install</code>.
+                  Use <strong class="font-semibold text-ink-900">--strict</strong> for <em class="italic">reproducible</em> builds.
+                  Press <kbd class="inline-flex items-center px-1.5 h-5 rounded-sm border border-line bg-surface text-ink-700 mono text-[11px] align-[1px]">⌘K</kbd> to search.
+                  <del class="text-ink-500 line-through decoration-1">Deprecated since v0.4</del> &mdash;
+                  see <a href="#" class="text-ink-900 underline decoration-line decoration-1 underline-offset-[3px] hover:decoration-ink-900">migration notes</a>.
+                </div>
+                <div class="text-[12px] text-ink-500 mt-2 mono">link · code · strong · em · kbd · del</div>
+              </div>
+            </div>
+            <div class="py-5 grid grid-cols-[120px_1fr] gap-6 items-start">
+              <div class="text-[12px] text-ink-500 mono pt-1">Markdown</div>
+              <div>
+                <article class="text-[15px] leading-relaxed text-ink-700 space-y-4">
+                  <h3 class="text-[20px] font-semibold tracking-tight text-ink-900 leading-tight">Configuring the registry</h3>
+                  <p>
+                    The <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">wasm.toml</code>
+                    manifest lives at the root of every package. It declares the package
+                    identity, its <a href="#" class="text-ink-900 underline decoration-line decoration-1 underline-offset-[3px] hover:decoration-ink-900">dependencies</a>,
+                    and the registries it pulls from.
+                  </p>
+                  <h4 class="text-[16px] font-semibold tracking-tight text-ink-900 leading-snug pt-2">Manifest fields</h4>
+                  <ul class="list-disc pl-5 space-y-1 marker:text-ink-400">
+                    <li><code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">name</code> &mdash; reverse-DNS package identifier</li>
+                    <li><code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">version</code> &mdash; semantic version, must be unique per registry</li>
+                    <li><code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">authors</code> &mdash; one or more contact strings</li>
+                  </ul>
+                  <h4 class="text-[16px] font-semibold tracking-tight text-ink-900 leading-snug pt-2">Resolution order</h4>
+                  <ol class="list-decimal pl-5 space-y-1 marker:text-ink-400 marker:tabular-nums">
+                    <li>Local cache at <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">~/.wasm/store</code></li>
+                    <li>Registries declared in the manifest, in order</li>
+                    <li>The default registry, unless <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">--offline</code> is set</li>
+                  </ol>
+                  <blockquote class="border-l-2 border-ink-900 pl-4 text-ink-700 italic">
+                    Registries are append-only. A version, once published, cannot be
+                    overwritten &mdash; only yanked.
+                  </blockquote>
+                  <pre class="overflow-x-auto rounded-md border border-line bg-surfaceMuted text-ink-900 mono text-[13px] leading-relaxed p-4"><code>[package]
+name    = "example.com/hello-world"
+version = "0.1.0"
+authors = ["Lorem Ipsum &lt;lorem@example.com&gt;"]
+
+[dependencies]
+"wasi:http"   = "0.2"
+"wasi:cli"    = "0.2"</code></pre>
+                  <p class="text-[13px] text-ink-500">
+                    See the <a href="#" class="text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">manifest reference</a>
+                    for the complete schema, including optional fields like
+                    <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-700 mono text-[0.875em]">[targets.*]</code>
+                    and <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-700 mono text-[0.875em]">[features]</code>.
+                  </p>
+                </article>
+                <div class="text-[12px] text-ink-500 mt-3 mono">h3 / h4 · p · ul · ol · blockquote · pre</div>
               </div>
             </div>
           </div>
@@ -1063,7 +1133,7 @@
             <!-- Input -->
             <label class="block">
               <span class="text-[12px] text-ink-500">Label</span>
-              <input type="text" placeholder="Lorem ipsum" class="mt-1 block w-full h-9 px-3 rounded-md border border-line bg-surface text-[14px] placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-ink-900 focus:border-ink-900" />
+              <input type="text" placeholder="Lorem ipsum" class="mt-1 block w-full h-9 px-3 rounded-md border border-line bg-surface text-[14px] placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
             </label>
             <!-- Input with help -->
             <label class="block">
@@ -1637,11 +1707,11 @@
             <div>
               <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Rules</h3>
               <ul class="space-y-2 text-[13px] text-ink-700 leading-relaxed">
-                <li class="flex gap-3"><span class="mono text-ink-400 w-12 shrink-0">01</span>The primary region (top of page) sits on <span class="mono text-ink-900">canvas</span>. Use it for the main subject.</li>
-                <li class="flex gap-3"><span class="mono text-ink-400 w-12 shrink-0">02</span>Secondary regions sit on <span class="mono text-ink-900">surface</span>. The boundary is the surface swap itself — no rule, no border.</li>
-                <li class="flex gap-3"><span class="mono text-ink-400 w-12 shrink-0">03</span>Use full-bleed background swap on wide screens so the boundary reads as a true section break, not a card.</li>
-                <li class="flex gap-3"><span class="mono text-ink-400 w-12 shrink-0">04</span>Maximum two surface swaps per page. Beyond that, switch to a new page or tabs.</li>
-                <li class="flex gap-3"><span class="mono text-ink-400 w-12 shrink-0">05</span>Within a region, use <span class="mono text-ink-900">lineSoft</span> for internal subdivisions (table rows, list separators).</li>
+                <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">01</span>The primary region (top of page) sits on <span class="mono text-ink-900">canvas</span>. Use it for the main subject.</li>
+                <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">02</span>Secondary regions sit on <span class="mono text-ink-900">surface</span>. The boundary is the surface swap itself — no rule, no border.</li>
+                <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">03</span>Use full-bleed background swap on wide screens so the boundary reads as a true section break, not a card.</li>
+                <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">04</span>Maximum two surface swaps per page. Beyond that, switch to a new page or tabs.</li>
+                <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">05</span>Within a region, use <span class="mono text-ink-900">lineSoft</span> for internal subdivisions (table rows, list separators).</li>
               </ul>
             </div>
           </div>
@@ -1771,11 +1841,11 @@
             <div>
               <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Rules</h3>
               <ul class="space-y-2 text-[13px] text-ink-700 leading-relaxed">
-                <li class="flex gap-3"><span class="mono text-ink-400 w-12 shrink-0">01</span>Animate <span class="mono text-ink-900">transform</span> and <span class="mono text-ink-900">opacity</span> only. Avoid <span class="mono text-ink-900">width</span>, <span class="mono text-ink-900">height</span>, <span class="mono text-ink-900">top</span>.</li>
-                <li class="flex gap-3"><span class="mono text-ink-400 w-12 shrink-0">02</span>Default to <span class="mono text-ink-900">base</span> + <span class="mono text-ink-900">standard</span>. Pick another token only when intent demands it.</li>
-                <li class="flex gap-3"><span class="mono text-ink-400 w-12 shrink-0">03</span>Pair entrance and exit asymmetrically: enter on <span class="mono text-ink-900">entrance</span>, leave on <span class="mono text-ink-900">exit</span>, exits 60–80% of the entrance duration.</li>
-                <li class="flex gap-3"><span class="mono text-ink-400 w-12 shrink-0">04</span>Spring is for human-initiated, direct manipulation only. Never for system events.</li>
-                <li class="flex gap-3"><span class="mono text-ink-400 w-12 shrink-0">05</span>Honor <span class="mono text-ink-900">prefers-reduced-motion</span> — collapse to instant or to a 60ms cross-fade.</li>
+                <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">01</span>Animate <span class="mono text-ink-900">transform</span> and <span class="mono text-ink-900">opacity</span> only. Avoid <span class="mono text-ink-900">width</span>, <span class="mono text-ink-900">height</span>, <span class="mono text-ink-900">top</span>.</li>
+                <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">02</span>Default to <span class="mono text-ink-900">base</span> + <span class="mono text-ink-900">standard</span>. Pick another token only when intent demands it.</li>
+                <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">03</span>Pair entrance and exit asymmetrically: enter on <span class="mono text-ink-900">entrance</span>, leave on <span class="mono text-ink-900">exit</span>, exits 60–80% of the entrance duration.</li>
+                <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">04</span>Spring is for human-initiated, direct manipulation only. Never for system events.</li>
+                <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">05</span>Honor <span class="mono text-ink-900">prefers-reduced-motion</span> — collapse to instant or to a 60ms cross-fade.</li>
               </ul>
             </div>
           </div>
