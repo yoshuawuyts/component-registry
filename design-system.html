@@ -123,20 +123,19 @@
 
       @media (prefers-color-scheme: dark) {
         :root:not([data-theme="light"]) {
-          /* Dark mode — keep the same calm, editorial feel:
-             a single warm-neutral hue family, near-black canvas (not jet),
-             soft-white ink (not pure white), and tinted-but-quiet pastels
-             so the page reads as paper-in-low-light, not "tech dark UI". */
-          --c-canvas:        #0F0F11;
-          --c-surface:       #18181B;
-          --c-surface-muted: #1F1F23;
+          /* Dark mode — dim paper, not OLED black. Lifting the canvas
+             a couple of steps lets the pastels feel placed-on-paper
+             instead of glowing-in-the-void. */
+          --c-canvas:        #1C1C20;
+          --c-surface:       #26262B;
+          --c-surface-muted: #2F2F35;
           --c-ink-900:       #ECECEE;
           --c-ink-700:       #B5B5BB;
           --c-ink-500:       #8B8B92;
           --c-ink-400:       #65656C;
-          --c-ink-300:       #3F3F46;
-          --c-line:          #2E2E33;
-          --c-line-soft:     #26262A;
+          --c-ink-300:       #4A4A50;
+          --c-line:          #3A3A40;
+          --c-line-soft:     #323238;
           --c-positive:      #4ADE80;
 
           /* Categoricals: keep the *exact* light-mode pastels.
@@ -150,26 +149,28 @@
           --c-cat-cream:     #F4ECC2;  --c-cat-cream-ink:  #7A6A2A;
 
           --c-rule:          #6B6B72;
-          --c-swatch-border: #2E2E33;
-          --c-scrollbar:     #3F3F46;
+          --c-swatch-border: #3A3A40;
+          --c-scrollbar:     #4A4A50;
 
           --shadow-tooltip:  0 10px 28px -10px rgba(0,0,0,0.7);
-          --shadow-card:     0 0 0 1px rgba(255,255,255,0.04), 0 1px 0 0 rgba(0,0,0,0.4);
+          /* Dark mode needs the card to *lift*: a top-edge highlight
+             at 6% gives the lifted-paper feel, plus a soft drop. */
+          --shadow-card:     inset 0 1px 0 0 rgba(255,255,255,0.06), 0 1px 0 0 rgba(0,0,0,0.5), 0 8px 16px -12px rgba(0,0,0,0.6);
         }
       }
 
       /* Explicit override (toggle) — applies regardless of system preference. */
       :root[data-theme="dark"] {
-        --c-canvas:        #0F0F11;
-        --c-surface:       #18181B;
-        --c-surface-muted: #1F1F23;
+        --c-canvas:        #1C1C20;
+        --c-surface:       #26262B;
+        --c-surface-muted: #2F2F35;
         --c-ink-900:       #ECECEE;
         --c-ink-700:       #B5B5BB;
         --c-ink-500:       #8B8B92;
         --c-ink-400:       #65656C;
-        --c-ink-300:       #3F3F46;
-        --c-line:          #2E2E33;
-        --c-line-soft:     #26262A;
+        --c-ink-300:       #4A4A50;
+        --c-line:          #3A3A40;
+        --c-line-soft:     #323238;
         --c-positive:      #4ADE80;
 
         --c-cat-blue:      #D6E4FF;  --c-cat-blue-ink:   #3D5A99;
@@ -180,11 +181,11 @@
         --c-cat-cream:     #F4ECC2;  --c-cat-cream-ink:  #7A6A2A;
 
         --c-rule:          #6B6B72;
-        --c-swatch-border: #2E2E33;
-        --c-scrollbar:     #3F3F46;
+        --c-swatch-border: #3A3A40;
+        --c-scrollbar:     #4A4A50;
 
         --shadow-tooltip:  0 10px 28px -10px rgba(0,0,0,0.7);
-        --shadow-card:     0 0 0 1px rgba(255,255,255,0.04), 0 1px 0 0 rgba(0,0,0,0.4);
+        --shadow-card:     inset 0 1px 0 0 rgba(255,255,255,0.06), 0 1px 0 0 rgba(0,0,0,0.5), 0 8px 16px -12px rgba(0,0,0,0.6);
       }
 
       html, body {
@@ -642,7 +643,7 @@
               <div class="text-[13px] font-medium">Card</div>
               <div class="mt-1 text-[12px] text-ink-500 mono">0 1px 0 rgba(20,22,28,.04)</div>
             </div>
-            <div class="p-5 bg-ink-900/85 backdrop-blur text-canvas rounded-md shadow-tooltip">
+            <div class="p-5 backdrop-blur text-canvas rounded-md shadow-tooltip" style="background: var(--c-ink-900);">
               <div class="text-[13px] font-medium">Tooltip</div>
               <div class="mt-1 text-[12px] text-ink-300 mono">0 8px 24px -8px rgba(20,22,28,.35)</div>
             </div>
@@ -894,7 +895,7 @@
             </p>
           </div>
           <div class="p-12 bg-canvas border border-line rounded-lg flex items-center justify-center">
-            <div class="shadow-tooltip rounded-md bg-ink-900/85 backdrop-blur text-canvas px-3 py-2 text-[12px] leading-tight">
+            <div class="shadow-tooltip rounded-md backdrop-blur text-canvas px-3 py-2 text-[12px] leading-tight" style="background: color-mix(in oklab, var(--c-ink-900) 85%, transparent);">
               <div class="text-ink-300">Cycle 14 · Aenean</div>
               <div class="mt-1 flex items-center justify-between gap-6"><span>Maxima:</span><span class="font-medium">9.42</span></div>
               <div class="flex items-center justify-between gap-6"><span>Minima:</span><span class="font-medium">3.18</span></div>
@@ -1329,8 +1330,8 @@
             <div>
               <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Counts</h3>
               <div class="flex flex-wrap items-center gap-2 text-[12px] font-medium">
-                <span class="inline-flex items-center px-1.5 min-w-[20px] h-5 rounded-pill bg-ink-900 text-canvas justify-center">3</span>
-                <span class="inline-flex items-center px-1.5 min-w-[20px] h-5 rounded-pill bg-surfaceMuted text-ink-700 justify-center">12</span>
+                <span class="inline-flex items-center px-1.5 min-w-[20px] h-5 rounded-pill bg-ink-700 text-canvas justify-center">3</span>
+                <span class="inline-flex items-center px-1.5 min-w-[20px] h-5 rounded-pill bg-surfaceMuted text-ink-700 border border-line justify-center">12</span>
                 <span class="inline-flex items-center px-1.5 min-w-[20px] h-5 rounded-pill bg-cat-pink text-cat-pinkInk justify-center">99+</span>
               </div>
             </div>
@@ -1409,7 +1410,7 @@
               padding. Header / body / footer rhythm.
             </p>
           </div>
-          <div class="relative bg-ink-900/50 rounded-lg p-8 md:p-12">
+          <div class="relative rounded-lg p-8 md:p-12" style="background: color-mix(in oklab, var(--c-ink-900) 50%, transparent);">
             <div class="mx-auto max-w-md bg-surface border border-line rounded-lg shadow-tooltip">
               <div class="flex items-start justify-between p-5 border-b border-lineSoft">
                 <div>
