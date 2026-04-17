@@ -60,6 +60,10 @@
               card: "0 1px 0 0 rgba(20,22,28,0.04)",
             },
             borderRadius: {
+              DEFAULT: "3px",
+              sm: "2px",
+              md: "4px",
+              lg: "5px",
               pill: "9999px",
             },
           },
@@ -73,12 +77,14 @@
         -moz-osx-font-smoothing: grayscale;
       }
       .hairline {
-        border-color: #d4d4d8;
+        border-color: #18181b;
       }
+      .border-t.hairline { border-top-width: 1.5px; }
+      .border-b.hairline { border-bottom-width: 1.5px; }
       /* Bar segment helper */
       .bar {
         height: 28px;
-        border-radius: 6px;
+        border-radius: 4px;
         display: flex;
         align-items: center;
         padding: 0 12px;
@@ -123,7 +129,7 @@
               <button class="h-9 w-9 grid place-items-center rounded-md hover:bg-surfaceMuted text-ink-700" aria-label="Save">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg>
               </button>
-              <button class="ml-1 h-9 px-3 inline-flex items-center gap-2 rounded-lg bg-ink-900 text-white text-[13px] hover:bg-ink-700 whitespace-nowrap">
+              <button class="ml-1 h-9 px-3 inline-flex items-center gap-2 rounded-lg bg-surfaceMuted text-ink-900 text-[13px] hover:bg-ink-300 whitespace-nowrap">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
                 2024 – 2025
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -155,7 +161,7 @@
           <button class="h-8 w-8 grid place-items-center rounded-md hover:bg-surfaceMuted text-ink-700" aria-label="Save">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg>
           </button>
-          <button class="ml-1 h-8 px-3 inline-flex items-center gap-2 rounded-lg bg-ink-900 text-white text-[13px] hover:bg-ink-700 whitespace-nowrap">
+          <button class="ml-1 h-8 px-3 inline-flex items-center gap-2 rounded-lg bg-surfaceMuted text-ink-900 text-[13px] hover:bg-ink-300 whitespace-nowrap">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
             2024 – 2025
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -398,7 +404,7 @@
               <button class="h-9 w-9 grid place-items-center rounded-md hover:bg-surfaceMuted text-ink-700" aria-label="Export">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 21H3"/></svg>
               </button>
-              <button class="ml-1 h-9 px-3 inline-flex items-center gap-2 rounded-lg border border-line bg-white text-[13px] hover:bg-surfaceMuted whitespace-nowrap">
+              <button class="ml-1 h-9 px-3 inline-flex items-center gap-2 rounded-lg border-[1.5px] border-ink-900 bg-white text-ink-900 text-[13px] hover:bg-surfaceMuted whitespace-nowrap">
                 All MRR Movements
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
               </button>
@@ -420,7 +426,7 @@
             <button class="h-8 w-8 grid place-items-center rounded-md hover:bg-surfaceMuted text-ink-700" aria-label="Export">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 21H3"/></svg>
             </button>
-            <button class="ml-1 h-8 px-3 inline-flex items-center gap-2 rounded-lg border border-line bg-white text-[13px] hover:bg-surfaceMuted whitespace-nowrap">
+            <button class="ml-1 h-8 px-3 inline-flex items-center gap-2 rounded-lg border-[1.5px] border-ink-900 bg-white text-ink-900 text-[13px] hover:bg-surfaceMuted whitespace-nowrap">
               All MRR Movements
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
             </button>
@@ -443,7 +449,7 @@
             </thead>
             <tbody class="text-ink-900">
               <tr class="border-t hairline">
-                <td class="py-5 pr-6 text-ink-700">New Business MRR</td>
+                <td class="py-5 pr-6 font-medium">New Business MRR</td>
                 <td class="text-right px-4 tabular-nums">$877.87</td>
                 <td class="text-right px-4 tabular-nums">$1,024.63</td>
                 <td class="text-right px-4 tabular-nums">$932.41</td>
@@ -452,7 +458,7 @@
                 <td class="text-right px-4 tabular-nums">$1,112.53</td>
               </tr>
               <tr class="border-t lineSoft border-lineSoft">
-                <td class="py-5 pr-6 text-ink-700">Expansion MRR</td>
+                <td class="py-5 pr-6 font-medium">Expansion MRR</td>
                 <td class="text-right px-4 tabular-nums">$214.00</td>
                 <td class="text-right px-4 tabular-nums">$318.42</td>
                 <td class="text-right px-4 tabular-nums">$402.10</td>
@@ -461,7 +467,7 @@
                 <td class="text-right px-4 tabular-nums">$345.77</td>
               </tr>
               <tr class="border-t border-lineSoft">
-                <td class="py-5 pr-6 text-ink-700">Reactivation MRR</td>
+                <td class="py-5 pr-6 font-medium">Reactivation MRR</td>
                 <td class="text-right px-4 tabular-nums">$58.20</td>
                 <td class="text-right px-4 tabular-nums">$72.10</td>
                 <td class="text-right px-4 tabular-nums">$64.00</td>
@@ -470,7 +476,7 @@
                 <td class="text-right px-4 tabular-nums">$96.18</td>
               </tr>
               <tr class="border-t border-lineSoft">
-                <td class="py-5 pr-6 text-ink-700">Churned MRR</td>
+                <td class="py-5 pr-6 font-medium">Churned MRR</td>
                 <td class="text-right px-4 tabular-nums text-cat-pinkInk">−$142.30</td>
                 <td class="text-right px-4 tabular-nums text-cat-pinkInk">−$98.40</td>
                 <td class="text-right px-4 tabular-nums text-cat-pinkInk">−$210.00</td>
