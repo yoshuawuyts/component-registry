@@ -179,6 +179,7 @@
     html, body {
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      overflow-x: clip;
     }
     .rule {
       border-color: var(--c-rule) !important;
@@ -211,7 +212,21 @@
     .method-delete { background: var(--c-cat-pink);  color: var(--c-cat-pink-ink); }
 
     /* Status code dot */
-    .status-dot { display: inline-block; height: 8px; width: 8px; border-radius: 999px; }
+    /* Status code chip — same pattern as the method tag, paired
+       categorical (pastel fill + ink text). The chip carries the
+       full meaning so we don't need a separate dot + text repeat. */
+    .status {
+      display: inline-flex; align-items: center; justify-content: center;
+      height: 22px; min-width: 44px; padding: 0 8px;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em;
+      flex: none;
+    }
+    .status-2xx { background: var(--c-cat-green); color: var(--c-cat-green-ink); }
+    .status-3xx { background: var(--c-cat-blue);  color: var(--c-cat-blue-ink); }
+    .status-4xx { background: var(--c-cat-peach); color: var(--c-cat-peach-ink); }
+    .status-5xx { background: var(--c-cat-pink);  color: var(--c-cat-pink-ink); }
 
     /* ============================================================
        REGIONS — page is composed of stacked regions. The primary
@@ -625,37 +640,37 @@
               </thead>
               <tbody class="text-ink-900">
                 <tr class="border-t-[1.5px] border-lineSoft">
-                  <td class="py-3 pr-6"><span class="inline-flex items-center gap-1.5"><span class="status-dot bg-cat-greenInk"></span><span class="mono">200</span></span></td>
+                  <td class="py-3 pr-6"><span class="status status-2xx">200</span></td>
                   <td class="pr-6 mono text-ink-700">ok</td>
                   <td class="text-ink-700">Request succeeded.</td>
                 </tr>
                 <tr class="border-t-[1.5px] border-lineSoft">
-                  <td class="py-3 pr-6"><span class="inline-flex items-center gap-1.5"><span class="status-dot bg-cat-peachInk"></span><span class="mono">400</span></span></td>
+                  <td class="py-3 pr-6"><span class="status status-4xx">400</span></td>
                   <td class="pr-6 mono text-ink-700">invalid_request</td>
                   <td class="text-ink-700">Malformed parameter or request body.</td>
                 </tr>
                 <tr class="border-t-[1.5px] border-lineSoft">
-                  <td class="py-3 pr-6"><span class="inline-flex items-center gap-1.5"><span class="status-dot bg-cat-peachInk"></span><span class="mono">401</span></span></td>
+                  <td class="py-3 pr-6"><span class="status status-4xx">401</span></td>
                   <td class="pr-6 mono text-ink-700">unauthenticated</td>
                   <td class="text-ink-700">Missing or invalid bearer token.</td>
                 </tr>
                 <tr class="border-t-[1.5px] border-lineSoft">
-                  <td class="py-3 pr-6"><span class="inline-flex items-center gap-1.5"><span class="status-dot bg-cat-peachInk"></span><span class="mono">404</span></span></td>
+                  <td class="py-3 pr-6"><span class="status status-4xx">404</span></td>
                   <td class="pr-6 mono text-ink-700">not_found</td>
                   <td class="text-ink-700">No such package, version, or interface.</td>
                 </tr>
                 <tr class="border-t-[1.5px] border-lineSoft">
-                  <td class="py-3 pr-6"><span class="inline-flex items-center gap-1.5"><span class="status-dot bg-cat-peachInk"></span><span class="mono">409</span></span></td>
+                  <td class="py-3 pr-6"><span class="status status-4xx">409</span></td>
                   <td class="pr-6 mono text-ink-700">conflict</td>
                   <td class="text-ink-700">Version already exists; cannot overwrite.</td>
                 </tr>
                 <tr class="border-t-[1.5px] border-lineSoft">
-                  <td class="py-3 pr-6"><span class="inline-flex items-center gap-1.5"><span class="status-dot bg-cat-peachInk"></span><span class="mono">429</span></span></td>
+                  <td class="py-3 pr-6"><span class="status status-4xx">429</span></td>
                   <td class="pr-6 mono text-ink-700">rate_limited</td>
                   <td class="text-ink-700">Too many requests. Retry after the indicated interval.</td>
                 </tr>
                 <tr class="border-t-[1.5px] border-lineSoft">
-                  <td class="py-3 pr-6"><span class="inline-flex items-center gap-1.5"><span class="status-dot bg-cat-pinkInk"></span><span class="mono">500</span></span></td>
+                  <td class="py-3 pr-6"><span class="status status-5xx">500</span></td>
                   <td class="pr-6 mono text-ink-700">internal_error</td>
                   <td class="text-ink-700">Unexpected server-side failure.</td>
                 </tr>
@@ -721,8 +736,7 @@
             <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Responses</div>
             <ul class="text-[13px] divide-y divide-lineSoft border-t-[1.5px] border-lineSoft">
               <li class="flex items-center gap-3 py-3">
-                <span class="status-dot bg-cat-greenInk"></span>
-                <span class="mono w-12">200</span>
+                <span class="status status-2xx">200</span>
                 <span class="text-ink-700">Service is up.</span>
               </li>
             </ul>
@@ -800,13 +814,11 @@
             <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Responses</div>
             <ul class="text-[13px] divide-y divide-lineSoft border-t-[1.5px] border-lineSoft">
               <li class="flex items-center gap-3 py-3">
-                <span class="status-dot bg-cat-greenInk"></span>
-                <span class="mono w-12">200</span>
+                <span class="status status-2xx">200</span>
                 <span class="text-ink-700"><a href="#schema-detail" class="underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">PackageDetail</a></span>
               </li>
               <li class="flex items-center gap-3 py-3">
-                <span class="status-dot bg-cat-peachInk"></span>
-                <span class="mono w-12">404</span>
+                <span class="status status-4xx">404</span>
                 <span class="text-ink-700">Repository is not indexed.</span>
               </li>
             </ul>
@@ -888,13 +900,11 @@
             <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Responses</div>
             <ul class="text-[13px] divide-y divide-lineSoft border-t-[1.5px] border-lineSoft">
               <li class="flex items-center gap-3 py-3">
-                <span class="status-dot bg-cat-greenInk"></span>
-                <span class="mono w-12">200</span>
+                <span class="status status-2xx">200</span>
                 <span class="text-ink-700">Array of <a href="#schema-version" class="underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">PackageVersion</a>.</span>
               </li>
               <li class="flex items-center gap-3 py-3">
-                <span class="status-dot bg-cat-peachInk"></span>
-                <span class="mono w-12">404</span>
+                <span class="status status-4xx">404</span>
                 <span class="text-ink-700">Repository is not indexed.</span>
               </li>
             </ul>
@@ -944,13 +954,11 @@
             <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Responses</div>
             <ul class="text-[13px] divide-y divide-lineSoft border-t-[1.5px] border-lineSoft">
               <li class="flex items-center gap-3 py-3">
-                <span class="status-dot bg-cat-greenInk"></span>
-                <span class="mono w-12">200</span>
+                <span class="status status-2xx">200</span>
                 <span class="text-ink-700"><a href="#schema-version" class="underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">PackageVersion</a></span>
               </li>
               <li class="flex items-center gap-3 py-3">
-                <span class="status-dot bg-cat-peachInk"></span>
-                <span class="mono w-12">404</span>
+                <span class="status status-4xx">404</span>
                 <span class="text-ink-700">No such tag for this repository.</span>
               </li>
             </ul>
@@ -1010,13 +1018,11 @@
             <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Responses</div>
             <ul class="text-[13px] divide-y divide-lineSoft border-t-[1.5px] border-lineSoft">
               <li class="flex items-center gap-3 py-3">
-                <span class="status-dot bg-cat-greenInk"></span>
-                <span class="mono w-12">201</span>
+                <span class="status status-2xx">201</span>
                 <span class="text-ink-700">Version accepted; returns the canonical <a href="#schema-version" class="underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">PackageVersion</a>.</span>
               </li>
               <li class="flex items-center gap-3 py-3">
-                <span class="status-dot bg-cat-peachInk"></span>
-                <span class="mono w-12">409</span>
+                <span class="status status-4xx">409</span>
                 <span class="text-ink-700">A version with this tag already exists.</span>
               </li>
             </ul>
@@ -1071,18 +1077,15 @@
             <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Responses</div>
             <ul class="text-[13px] divide-y divide-lineSoft border-t-[1.5px] border-lineSoft">
               <li class="flex items-center gap-3 py-3">
-                <span class="status-dot bg-cat-greenInk"></span>
-                <span class="mono w-12">204</span>
+                <span class="status status-2xx">204</span>
                 <span class="text-ink-700">Version yanked.</span>
               </li>
               <li class="flex items-center gap-3 py-3">
-                <span class="status-dot bg-cat-peachInk"></span>
-                <span class="mono w-12">401</span>
+                <span class="status status-4xx">401</span>
                 <span class="text-ink-700">Token missing or invalid.</span>
               </li>
               <li class="flex items-center gap-3 py-3">
-                <span class="status-dot bg-cat-peachInk"></span>
-                <span class="mono w-12">404</span>
+                <span class="status status-4xx">404</span>
                 <span class="text-ink-700">No such tag.</span>
               </li>
             </ul>
@@ -1135,13 +1138,11 @@
             <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Responses</div>
             <ul class="text-[13px] divide-y divide-lineSoft border-t-[1.5px] border-lineSoft">
               <li class="flex items-center gap-3 py-3">
-                <span class="status-dot bg-cat-greenInk"></span>
-                <span class="mono w-12">200</span>
+                <span class="status status-2xx">200</span>
                 <span class="text-ink-700">Array of <a href="#schema-package" class="underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">Package</a>.</span>
               </li>
               <li class="flex items-center gap-3 py-3">
-                <span class="status-dot bg-cat-peachInk"></span>
-                <span class="mono w-12">400</span>
+                <span class="status status-4xx">400</span>
                 <span class="text-ink-700">Malformed interface identifier.</span>
               </li>
             </ul>
@@ -1189,13 +1190,11 @@
             <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Responses</div>
             <ul class="text-[13px] divide-y divide-lineSoft border-t-[1.5px] border-lineSoft">
               <li class="flex items-center gap-3 py-3">
-                <span class="status-dot bg-cat-greenInk"></span>
-                <span class="mono w-12">200</span>
+                <span class="status status-2xx">200</span>
                 <span class="text-ink-700">Array of <a href="#schema-package" class="underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">Package</a>.</span>
               </li>
               <li class="flex items-center gap-3 py-3">
-                <span class="status-dot bg-cat-peachInk"></span>
-                <span class="mono w-12">400</span>
+                <span class="status status-4xx">400</span>
                 <span class="text-ink-700">Malformed interface identifier.</span>
               </li>
             </ul>

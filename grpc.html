@@ -642,7 +642,7 @@
           <!-- Language tabs (Go wired; others reserved) -->
           <div>
             <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Example</div>
-            <div class="lang-tabs" role="tablist" aria-label="Language">
+            <div class="lang-tabs" aria-label="Language">
               <span class="lang-tab is-active"><span class="dot"></span>Go</span>
               <span class="lang-tab is-soon" title="Coming soon"><span class="dot"></span>Rust</span>
               <span class="lang-tab is-soon" title="Coming soon"><span class="dot"></span>TypeScript</span>
@@ -755,12 +755,12 @@
 
           <div>
             <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Example</div>
-            <div class="lang-tabs" role="tablist" aria-label="Language">
+            <div class="lang-tabs" aria-label="Language">
               <span class="lang-tab is-active"><span class="dot"></span>Go</span>
-              <span class="lang-tab is-soon"><span class="dot"></span>Rust</span>
-              <span class="lang-tab is-soon"><span class="dot"></span>TypeScript</span>
-              <span class="lang-tab is-soon"><span class="dot"></span>Python</span>
-              <span class="lang-tab is-soon"><span class="dot"></span>Java</span>
+              <span class="lang-tab is-soon" title="Coming soon"><span class="dot"></span>Rust</span>
+              <span class="lang-tab is-soon" title="Coming soon"><span class="dot"></span>TypeScript</span>
+              <span class="lang-tab is-soon" title="Coming soon"><span class="dot"></span>Python</span>
+              <span class="lang-tab is-soon" title="Coming soon"><span class="dot"></span>Java</span>
             </div>
             <div class="lang-panel">
 <pre class="code">resp, err := client.<span class="fn">GetPackage</span>(ctx, &amp;registrypb.<span class="ty">GetPackageRequest</span>{
@@ -992,17 +992,17 @@ fmt.<span class="fn">Println</span>(resp.<span class="fn">GetPackage</span>().<s
         </article>
 
           </div><!-- /space-y-12 -->
-        </div><!-- /region-surface -->
 
         <!-- ============================================================ -->
         <!-- MESSAGES                                                     -->
         <!-- ============================================================ -->
-        <section>
+        <section class="mt-16">
           <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Messages</div>
           <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Object reference</h2>
-          <p class="mt-3 text-[13px] text-ink-500 max-w-2xl leading-relaxed">
-            Canonical Protobuf shapes used across the service. Field numbers
-            are stable and will never be reassigned.
+          <p class="mt-2 text-[13px] text-ink-500 max-w-2xl leading-relaxed">
+            Canonical Protobuf shapes used across the service. The leading
+            column is the field number — these are stable and will never be
+            reassigned.
           </p>
         </section>
 
@@ -1011,20 +1011,25 @@ fmt.<span class="fn">Println</span>(resp.<span class="fn">GetPackage</span>().<s
           <p class="text-[13px] text-ink-500 max-w-2xl">A registry-qualified repository pointer with a resolved latest tag.</p>
           <div class="overflow-x-auto border-t-[1.5px] border-lineSoft">
             <table class="w-full min-w-[560px] text-[13px]">
+              <colgroup>
+                <col class="w-[60px]">
+                <col class="w-[200px]">
+                <col>
+              </colgroup>
               <tbody class="text-ink-900">
                 <tr class="border-b border-lineSoft">
-                  <td class="py-3 pr-6 align-top w-[60px] mono text-ink-500">1</td>
-                  <td class="py-3 pr-6 align-top w-[180px]"><div class="mono">registry</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string</div></td>
+                  <td class="py-3 pr-6 align-top mono text-ink-500">1</td>
+                  <td class="py-3 pr-6 align-top"><div class="mono">registry</div><div class="text-[11px] text-ink-500 mono mt-0.5">string</div></td>
                   <td class="py-3 text-ink-700">Upstream host name.</td>
                 </tr>
                 <tr class="border-b border-lineSoft">
                   <td class="py-3 pr-6 align-top mono text-ink-500">2</td>
-                  <td class="py-3 pr-6 align-top"><div class="mono">repository</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string</div></td>
+                  <td class="py-3 pr-6 align-top"><div class="mono">repository</div><div class="text-[11px] text-ink-500 mono mt-0.5">string</div></td>
                   <td class="py-3 text-ink-700">Slash-separated repository path.</td>
                 </tr>
-                <tr class="border-b border-lineSoft">
+                <tr>
                   <td class="py-3 pr-6 align-top mono text-ink-500">3</td>
-                  <td class="py-3 pr-6 align-top"><div class="mono">latest</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string</div></td>
+                  <td class="py-3 pr-6 align-top"><div class="mono">latest</div><div class="text-[11px] text-ink-500 mono mt-0.5">string</div></td>
                   <td class="py-3 text-ink-700">Highest non-yanked SemVer tag, empty if none.</td>
                 </tr>
               </tbody>
@@ -1037,40 +1042,45 @@ fmt.<span class="fn">Println</span>(resp.<span class="fn">GetPackage</span>().<s
           <p class="text-[13px] text-ink-500 max-w-2xl">A single tag with manifest metadata and dependency graph.</p>
           <div class="overflow-x-auto border-t-[1.5px] border-lineSoft">
             <table class="w-full min-w-[560px] text-[13px]">
+              <colgroup>
+                <col class="w-[60px]">
+                <col class="w-[200px]">
+                <col>
+              </colgroup>
               <tbody class="text-ink-900">
                 <tr class="border-b border-lineSoft">
-                  <td class="py-3 pr-6 align-top w-[60px] mono text-ink-500">1</td>
-                  <td class="py-3 pr-6 align-top w-[180px]"><div class="mono">version</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string · semver</div></td>
+                  <td class="py-3 pr-6 align-top mono text-ink-500">1</td>
+                  <td class="py-3 pr-6 align-top"><div class="mono">version</div><div class="text-[11px] text-ink-500 mono mt-0.5">string · semver</div></td>
                   <td class="py-3 text-ink-700">SemVer tag.</td>
                 </tr>
                 <tr class="border-b border-lineSoft">
                   <td class="py-3 pr-6 align-top mono text-ink-500">2</td>
-                  <td class="py-3 pr-6 align-top"><div class="mono">digest</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string · sha256</div></td>
+                  <td class="py-3 pr-6 align-top"><div class="mono">digest</div><div class="text-[11px] text-ink-500 mono mt-0.5">string · sha256</div></td>
                   <td class="py-3 text-ink-700">OCI manifest digest.</td>
                 </tr>
                 <tr class="border-b border-lineSoft">
                   <td class="py-3 pr-6 align-top mono text-ink-500">3</td>
-                  <td class="py-3 pr-6 align-top"><div class="mono">size</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">int64</div></td>
+                  <td class="py-3 pr-6 align-top"><div class="mono">size</div><div class="text-[11px] text-ink-500 mono mt-0.5">int64</div></td>
                   <td class="py-3 text-ink-700">Total wasm layer size in bytes.</td>
                 </tr>
                 <tr class="border-b border-lineSoft">
                   <td class="py-3 pr-6 align-top mono text-ink-500">4</td>
-                  <td class="py-3 pr-6 align-top"><div class="mono">yanked</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">bool</div></td>
+                  <td class="py-3 pr-6 align-top"><div class="mono">yanked</div><div class="text-[11px] text-ink-500 mono mt-0.5">bool</div></td>
                   <td class="py-3 text-ink-700">True if the version was withdrawn.</td>
                 </tr>
                 <tr class="border-b border-lineSoft">
                   <td class="py-3 pr-6 align-top mono text-ink-500">5</td>
-                  <td class="py-3 pr-6 align-top"><div class="mono">published_at</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">google.protobuf.Timestamp</div></td>
+                  <td class="py-3 pr-6 align-top"><div class="mono">published_at</div><div class="text-[11px] text-ink-500 mono mt-0.5">google.protobuf.Timestamp</div></td>
                   <td class="py-3 text-ink-700">Server-assigned publish time.</td>
                 </tr>
                 <tr class="border-b border-lineSoft">
                   <td class="py-3 pr-6 align-top mono text-ink-500">6</td>
-                  <td class="py-3 pr-6 align-top"><div class="mono">imports</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">repeated string</div></td>
+                  <td class="py-3 pr-6 align-top"><div class="mono">imports</div><div class="text-[11px] text-ink-500 mono mt-0.5">repeated string</div></td>
                   <td class="py-3 text-ink-700">WIT interfaces imported by the world.</td>
                 </tr>
-                <tr class="border-b border-lineSoft">
+                <tr>
                   <td class="py-3 pr-6 align-top mono text-ink-500">7</td>
-                  <td class="py-3 pr-6 align-top"><div class="mono">exports</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">repeated string</div></td>
+                  <td class="py-3 pr-6 align-top"><div class="mono">exports</div><div class="text-[11px] text-ink-500 mono mt-0.5">repeated string</div></td>
                   <td class="py-3 text-ink-700">WIT interfaces exported by the world.</td>
                 </tr>
               </tbody>
@@ -1083,15 +1093,20 @@ fmt.<span class="fn">Println</span>(resp.<span class="fn">GetPackage</span>().<s
           <p class="text-[13px] text-ink-500 max-w-2xl">One frame of the wasm component during a Publish stream. Chunks are at most 1 MiB; the final chunk has <span class="mono text-[12.5px]">last = true</span>.</p>
           <div class="overflow-x-auto border-t-[1.5px] border-lineSoft">
             <table class="w-full min-w-[560px] text-[13px]">
+              <colgroup>
+                <col class="w-[60px]">
+                <col class="w-[200px]">
+                <col>
+              </colgroup>
               <tbody class="text-ink-900">
                 <tr class="border-b border-lineSoft">
-                  <td class="py-3 pr-6 align-top w-[60px] mono text-ink-500">1</td>
-                  <td class="py-3 pr-6 align-top w-[180px]"><div class="mono">data</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">bytes</div></td>
+                  <td class="py-3 pr-6 align-top mono text-ink-500">1</td>
+                  <td class="py-3 pr-6 align-top"><div class="mono">data</div><div class="text-[11px] text-ink-500 mono mt-0.5">bytes</div></td>
                   <td class="py-3 text-ink-700">Raw bytes from the wasm component.</td>
                 </tr>
-                <tr class="border-b border-lineSoft">
+                <tr>
                   <td class="py-3 pr-6 align-top mono text-ink-500">2</td>
-                  <td class="py-3 pr-6 align-top"><div class="mono">last</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">bool</div></td>
+                  <td class="py-3 pr-6 align-top"><div class="mono">last</div><div class="text-[11px] text-ink-500 mono mt-0.5">bool</div></td>
                   <td class="py-3 text-ink-700">Set on the final chunk.</td>
                 </tr>
               </tbody>
@@ -1104,20 +1119,25 @@ fmt.<span class="fn">Println</span>(resp.<span class="fn">GetPackage</span>().<s
           <p class="text-[13px] text-ink-500 max-w-2xl">A single resolution query within a ResolveGraph stream.</p>
           <div class="overflow-x-auto border-t-[1.5px] border-lineSoft">
             <table class="w-full min-w-[560px] text-[13px]">
+              <colgroup>
+                <col class="w-[60px]">
+                <col class="w-[200px]">
+                <col>
+              </colgroup>
               <tbody class="text-ink-900">
                 <tr class="border-b border-lineSoft">
-                  <td class="py-3 pr-6 align-top w-[60px] mono text-ink-500">1</td>
-                  <td class="py-3 pr-6 align-top w-[180px]"><div class="mono">registry</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string</div></td>
+                  <td class="py-3 pr-6 align-top mono text-ink-500">1</td>
+                  <td class="py-3 pr-6 align-top"><div class="mono">registry</div><div class="text-[11px] text-ink-500 mono mt-0.5">string</div></td>
                   <td class="py-3 text-ink-700">Upstream host name.</td>
                 </tr>
                 <tr class="border-b border-lineSoft">
                   <td class="py-3 pr-6 align-top mono text-ink-500">2</td>
-                  <td class="py-3 pr-6 align-top"><div class="mono">repository</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string</div></td>
+                  <td class="py-3 pr-6 align-top"><div class="mono">repository</div><div class="text-[11px] text-ink-500 mono mt-0.5">string</div></td>
                   <td class="py-3 text-ink-700">Repository path.</td>
                 </tr>
-                <tr class="border-b border-lineSoft">
+                <tr>
                   <td class="py-3 pr-6 align-top mono text-ink-500">3</td>
-                  <td class="py-3 pr-6 align-top"><div class="mono">version_req</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string · SemVer range</div></td>
+                  <td class="py-3 pr-6 align-top"><div class="mono">version_req</div><div class="text-[11px] text-ink-500 mono mt-0.5">string · SemVer range</div></td>
                   <td class="py-3 text-ink-700">SemVer range, e.g. <span class="mono">^0.2</span>.</td>
                 </tr>
               </tbody>
@@ -1130,21 +1150,28 @@ fmt.<span class="fn">Println</span>(resp.<span class="fn">GetPackage</span>().<s
           <p class="text-[13px] text-ink-500 max-w-2xl">A resolved candidate for a single ResolveRequest.</p>
           <div class="overflow-x-auto border-t-[1.5px] border-lineSoft">
             <table class="w-full min-w-[560px] text-[13px]">
+              <colgroup>
+                <col class="w-[60px]">
+                <col class="w-[200px]">
+                <col>
+              </colgroup>
               <tbody class="text-ink-900">
                 <tr class="border-b border-lineSoft">
-                  <td class="py-3 pr-6 align-top w-[60px] mono text-ink-500">1</td>
-                  <td class="py-3 pr-6 align-top w-[180px]"><div class="mono">request_index</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">uint32</div></td>
+                  <td class="py-3 pr-6 align-top mono text-ink-500">1</td>
+                  <td class="py-3 pr-6 align-top"><div class="mono">request_index</div><div class="text-[11px] text-ink-500 mono mt-0.5">uint32</div></td>
                   <td class="py-3 text-ink-700">Index of the originating request in the stream.</td>
                 </tr>
-                <tr class="border-b border-lineSoft">
+                <tr>
                   <td class="py-3 pr-6 align-top mono text-ink-500">2</td>
-                  <td class="py-3 pr-6 align-top"><div class="mono">resolved</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">PackageVersion</div></td>
+                  <td class="py-3 pr-6 align-top"><div class="mono">resolved</div><div class="text-[11px] text-ink-500 mono mt-0.5"><a href="#msg-packageversion" class="text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">PackageVersion</a></div></td>
                   <td class="py-3 text-ink-700">The selected version, or empty if no match.</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </article>
+
+        </div><!-- /region-surface -->
 
       </div><!-- /content -->
     </div><!-- /grid -->
