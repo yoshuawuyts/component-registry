@@ -1,0 +1,1381 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="color-scheme" content="light dark">
+  <style>html{background:#F4F4F5}@media(prefers-color-scheme:dark){html:not([data-theme=light]){background:#1C1C20}}html[data-theme=dark]{background:#1C1C20}html[data-theme=light]{background:#F4F4F5}</style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registry API · Reference</title>
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("ds-theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.setAttribute("data-theme", t);
+          document.documentElement.style.background = t === "dark" ? "#1C1C20" : "#F4F4F5";
+        } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+          document.documentElement.style.background = "#1C1C20";
+        }
+      } catch (e) { }
+    })();
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: [
+              "-apple-system", "BlinkMacSystemFont", "system-ui",
+              "\"Segoe UI\"", "\"Helvetica Neue\"", "Helvetica", "Arial", "sans-serif",
+            ],
+            mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
+          },
+          colors: {
+            canvas: "var(--c-canvas)",
+            surface: { DEFAULT: "var(--c-surface)", muted: "var(--c-surface-muted)" },
+            surfaceMuted: "var(--c-surface-muted)",
+            ink: {
+              900: "var(--c-ink-900)", 700: "var(--c-ink-700)",
+              500: "var(--c-ink-500)", 400: "var(--c-ink-400)", 300: "var(--c-ink-300)",
+            },
+            line: "var(--c-line)",
+            lineSoft: "var(--c-line-soft)",
+            rule: "var(--c-rule)",
+            positive: "var(--c-positive)",
+            negative: "var(--c-negative)",
+            accent: "var(--c-accent)",
+            cat: {
+              blue: "var(--c-cat-blue)", blueInk: "var(--c-cat-blue-ink)",
+              pink: "var(--c-cat-pink)", pinkInk: "var(--c-cat-pink-ink)",
+              green: "var(--c-cat-green)", greenInk: "var(--c-cat-green-ink)",
+              peach: "var(--c-cat-peach)", peachInk: "var(--c-cat-peach-ink)",
+              lilac: "var(--c-cat-lilac)", lilacInk: "var(--c-cat-lilac-ink)",
+              cream: "var(--c-cat-cream)", creamInk: "var(--c-cat-cream-ink)",
+              teal: "var(--c-cat-teal)", tealInk: "var(--c-cat-teal-ink)",
+              rust: "var(--c-cat-rust)", rustInk: "var(--c-cat-rust-ink)",
+              plum: "var(--c-cat-plum)", plumInk: "var(--c-cat-plum-ink)",
+              slate: "var(--c-cat-slate)", slateInk: "var(--c-cat-slate-ink)",
+            },
+          },
+          letterSpacing: { display: "-0.06em" },
+          fontSize: {
+            sm: ["0.875rem", { lineHeight: "1.375rem" }],
+            lg: ["1.125rem", { lineHeight: "1.625rem" }],
+          },
+          boxShadow: {
+            tooltip: "var(--shadow-tooltip)",
+            card: "var(--shadow-card)",
+          },
+          borderRadius: {
+            DEFAULT: "3px", sm: "2px", md: "4px", lg: "5px", pill: "9999px",
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --c-canvas: #F4F4F5;
+      --c-surface: #FFFFFF;
+      --c-surface-muted: #E8E8EA;
+      --c-ink-900: #18181B;
+      --c-ink-700: #3F3F46;
+      --c-ink-500: #71717A;
+      --c-ink-400: #A1A1AA;
+      --c-ink-300: #D4D4D8;
+      --c-line: #D4D4D8;
+      --c-line-soft: #E4E4E7;
+      --c-positive: #1F8A4C;
+      --c-negative: #9B4F5E;
+      --c-accent: #18181B;
+
+      --c-cat-blue: #D6E4FF; --c-cat-blue-ink: #3D5A99;
+      --c-cat-pink: #FBD9DF; --c-cat-pink-ink: #9B4F5E;
+      --c-cat-green: #D2ECD8; --c-cat-green-ink: #3F7A52;
+      --c-cat-peach: #F8E2C2; --c-cat-peach-ink: #8E6529;
+      --c-cat-lilac: #E4DAF1; --c-cat-lilac-ink: #6B528F;
+      --c-cat-cream: #F4ECC2; --c-cat-cream-ink: #7A6A2A;
+      --c-cat-teal: #BFE3EE; --c-cat-teal-ink: #1F6F87;
+      --c-cat-rust: #F4D2C0; --c-cat-rust-ink: #9F5536;
+      --c-cat-plum: #E8C5E8; --c-cat-plum-ink: #7E2E7E;
+      --c-cat-slate: #DADCE0; --c-cat-slate-ink: #535A66;
+
+      --c-rule: var(--c-ink-900);
+      --c-swatch-border: var(--c-line-soft);
+      --c-scrollbar: #D4D4D8;
+      --shadow-tooltip: 0 8px 24px -8px rgba(20, 22, 28, 0.35);
+      --shadow-card: 0 1px 0 0 rgba(20, 22, 28, 0.04);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --c-canvas: #1C1C20;
+        --c-surface: #26262B;
+        --c-surface-muted: #2F2F35;
+        --c-ink-900: #ECECEE;
+        --c-ink-700: #B5B5BB;
+        --c-ink-500: #8B8B92;
+        --c-ink-400: #76767D;
+        --c-ink-300: #4A4A50;
+        --c-line: #3A3A40;
+        --c-line-soft: #323238;
+        --c-positive: #5EC787;
+        --c-negative: #EE7B8E;
+        --c-accent: #8FB1F5;
+
+        --c-cat-blue: #B8D0FF; --c-cat-blue-ink: #1F3F8C;
+        --c-cat-pink: #FFB8B0; --c-cat-pink-ink: #9E2823;
+        --c-cat-green: #B5E8C0; --c-cat-green-ink: #1F6738;
+        --c-cat-peach: #FBD3A0; --c-cat-peach-ink: #7A4E10;
+        --c-cat-lilac: #C6B1F0; --c-cat-lilac-ink: #422684;
+        --c-cat-cream: #F5E696; --c-cat-cream-ink: #6B5610;
+        --c-cat-teal: #A6DDF0; --c-cat-teal-ink: #0F5C7A;
+        --c-cat-rust: #F5BFA0; --c-cat-rust-ink: #87401C;
+        --c-cat-plum: #DDB2EF; --c-cat-plum-ink: #571485;
+        --c-cat-slate: #C6CDD8; --c-cat-slate-ink: #424B5C;
+
+        --c-rule: #6B6B72;
+        --c-swatch-border: #3A3A40;
+        --c-scrollbar: #4A4A50;
+        --shadow-tooltip: 0 10px 28px -10px rgba(0, 0, 0, 0.7);
+        --shadow-card: inset 0 1px 0 0 rgba(255, 255, 255, 0.06), 0 1px 0 0 rgba(0, 0, 0, 0.5), 0 8px 16px -12px rgba(0, 0, 0, 0.6);
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --c-canvas: #1C1C20;
+      --c-surface: #26262B;
+      --c-surface-muted: #2F2F35;
+      --c-ink-900: #ECECEE;
+      --c-ink-700: #B5B5BB;
+      --c-ink-500: #8B8B92;
+      --c-ink-400: #76767D;
+      --c-ink-300: #4A4A50;
+      --c-line: #3A3A40;
+      --c-line-soft: #323238;
+      --c-positive: #5EC787;
+      --c-negative: #EE7B8E;
+      --c-accent: #8FB1F5;
+      --c-cat-blue: #B8D0FF; --c-cat-blue-ink: #1F3F8C;
+      --c-cat-pink: #FFB8B0; --c-cat-pink-ink: #9E2823;
+      --c-cat-green: #B5E8C0; --c-cat-green-ink: #1F6738;
+      --c-cat-peach: #FBD3A0; --c-cat-peach-ink: #7A4E10;
+      --c-cat-lilac: #C6B1F0; --c-cat-lilac-ink: #422684;
+      --c-cat-cream: #F5E696; --c-cat-cream-ink: #6B5610;
+      --c-cat-teal: #A6DDF0; --c-cat-teal-ink: #0F5C7A;
+      --c-cat-rust: #F5BFA0; --c-cat-rust-ink: #87401C;
+      --c-cat-plum: #DDB2EF; --c-cat-plum-ink: #571485;
+      --c-cat-slate: #C6CDD8; --c-cat-slate-ink: #424B5C;
+      --c-rule: #6B6B72;
+      --c-swatch-border: #3A3A40;
+      --c-scrollbar: #4A4A50;
+      --shadow-tooltip: 0 10px 28px -10px rgba(0, 0, 0, 0.7);
+      --shadow-card: inset 0 1px 0 0 rgba(255, 255, 255, 0.06), 0 1px 0 0 rgba(0, 0, 0, 0.5), 0 8px 16px -12px rgba(0, 0, 0, 0.6);
+    }
+
+    html, body {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .rule {
+      border-color: var(--c-rule) !important;
+      border-top-width: 1.5px !important;
+    }
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-thumb { background: var(--c-scrollbar); border-radius: 999px; }
+    ::selection {
+      background: color-mix(in oklab, var(--c-accent) 35%, transparent);
+      color: var(--c-ink-900);
+    }
+    :focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+    :focus:not(:focus-visible) { outline: none; }
+
+    /* HTTP method tag — fixed-width pill */
+    .method {
+      display: inline-flex; align-items: center; justify-content: center;
+      height: 22px; min-width: 56px; padding: 0 8px;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+    }
+    .method-get    { background: var(--c-cat-blue);  color: var(--c-cat-blue-ink); }
+    .method-post   { background: var(--c-cat-green); color: var(--c-cat-green-ink); }
+    .method-put    { background: var(--c-cat-peach); color: var(--c-cat-peach-ink); }
+    .method-patch  { background: var(--c-cat-lilac); color: var(--c-cat-lilac-ink); }
+    .method-delete { background: var(--c-cat-pink);  color: var(--c-cat-pink-ink); }
+
+    /* Status code dot */
+    .status-dot { display: inline-block; height: 8px; width: 8px; border-radius: 999px; }
+
+    /* Code block */
+    pre.code {
+      background: var(--c-surface);
+      border: 1px solid var(--c-line-soft);
+      border-radius: 5px;
+      padding: 14px 16px;
+      font-size: 12.5px;
+      line-height: 1.55;
+      overflow-x: auto;
+      color: var(--c-ink-900);
+    }
+    pre.code .k { color: var(--c-cat-blue-ink); }   /* keys */
+    pre.code .s { color: var(--c-cat-green-ink); }  /* strings */
+    pre.code .n { color: var(--c-cat-peach-ink); }  /* numbers */
+    pre.code .c { color: var(--c-ink-500); font-style: italic; }
+    pre.code .p { color: var(--c-ink-400); }        /* punctuation */
+    pre.code .v { color: var(--c-cat-plum-ink); }   /* shell verb */
+    pre.code .f { color: var(--c-cat-rust-ink); }   /* flag */
+
+    /* Path styling — segments + params */
+    .path { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; }
+    .path .seg { color: var(--c-ink-900); }
+    .path .par { color: var(--c-cat-plum-ink); }
+    .path .sl  { color: var(--c-ink-400); }
+
+    /* Sticky sidebar */
+    .sidebar { position: sticky; top: 64px; align-self: start; max-height: calc(100vh - 80px); overflow-y: auto; }
+    .sidebar .group-label { font-size: 11px; }
+    .sidebar a.endpoint {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 8px; border-radius: 4px;
+      color: var(--c-ink-700); font-size: 12.5px;
+    }
+    .sidebar a.endpoint:hover { background: var(--c-surface-muted); }
+    .sidebar a.endpoint .m {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+      width: 38px; flex: none; text-align: center;
+    }
+    .sidebar .m-get    { color: var(--c-cat-blue-ink); }
+    .sidebar .m-post   { color: var(--c-cat-green-ink); }
+    .sidebar .m-put    { color: var(--c-cat-peach-ink); }
+    .sidebar .m-patch  { color: var(--c-cat-lilac-ink); }
+    .sidebar .m-delete { color: var(--c-cat-pink-ink); }
+
+    .theme-icon-sun { display: none; }
+    .theme-icon-moon { display: inline-block; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .theme-icon-sun { display: inline-block; }
+      :root:not([data-theme="light"]) .theme-icon-moon { display: none; }
+    }
+    :root[data-theme="dark"] .theme-icon-sun { display: inline-block; }
+    :root[data-theme="dark"] .theme-icon-moon { display: none; }
+    :root[data-theme="light"] .theme-icon-sun { display: none; }
+    :root[data-theme="light"] .theme-icon-moon { display: inline-block; }
+
+    html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+
+    /* Sticky topbar */
+    .topbar {
+      position: sticky; top: 0; z-index: 40;
+      background: color-mix(in oklab, var(--c-canvas) 88%, transparent);
+      backdrop-filter: saturate(140%) blur(8px);
+      -webkit-backdrop-filter: saturate(140%) blur(8px);
+      border-bottom: 1px solid var(--c-line-soft);
+    }
+    .topbar-inner { height: 48px; }
+    .topbar-title { letter-spacing: -0.01em; }
+
+    /* Search input */
+    .search {
+      position: relative; width: 100%; max-width: 360px;
+    }
+    .search input {
+      width: 100%; height: 30px;
+      padding: 0 28px 0 30px;
+      border-radius: 4px;
+      border: 1px solid var(--c-line);
+      background: var(--c-surface);
+      color: var(--c-ink-900);
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+    }
+    .search input::placeholder { color: var(--c-ink-400); }
+    .search input:focus { border-color: var(--c-accent); }
+    .search .icon {
+      position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
+      color: var(--c-ink-400); pointer-events: none;
+    }
+    .search kbd {
+      position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 10.5px; color: var(--c-ink-500);
+      border: 1px solid var(--c-line-soft);
+      border-radius: 3px; padding: 1px 5px; background: var(--c-surface-muted);
+      line-height: 1;
+    }
+    .search-clear {
+      position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+      height: 18px; width: 18px;
+      display: none; align-items: center; justify-content: center;
+      border-radius: 3px; color: var(--c-ink-500);
+    }
+    .search-clear:hover { background: var(--c-surface-muted); color: var(--c-ink-900); }
+    .search.has-value kbd { display: none; }
+    .search.has-value .search-clear { display: inline-flex; }
+
+    /* Sidebar group hidden when no children match search */
+    .nav-group.is-hidden { display: none; }
+    .nav-group .group-divider { display: block; }
+    .nav-group:first-child .group-divider { display: none; }
+
+    /* Highlighted matches */
+    .nav-hit { background: color-mix(in oklab, var(--c-accent) 14%, transparent); border-radius: 2px; padding: 0 2px; }
+
+    /* Empty state for search */
+    .nav-empty { display: none; padding: 8px 8px; color: var(--c-ink-500); font-size: 12.5px; }
+    .sidebar.is-empty .nav-empty { display: block; }
+  </style>
+</head>
+
+<body class="bg-canvas text-ink-900 font-sans antialiased">
+
+  <!-- ============================== -->
+  <!-- STICKY TOPBAR                  -->
+  <!-- ============================== -->
+  <div class="topbar">
+    <div class="mx-auto max-w-[1280px] px-4 md:px-8">
+      <div class="topbar-inner flex items-center gap-4">
+        <a href="#top" class="flex items-center gap-2 min-w-0">
+          <span class="topbar-title text-[13.5px] font-semibold tracking-tight">Registry API</span>
+          <span class="hidden sm:inline text-[11px] mono uppercase tracking-wider text-ink-500">v1</span>
+        </a>
+
+        <div class="flex-1 flex justify-center">
+          <div class="search" id="search">
+            <span class="icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-3.5-3.5" />
+              </svg>
+            </span>
+            <input id="search-input" type="search" autocomplete="off" spellcheck="false"
+              placeholder="Search endpoints, schemas, guides\u2026" aria-label="Search documentation" />
+            <kbd>/</kbd>
+            <button type="button" class="search-clear" id="search-clear" aria-label="Clear search">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <a href="#" class="hidden md:inline text-[12.5px] text-ink-700 hover:text-ink-900">Schema</a>
+          <button id="theme-toggle" type="button" aria-label="Toggle color theme" title="Toggle color theme"
+            class="inline-flex items-center justify-center h-7 w-7 rounded-md border border-line text-ink-700 hover:text-ink-900 hover:bg-surfaceMuted">
+            <svg class="theme-icon-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+            <svg class="theme-icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main id="top" class="mx-auto max-w-[1280px] px-4 md:px-8 pb-24">
+
+    <!-- ============================== -->
+    <!-- HEADER                         -->
+    <!-- ============================== -->
+    <header class="pt-8 md:pt-12 pb-8 md:pb-12">
+      <div class="flex items-center gap-2 text-[12px] text-ink-500 mono uppercase tracking-wider">
+        <span>v1</span>
+        <span class="h-1 w-1 rounded-full bg-ink-300"></span>
+        <span>HTTP · JSON · OpenAPI 3.1</span>
+      </div>
+      <h1 class="mt-3 text-[36px] md:text-[44px] leading-[1.05] font-semibold tracking-tight">
+        Registry API
+      </h1>
+      <p class="mt-3 max-w-2xl text-[15px] text-ink-700 leading-relaxed">
+        A read-only HTTP interface over the WebAssembly component registry.
+        Resolve packages, inspect versions, and search by imported or exported
+        WIT interface. All endpoints return <span class="mono text-[13px]">application/json</span>.
+      </p>
+
+      <!-- Base URL + spec link strip -->
+      <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-[13px]">
+        <div class="inline-flex items-center gap-2">
+          <span class="text-[11px] mono uppercase tracking-wider text-ink-500">Base URL</span>
+          <span class="inline-flex items-center h-7 px-2.5 rounded-md bg-surfaceMuted text-ink-900 mono text-[12.5px]">
+            https://registry.example.com
+          </span>
+        </div>
+        <div class="inline-flex items-center gap-2">
+          <span class="text-[11px] mono uppercase tracking-wider text-ink-500">Schema</span>
+          <a href="#" class="text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900 mono text-[12.5px]">openapi.yaml</a>
+        </div>
+        <div class="inline-flex items-center gap-2">
+          <span class="text-[11px] mono uppercase tracking-wider text-ink-500">Status</span>
+          <span class="inline-flex items-center gap-1.5 px-2 h-6 rounded-pill bg-cat-green text-cat-greenInk text-[12px] font-medium">
+            <span class="h-1.5 w-1.5 rounded-full bg-cat-greenInk"></span>Operational
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <div class="border-t rule"></div>
+
+    <!-- ============================== -->
+    <!-- BODY: SIDEBAR + CONTENT        -->
+    <!-- ============================== -->
+    <div class="grid md:grid-cols-[220px_1fr] gap-6 md:gap-12 pt-10">
+
+      <!-- ============================== -->
+      <!-- SIDEBAR                        -->
+      <!-- ============================== -->
+      <aside class="sidebar" id="sidebar">
+        <nav class="text-[13px]">
+          <div class="nav-empty">No matches.</div>
+          <div class="nav-group" data-group="Guide">
+          <div class="group-label mono uppercase tracking-wider text-ink-500 mb-2">Guide</div>
+          <ul class="space-y-px mb-5">
+            <li><a href="#overview"   class="endpoint"><span class="m">·</span><span>Overview</span></a></li>
+            <li><a href="#auth"       class="endpoint"><span class="m">·</span><span>Authentication</span></a></li>
+            <li><a href="#errors"     class="endpoint"><span class="m">·</span><span>Errors</span></a></li>
+            <li><a href="#pagination" class="endpoint"><span class="m">·</span><span>Pagination</span></a></li>
+          </ul>
+          </div>
+
+          <div class="my-4 border-t-[1.5px] border-rule group-divider"></div>
+
+          <div class="nav-group" data-group="Health">
+          <div class="group-label mono uppercase tracking-wider text-ink-500 mb-2">Health</div>
+          <ul class="space-y-px mb-5">
+            <li><a href="#op-health" class="endpoint"><span class="m m-get">GET</span><span>/v1/health</span></a></li>
+          </ul>
+          </div>
+
+          <div class="nav-group" data-group="Packages">
+          <div class="group-label mono uppercase tracking-wider text-ink-500 mb-2">Packages</div>
+          <ul class="space-y-px mb-5">
+            <li><a href="#op-detail"   class="endpoint"><span class="m m-get">GET</span><span>Package detail</span></a></li>
+            <li><a href="#op-versions" class="endpoint"><span class="m m-get">GET</span><span>List versions</span></a></li>
+            <li><a href="#op-version"  class="endpoint"><span class="m m-get">GET</span><span>Get version</span></a></li>
+            <li><a href="#op-publish"  class="endpoint"><span class="m m-post">POST</span><span>Publish</span></a></li>
+            <li><a href="#op-yank"     class="endpoint"><span class="m m-delete">DEL</span><span>Yank version</span></a></li>
+          </ul>
+          </div>
+
+          <div class="nav-group" data-group="Search">
+          <div class="group-label mono uppercase tracking-wider text-ink-500 mb-2">Search</div>
+          <ul class="space-y-px mb-5">
+            <li><a href="#op-by-import" class="endpoint"><span class="m m-get">GET</span><span>By import</span></a></li>
+            <li><a href="#op-by-export" class="endpoint"><span class="m m-get">GET</span><span>By export</span></a></li>
+          </ul>
+          </div>
+
+          <div class="my-4 border-t-[1.5px] border-rule group-divider"></div>
+
+          <div class="nav-group" data-group="Schemas">
+          <div class="group-label mono uppercase tracking-wider text-ink-500 mb-2">Schemas</div>
+          <ul class="space-y-px">
+            <li><a href="#schema-package"   class="endpoint"><span class="m">{}</span><span>Package</span></a></li>
+            <li><a href="#schema-detail"    class="endpoint"><span class="m">{}</span><span>PackageDetail</span></a></li>
+            <li><a href="#schema-version"   class="endpoint"><span class="m">{}</span><span>PackageVersion</span></a></li>
+            <li><a href="#schema-error"     class="endpoint"><span class="m">{}</span><span>Error</span></a></li>
+          </ul>
+          </div>
+        </nav>
+      </aside>
+
+      <!-- ============================== -->
+      <!-- CONTENT                        -->
+      <!-- ============================== -->
+      <div class="min-w-0 space-y-16">
+
+        <!-- ============================== -->
+        <!-- OVERVIEW                       -->
+        <!-- ============================== -->
+        <section id="overview">
+          <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Guide</div>
+          <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Overview</h2>
+          <p class="mt-3 text-[14px] text-ink-700 leading-relaxed max-w-2xl">
+            The Registry API is a thin JSON layer over the OCI-backed package
+            store. It is the same surface used by the
+            <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-700 mono text-[0.875em]">wasm</code>
+            CLI for resolution, search, and publishing. Endpoints follow the
+            <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-700 mono text-[0.875em]">/v1</code>
+            prefix and are versioned by URL.
+          </p>
+
+          <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="p-4 bg-surface border border-lineSoft rounded-lg shadow-card">
+              <div class="text-[11px] mono uppercase tracking-wider text-ink-500">Transport</div>
+              <div class="mt-1 text-[13.5px] font-medium">HTTPS only</div>
+              <div class="text-[12px] text-ink-500 mt-0.5">TLS 1.2+</div>
+            </div>
+            <div class="p-4 bg-surface border border-lineSoft rounded-lg shadow-card">
+              <div class="text-[11px] mono uppercase tracking-wider text-ink-500">Encoding</div>
+              <div class="mt-1 text-[13.5px] font-medium mono">application/json</div>
+              <div class="text-[12px] text-ink-500 mt-0.5">UTF-8</div>
+            </div>
+            <div class="p-4 bg-surface border border-lineSoft rounded-lg shadow-card">
+              <div class="text-[11px] mono uppercase tracking-wider text-ink-500">Rate limit</div>
+              <div class="mt-1 text-[13.5px] font-medium">600 req / min</div>
+              <div class="text-[12px] text-ink-500 mt-0.5">per token</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================== -->
+        <!-- AUTH                           -->
+        <!-- ============================== -->
+        <section id="auth">
+          <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Guide</div>
+          <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Authentication</h2>
+          <p class="mt-3 text-[14px] text-ink-700 leading-relaxed max-w-2xl">
+            Read endpoints are unauthenticated. Mutating endpoints
+            (<span class="method method-post">POST</span>,
+             <span class="method method-delete">DELETE</span>)
+            require a bearer token issued by your registry administrator.
+            Pass it in the <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-700 mono text-[0.875em]">Authorization</code> header.
+          </p>
+
+          <div class="mt-6">
+            <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Example</div>
+<pre class="code"><span class="v">curl</span> <span class="f">-H</span> <span class="s">"Authorization: Bearer $REGISTRY_TOKEN"</span> \
+     https://registry.example.com/v1/packages/detail/example.com/hello-world</pre>
+          </div>
+        </section>
+
+        <!-- ============================== -->
+        <!-- ERRORS                         -->
+        <!-- ============================== -->
+        <section id="errors">
+          <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Guide</div>
+          <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Errors</h2>
+          <p class="mt-3 text-[14px] text-ink-700 leading-relaxed max-w-2xl">
+            Errors are returned as a JSON object with a stable
+            <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-700 mono text-[0.875em]">code</code> string and
+            human-readable <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-700 mono text-[0.875em]">message</code>.
+            HTTP status follows the standard semantics below.
+          </p>
+
+          <div class="mt-6 overflow-x-auto border-t-[1.5px] border-lineSoft">
+            <table class="w-full min-w-[560px] text-[13px]">
+              <thead>
+                <tr class="text-ink-400">
+                  <th class="text-left font-normal py-3 pr-6 w-[120px]">Status</th>
+                  <th class="text-left font-normal py-3 pr-6 w-[180px]">Code</th>
+                  <th class="text-left font-normal py-3">Meaning</th>
+                </tr>
+              </thead>
+              <tbody class="text-ink-900">
+                <tr class="border-t-[1.5px] border-lineSoft">
+                  <td class="py-3 pr-6"><span class="inline-flex items-center gap-1.5"><span class="status-dot bg-cat-greenInk"></span><span class="mono">200</span></span></td>
+                  <td class="pr-6 mono text-ink-700">ok</td>
+                  <td class="text-ink-700">Request succeeded.</td>
+                </tr>
+                <tr class="border-t-[1.5px] border-lineSoft">
+                  <td class="py-3 pr-6"><span class="inline-flex items-center gap-1.5"><span class="status-dot bg-cat-peachInk"></span><span class="mono">400</span></span></td>
+                  <td class="pr-6 mono text-ink-700">invalid_request</td>
+                  <td class="text-ink-700">Malformed parameter or request body.</td>
+                </tr>
+                <tr class="border-t-[1.5px] border-lineSoft">
+                  <td class="py-3 pr-6"><span class="inline-flex items-center gap-1.5"><span class="status-dot bg-cat-peachInk"></span><span class="mono">401</span></span></td>
+                  <td class="pr-6 mono text-ink-700">unauthenticated</td>
+                  <td class="text-ink-700">Missing or invalid bearer token.</td>
+                </tr>
+                <tr class="border-t-[1.5px] border-lineSoft">
+                  <td class="py-3 pr-6"><span class="inline-flex items-center gap-1.5"><span class="status-dot bg-cat-peachInk"></span><span class="mono">404</span></span></td>
+                  <td class="pr-6 mono text-ink-700">not_found</td>
+                  <td class="text-ink-700">No such package, version, or interface.</td>
+                </tr>
+                <tr class="border-t-[1.5px] border-lineSoft">
+                  <td class="py-3 pr-6"><span class="inline-flex items-center gap-1.5"><span class="status-dot bg-cat-peachInk"></span><span class="mono">409</span></span></td>
+                  <td class="pr-6 mono text-ink-700">conflict</td>
+                  <td class="text-ink-700">Version already exists; cannot overwrite.</td>
+                </tr>
+                <tr class="border-t-[1.5px] border-lineSoft">
+                  <td class="py-3 pr-6"><span class="inline-flex items-center gap-1.5"><span class="status-dot bg-cat-peachInk"></span><span class="mono">429</span></span></td>
+                  <td class="pr-6 mono text-ink-700">rate_limited</td>
+                  <td class="text-ink-700">Too many requests. Retry after the indicated interval.</td>
+                </tr>
+                <tr class="border-t-[1.5px] border-lineSoft">
+                  <td class="py-3 pr-6"><span class="inline-flex items-center gap-1.5"><span class="status-dot bg-cat-pinkInk"></span><span class="mono">500</span></span></td>
+                  <td class="pr-6 mono text-ink-700">internal_error</td>
+                  <td class="text-ink-700">Unexpected server-side failure.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mt-6">
+            <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Error envelope</div>
+<pre class="code">{
+  <span class="k">"code"</span><span class="p">:</span> <span class="s">"not_found"</span><span class="p">,</span>
+  <span class="k">"message"</span><span class="p">:</span> <span class="s">"package 'example.com/missing' was not indexed"</span><span class="p">,</span>
+  <span class="k">"request_id"</span><span class="p">:</span> <span class="s">"req_01JABCDE6N3QK7Y2S0V"</span>
+}</pre>
+          </div>
+        </section>
+
+        <!-- ============================== -->
+        <!-- PAGINATION                     -->
+        <!-- ============================== -->
+        <section id="pagination">
+          <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Guide</div>
+          <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Pagination</h2>
+          <p class="mt-3 text-[14px] text-ink-700 leading-relaxed max-w-2xl">
+            List endpoints use forward-only cursor pagination. Pass
+            <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-700 mono text-[0.875em]">?cursor=&lt;opaque&gt;</code>
+            to continue from the previous page. The next cursor — if any — is
+            returned in the <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-700 mono text-[0.875em]">Link</code> header
+            with <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-700 mono text-[0.875em]">rel="next"</code>.
+            Default page size is <span class="mono">50</span>; maximum is <span class="mono">200</span>.
+          </p>
+        </section>
+
+        <!-- ====================================== -->
+        <!--   ENDPOINTS                            -->
+        <!-- ====================================== -->
+
+        <div class="border-t rule"></div>
+
+        <!-- =========================== HEALTH =========================== -->
+        <section>
+          <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Health</div>
+          <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Service health</h2>
+          <p class="mt-2 text-[13px] text-ink-500 max-w-2xl leading-relaxed">
+            Liveness probe for orchestrators and uptime monitors. Cheap; no
+            database access.
+          </p>
+        </section>
+
+        <article id="op-health" class="space-y-5">
+          <div class="flex items-center gap-3 flex-wrap">
+            <span class="method method-get">GET</span>
+            <span class="path"><span class="seg">/v1/health</span></span>
+          </div>
+          <p class="text-[13.5px] text-ink-700 max-w-2xl leading-relaxed">
+            Returns <span class="mono text-[12.5px]">200 OK</span> with a fixed
+            payload when the process is reachable.
+          </p>
+
+          <div>
+            <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Responses</div>
+            <ul class="text-[13px] divide-y divide-lineSoft border-t-[1.5px] border-lineSoft">
+              <li class="flex items-center gap-3 py-3">
+                <span class="status-dot bg-cat-greenInk"></span>
+                <span class="mono w-12">200</span>
+                <span class="text-ink-700">Service is up.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Request</div>
+<pre class="code"><span class="v">curl</span> https://registry.example.com/v1/health</pre>
+            </div>
+            <div>
+              <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Response · 200</div>
+<pre class="code">{ <span class="k">"status"</span><span class="p">:</span> <span class="s">"ok"</span> }</pre>
+            </div>
+          </div>
+        </article>
+
+        <div class="border-t rule"></div>
+
+        <!-- =========================== PACKAGES =========================== -->
+        <section>
+          <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Packages</div>
+          <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Packages</h2>
+          <p class="mt-2 text-[13px] text-ink-500 max-w-2xl leading-relaxed">
+            Inspect packages, list versions, and read per-version metadata.
+            Repository paths are case-sensitive and use forward slashes; the
+            registry component is the upstream domain.
+          </p>
+        </section>
+
+        <!-- ============== Package detail ============== -->
+        <article id="op-detail" class="space-y-5">
+          <div class="flex items-center gap-3 flex-wrap">
+            <span class="method method-get">GET</span>
+            <span class="path">
+              <span class="seg">/v1/packages/detail</span><span class="sl">/</span><span class="par">{registry}</span><span class="sl">/</span><span class="par">{*repository}</span>
+            </span>
+          </div>
+          <p class="text-[13.5px] text-ink-700 max-w-2xl leading-relaxed">
+            Resolve a single repository to its full <a href="#schema-detail" class="text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">PackageDetail</a>,
+            including every known version, manifest digest, and extracted WIT
+            dependency graph.
+          </p>
+
+          <div>
+            <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Path parameters</div>
+            <div class="overflow-x-auto border-t-[1.5px] border-lineSoft">
+              <table class="w-full min-w-[560px] text-[13px]">
+                <tbody class="text-ink-900">
+                  <tr class="border-b border-lineSoft">
+                    <td class="py-3 pr-6 align-top w-[180px]">
+                      <div class="mono">registry</div>
+                      <div class="text-[11.5px] text-ink-500 mono mt-0.5">string · required</div>
+                    </td>
+                    <td class="py-3 text-ink-700">
+                      Upstream registry host, e.g. <span class="mono text-[12.5px]">example.com</span>.
+                    </td>
+                  </tr>
+                  <tr class="border-b border-lineSoft">
+                    <td class="py-3 pr-6 align-top">
+                      <div class="mono">repository</div>
+                      <div class="text-[11.5px] text-ink-500 mono mt-0.5">path · required</div>
+                    </td>
+                    <td class="py-3 text-ink-700">
+                      Slash-separated repository path. May contain multiple
+                      segments — captured as a single greedy parameter.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
+            <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Responses</div>
+            <ul class="text-[13px] divide-y divide-lineSoft border-t-[1.5px] border-lineSoft">
+              <li class="flex items-center gap-3 py-3">
+                <span class="status-dot bg-cat-greenInk"></span>
+                <span class="mono w-12">200</span>
+                <span class="text-ink-700"><a href="#schema-detail" class="underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">PackageDetail</a></span>
+              </li>
+              <li class="flex items-center gap-3 py-3">
+                <span class="status-dot bg-cat-peachInk"></span>
+                <span class="mono w-12">404</span>
+                <span class="text-ink-700">Repository is not indexed.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Request</div>
+<pre class="code"><span class="v">curl</span> https://registry.example.com\
+/v1/packages/detail/example.com/hello-world</pre>
+            </div>
+            <div>
+              <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Response · 200</div>
+<pre class="code">{
+  <span class="k">"registry"</span><span class="p">:</span>   <span class="s">"example.com"</span><span class="p">,</span>
+  <span class="k">"repository"</span><span class="p">:</span> <span class="s">"hello-world"</span><span class="p">,</span>
+  <span class="k">"latest"</span><span class="p">:</span>     <span class="s">"0.1.0"</span><span class="p">,</span>
+  <span class="k">"versions"</span><span class="p">:</span> [
+    {
+      <span class="k">"version"</span><span class="p">:</span> <span class="s">"0.1.0"</span><span class="p">,</span>
+      <span class="k">"digest"</span><span class="p">:</span>  <span class="s">"sha256:8c7f…"</span><span class="p">,</span>
+      <span class="k">"size"</span><span class="p">:</span>    <span class="n">128944</span><span class="p">,</span>
+      <span class="k">"published_at"</span><span class="p">:</span> <span class="s">"2026-04-01T10:22:18Z"</span>
+    }
+  ]
+}</pre>
+            </div>
+          </div>
+        </article>
+
+        <div class="border-t border-lineSoft"></div>
+
+        <!-- ============== List versions ============== -->
+        <article id="op-versions" class="space-y-5">
+          <div class="flex items-center gap-3 flex-wrap">
+            <span class="method method-get">GET</span>
+            <span class="path">
+              <span class="seg">/v1/packages/versions</span><span class="sl">/</span><span class="par">{registry}</span><span class="sl">/</span><span class="par">{*repository}</span>
+            </span>
+          </div>
+          <p class="text-[13.5px] text-ink-700 max-w-2xl leading-relaxed">
+            List every published version for a repository, ordered newest first.
+            Each entry is a <a href="#schema-version" class="text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">PackageVersion</a> with
+            manifest metadata.
+          </p>
+
+          <div>
+            <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Query parameters</div>
+            <div class="overflow-x-auto border-t-[1.5px] border-lineSoft">
+              <table class="w-full min-w-[560px] text-[13px]">
+                <tbody class="text-ink-900">
+                  <tr class="border-b border-lineSoft">
+                    <td class="py-3 pr-6 align-top w-[180px]">
+                      <div class="mono">limit</div>
+                      <div class="text-[11.5px] text-ink-500 mono mt-0.5">int · optional</div>
+                    </td>
+                    <td class="py-3 text-ink-700">Maximum results. Default <span class="mono">50</span>, max <span class="mono">200</span>.</td>
+                  </tr>
+                  <tr class="border-b border-lineSoft">
+                    <td class="py-3 pr-6 align-top">
+                      <div class="mono">cursor</div>
+                      <div class="text-[11.5px] text-ink-500 mono mt-0.5">string · optional</div>
+                    </td>
+                    <td class="py-3 text-ink-700">Opaque continuation token from a previous page.</td>
+                  </tr>
+                  <tr class="border-b border-lineSoft">
+                    <td class="py-3 pr-6 align-top">
+                      <div class="mono">include_yanked</div>
+                      <div class="text-[11.5px] text-ink-500 mono mt-0.5">bool · optional</div>
+                    </td>
+                    <td class="py-3 text-ink-700">If <span class="mono">true</span>, include yanked versions. Default <span class="mono">false</span>.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
+            <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Responses</div>
+            <ul class="text-[13px] divide-y divide-lineSoft border-t-[1.5px] border-lineSoft">
+              <li class="flex items-center gap-3 py-3">
+                <span class="status-dot bg-cat-greenInk"></span>
+                <span class="mono w-12">200</span>
+                <span class="text-ink-700">Array of <a href="#schema-version" class="underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">PackageVersion</a>.</span>
+              </li>
+              <li class="flex items-center gap-3 py-3">
+                <span class="status-dot bg-cat-peachInk"></span>
+                <span class="mono w-12">404</span>
+                <span class="text-ink-700">Repository is not indexed.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Request</div>
+<pre class="code"><span class="v">curl</span> <span class="s">"https://registry.example.com\
+/v1/packages/versions/wasi/http?limit=5"</span></pre>
+            </div>
+            <div>
+              <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Response · 200</div>
+<pre class="code">[
+  {
+    <span class="k">"version"</span><span class="p">:</span> <span class="s">"0.2.4"</span><span class="p">,</span>
+    <span class="k">"digest"</span><span class="p">:</span>  <span class="s">"sha256:1f08…"</span><span class="p">,</span>
+    <span class="k">"yanked"</span><span class="p">:</span>  <span class="n">false</span>
+  },
+  {
+    <span class="k">"version"</span><span class="p">:</span> <span class="s">"0.2.3"</span><span class="p">,</span>
+    <span class="k">"digest"</span><span class="p">:</span>  <span class="s">"sha256:90ab…"</span><span class="p">,</span>
+    <span class="k">"yanked"</span><span class="p">:</span>  <span class="n">false</span>
+  }
+]</pre>
+            </div>
+          </div>
+        </article>
+
+        <div class="border-t border-lineSoft"></div>
+
+        <!-- ============== Get version ============== -->
+        <article id="op-version" class="space-y-5">
+          <div class="flex items-center gap-3 flex-wrap">
+            <span class="method method-get">GET</span>
+            <span class="path">
+              <span class="seg">/v1/packages/version</span><span class="sl">/</span><span class="par">{registry}</span><span class="sl">/</span><span class="par">{version}</span><span class="sl">/</span><span class="par">{*repository}</span>
+            </span>
+          </div>
+          <p class="text-[13.5px] text-ink-700 max-w-2xl leading-relaxed">
+            Resolve a single tag to its <a href="#schema-version" class="text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">PackageVersion</a>.
+            The version segment accepts a SemVer tag or the literal
+            <span class="mono text-[12.5px]">latest</span>.
+          </p>
+
+          <div>
+            <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Responses</div>
+            <ul class="text-[13px] divide-y divide-lineSoft border-t-[1.5px] border-lineSoft">
+              <li class="flex items-center gap-3 py-3">
+                <span class="status-dot bg-cat-greenInk"></span>
+                <span class="mono w-12">200</span>
+                <span class="text-ink-700"><a href="#schema-version" class="underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">PackageVersion</a></span>
+              </li>
+              <li class="flex items-center gap-3 py-3">
+                <span class="status-dot bg-cat-peachInk"></span>
+                <span class="mono w-12">404</span>
+                <span class="text-ink-700">No such tag for this repository.</span>
+              </li>
+            </ul>
+          </div>
+        </article>
+
+        <div class="border-t border-lineSoft"></div>
+
+        <!-- ============== Publish ============== -->
+        <article id="op-publish" class="space-y-5">
+          <div class="flex items-center gap-3 flex-wrap">
+            <span class="method method-post">POST</span>
+            <span class="path">
+              <span class="seg">/v1/packages</span><span class="sl">/</span><span class="par">{registry}</span><span class="sl">/</span><span class="par">{*repository}</span>
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-2 h-6 rounded-pill bg-cat-cream text-cat-creamInk text-[11px] font-medium">
+              <span class="h-1.5 w-1.5 rounded-full bg-cat-creamInk"></span>Auth required
+            </span>
+          </div>
+          <p class="text-[13.5px] text-ink-700 max-w-2xl leading-relaxed">
+            Publish a new version. The body references an OCI manifest already
+            uploaded via the standard distribution endpoints.
+          </p>
+
+          <div>
+            <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Request body</div>
+            <div class="overflow-x-auto border-t-[1.5px] border-lineSoft">
+              <table class="w-full min-w-[560px] text-[13px]">
+                <tbody class="text-ink-900">
+                  <tr class="border-b border-lineSoft">
+                    <td class="py-3 pr-6 align-top w-[180px]">
+                      <div class="mono">version</div>
+                      <div class="text-[11.5px] text-ink-500 mono mt-0.5">string · required</div>
+                    </td>
+                    <td class="py-3 text-ink-700">SemVer tag, e.g. <span class="mono">0.2.4</span>.</td>
+                  </tr>
+                  <tr class="border-b border-lineSoft">
+                    <td class="py-3 pr-6 align-top">
+                      <div class="mono">digest</div>
+                      <div class="text-[11.5px] text-ink-500 mono mt-0.5">string · required</div>
+                    </td>
+                    <td class="py-3 text-ink-700">Manifest digest, prefixed with <span class="mono">sha256:</span>.</td>
+                  </tr>
+                  <tr class="border-b border-lineSoft">
+                    <td class="py-3 pr-6 align-top">
+                      <div class="mono">signature</div>
+                      <div class="text-[11.5px] text-ink-500 mono mt-0.5">string · optional</div>
+                    </td>
+                    <td class="py-3 text-ink-700">Detached cosign-compatible signature, base64 encoded.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
+            <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Responses</div>
+            <ul class="text-[13px] divide-y divide-lineSoft border-t-[1.5px] border-lineSoft">
+              <li class="flex items-center gap-3 py-3">
+                <span class="status-dot bg-cat-greenInk"></span>
+                <span class="mono w-12">201</span>
+                <span class="text-ink-700">Version accepted; returns the canonical <a href="#schema-version" class="underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">PackageVersion</a>.</span>
+              </li>
+              <li class="flex items-center gap-3 py-3">
+                <span class="status-dot bg-cat-peachInk"></span>
+                <span class="mono w-12">409</span>
+                <span class="text-ink-700">A version with this tag already exists.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Request</div>
+<pre class="code"><span class="v">curl</span> <span class="f">-X</span> POST \
+  <span class="f">-H</span> <span class="s">"Authorization: Bearer $TOKEN"</span> \
+  <span class="f">-H</span> <span class="s">"Content-Type: application/json"</span> \
+  <span class="f">-d</span> <span class="s">'{
+    "version": "0.2.4",
+    "digest":  "sha256:1f08…"
+  }'</span> \
+  https://registry.example.com\
+/v1/packages/wasi/http</pre>
+            </div>
+            <div>
+              <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Response · 201</div>
+<pre class="code">{
+  <span class="k">"version"</span><span class="p">:</span> <span class="s">"0.2.4"</span><span class="p">,</span>
+  <span class="k">"digest"</span><span class="p">:</span>  <span class="s">"sha256:1f08…"</span><span class="p">,</span>
+  <span class="k">"yanked"</span><span class="p">:</span>  <span class="n">false</span><span class="p">,</span>
+  <span class="k">"published_at"</span><span class="p">:</span> <span class="s">"2026-04-18T08:11:02Z"</span>
+}</pre>
+            </div>
+          </div>
+        </article>
+
+        <div class="border-t border-lineSoft"></div>
+
+        <!-- ============== Yank ============== -->
+        <article id="op-yank" class="space-y-5">
+          <div class="flex items-center gap-3 flex-wrap">
+            <span class="method method-delete">DELETE</span>
+            <span class="path">
+              <span class="seg">/v1/packages/version</span><span class="sl">/</span><span class="par">{registry}</span><span class="sl">/</span><span class="par">{version}</span><span class="sl">/</span><span class="par">{*repository}</span>
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-2 h-6 rounded-pill bg-cat-cream text-cat-creamInk text-[11px] font-medium">
+              <span class="h-1.5 w-1.5 rounded-full bg-cat-creamInk"></span>Auth required
+            </span>
+          </div>
+          <p class="text-[13.5px] text-ink-700 max-w-2xl leading-relaxed">
+            Mark a version as yanked. Yanked versions remain resolvable by exact
+            digest but are excluded from version listings unless
+            <span class="mono text-[12.5px]">include_yanked=true</span> is set.
+            This operation is reversible by re-publishing the same digest.
+          </p>
+
+          <div>
+            <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Responses</div>
+            <ul class="text-[13px] divide-y divide-lineSoft border-t-[1.5px] border-lineSoft">
+              <li class="flex items-center gap-3 py-3">
+                <span class="status-dot bg-cat-greenInk"></span>
+                <span class="mono w-12">204</span>
+                <span class="text-ink-700">Version yanked.</span>
+              </li>
+              <li class="flex items-center gap-3 py-3">
+                <span class="status-dot bg-cat-peachInk"></span>
+                <span class="mono w-12">401</span>
+                <span class="text-ink-700">Token missing or invalid.</span>
+              </li>
+              <li class="flex items-center gap-3 py-3">
+                <span class="status-dot bg-cat-peachInk"></span>
+                <span class="mono w-12">404</span>
+                <span class="text-ink-700">No such tag.</span>
+              </li>
+            </ul>
+          </div>
+        </article>
+
+        <div class="border-t rule"></div>
+
+        <!-- =========================== SEARCH =========================== -->
+        <section>
+          <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Search</div>
+          <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Interface search</h2>
+          <p class="mt-2 text-[13px] text-ink-500 max-w-2xl leading-relaxed">
+            Find packages by the WIT interfaces their worlds import or export.
+            Interface identifiers use the canonical
+            <span class="mono">namespace:package/interface@version</span> form.
+          </p>
+        </section>
+
+        <article id="op-by-import" class="space-y-5">
+          <div class="flex items-center gap-3 flex-wrap">
+            <span class="method method-get">GET</span>
+            <span class="path"><span class="seg">/v1/search/by-import</span></span>
+          </div>
+          <p class="text-[13.5px] text-ink-700 max-w-2xl leading-relaxed">
+            Return packages whose worlds <em>import</em> the given interface.
+          </p>
+
+          <div>
+            <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Query parameters</div>
+            <div class="overflow-x-auto border-t-[1.5px] border-lineSoft">
+              <table class="w-full min-w-[560px] text-[13px]">
+                <tbody class="text-ink-900">
+                  <tr class="border-b border-lineSoft">
+                    <td class="py-3 pr-6 align-top w-[180px]">
+                      <div class="mono">interface</div>
+                      <div class="text-[11.5px] text-ink-500 mono mt-0.5">string · required</div>
+                    </td>
+                    <td class="py-3 text-ink-700">
+                      Interface identifier, e.g.
+                      <span class="mono text-[12.5px]">wasi:http/incoming-handler@0.2.0</span>.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
+            <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Responses</div>
+            <ul class="text-[13px] divide-y divide-lineSoft border-t-[1.5px] border-lineSoft">
+              <li class="flex items-center gap-3 py-3">
+                <span class="status-dot bg-cat-greenInk"></span>
+                <span class="mono w-12">200</span>
+                <span class="text-ink-700">Array of <a href="#schema-package" class="underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">Package</a>.</span>
+              </li>
+              <li class="flex items-center gap-3 py-3">
+                <span class="status-dot bg-cat-peachInk"></span>
+                <span class="mono w-12">400</span>
+                <span class="text-ink-700">Malformed interface identifier.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Request</div>
+<pre class="code"><span class="v">curl</span> <span class="s">"https://registry.example.com\
+/v1/search/by-import\
+?interface=wasi:http/incoming-handler@0.2.0"</span></pre>
+            </div>
+            <div>
+              <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Response · 200</div>
+<pre class="code">[
+  {
+    <span class="k">"registry"</span><span class="p">:</span>   <span class="s">"example.com"</span><span class="p">,</span>
+    <span class="k">"repository"</span><span class="p">:</span> <span class="s">"hello-world"</span><span class="p">,</span>
+    <span class="k">"latest"</span><span class="p">:</span>     <span class="s">"0.1.0"</span>
+  },
+  {
+    <span class="k">"registry"</span><span class="p">:</span>   <span class="s">"fermyon.com"</span><span class="p">,</span>
+    <span class="k">"repository"</span><span class="p">:</span> <span class="s">"spin-http"</span><span class="p">,</span>
+    <span class="k">"latest"</span><span class="p">:</span>     <span class="s">"3.1.2"</span>
+  }
+]</pre>
+            </div>
+          </div>
+        </article>
+
+        <div class="border-t border-lineSoft"></div>
+
+        <article id="op-by-export" class="space-y-5">
+          <div class="flex items-center gap-3 flex-wrap">
+            <span class="method method-get">GET</span>
+            <span class="path"><span class="seg">/v1/search/by-export</span></span>
+          </div>
+          <p class="text-[13.5px] text-ink-700 max-w-2xl leading-relaxed">
+            Return packages whose worlds <em>export</em> the given interface.
+            Mirrors <a href="#op-by-import" class="text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">by-import</a>
+            in shape and parameters.
+          </p>
+
+          <div>
+            <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Responses</div>
+            <ul class="text-[13px] divide-y divide-lineSoft border-t-[1.5px] border-lineSoft">
+              <li class="flex items-center gap-3 py-3">
+                <span class="status-dot bg-cat-greenInk"></span>
+                <span class="mono w-12">200</span>
+                <span class="text-ink-700">Array of <a href="#schema-package" class="underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">Package</a>.</span>
+              </li>
+              <li class="flex items-center gap-3 py-3">
+                <span class="status-dot bg-cat-peachInk"></span>
+                <span class="mono w-12">400</span>
+                <span class="text-ink-700">Malformed interface identifier.</span>
+              </li>
+            </ul>
+          </div>
+        </article>
+
+        <div class="border-t rule"></div>
+
+        <!-- =========================== SCHEMAS =========================== -->
+        <section>
+          <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Schemas</div>
+          <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Object reference</h2>
+          <p class="mt-2 text-[13px] text-ink-500 max-w-2xl leading-relaxed">
+            Canonical JSON shapes returned by the API. Field types use the
+            OpenAPI 3.1 type vocabulary.
+          </p>
+        </section>
+
+        <article id="schema-package" class="space-y-3">
+          <h3 class="text-[16px] font-semibold tracking-tight mono">Package</h3>
+          <p class="text-[13px] text-ink-500 max-w-2xl">A registry-qualified repository pointer with a resolved latest tag.</p>
+          <div class="overflow-x-auto border-t-[1.5px] border-lineSoft">
+            <table class="w-full min-w-[560px] text-[13px]">
+              <tbody class="text-ink-900">
+                <tr class="border-b border-lineSoft">
+                  <td class="py-3 pr-6 align-top w-[180px]"><div class="mono">registry</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string</div></td>
+                  <td class="py-3 text-ink-700">Upstream host name.</td>
+                </tr>
+                <tr class="border-b border-lineSoft">
+                  <td class="py-3 pr-6 align-top"><div class="mono">repository</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string</div></td>
+                  <td class="py-3 text-ink-700">Slash-separated repository path.</td>
+                </tr>
+                <tr class="border-b border-lineSoft">
+                  <td class="py-3 pr-6 align-top"><div class="mono">latest</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string · semver</div></td>
+                  <td class="py-3 text-ink-700">Highest non-yanked version, or <span class="mono">null</span> if none.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article id="schema-detail" class="space-y-3">
+          <h3 class="text-[16px] font-semibold tracking-tight mono">PackageDetail</h3>
+          <p class="text-[13px] text-ink-500 max-w-2xl">Extends <a href="#schema-package" class="text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">Package</a> with the full version timeline.</p>
+          <div class="overflow-x-auto border-t-[1.5px] border-lineSoft">
+            <table class="w-full min-w-[560px] text-[13px]">
+              <tbody class="text-ink-900">
+                <tr class="border-b border-lineSoft">
+                  <td class="py-3 pr-6 align-top w-[180px]"><div class="mono">registry</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string</div></td>
+                  <td class="py-3 text-ink-700">Upstream host name.</td>
+                </tr>
+                <tr class="border-b border-lineSoft">
+                  <td class="py-3 pr-6 align-top"><div class="mono">repository</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string</div></td>
+                  <td class="py-3 text-ink-700">Slash-separated repository path.</td>
+                </tr>
+                <tr class="border-b border-lineSoft">
+                  <td class="py-3 pr-6 align-top"><div class="mono">latest</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string · semver</div></td>
+                  <td class="py-3 text-ink-700">Highest non-yanked version.</td>
+                </tr>
+                <tr class="border-b border-lineSoft">
+                  <td class="py-3 pr-6 align-top"><div class="mono">versions</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">PackageVersion[]</div></td>
+                  <td class="py-3 text-ink-700">All known versions, newest first.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article id="schema-version" class="space-y-3">
+          <h3 class="text-[16px] font-semibold tracking-tight mono">PackageVersion</h3>
+          <p class="text-[13px] text-ink-500 max-w-2xl">A single tag with manifest metadata and dependency graph.</p>
+          <div class="overflow-x-auto border-t-[1.5px] border-lineSoft">
+            <table class="w-full min-w-[560px] text-[13px]">
+              <tbody class="text-ink-900">
+                <tr class="border-b border-lineSoft">
+                  <td class="py-3 pr-6 align-top w-[180px]"><div class="mono">version</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string · semver</div></td>
+                  <td class="py-3 text-ink-700">SemVer tag.</td>
+                </tr>
+                <tr class="border-b border-lineSoft">
+                  <td class="py-3 pr-6 align-top"><div class="mono">digest</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string · sha256</div></td>
+                  <td class="py-3 text-ink-700">Manifest digest.</td>
+                </tr>
+                <tr class="border-b border-lineSoft">
+                  <td class="py-3 pr-6 align-top"><div class="mono">size</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">int · bytes</div></td>
+                  <td class="py-3 text-ink-700">Total wasm layer size.</td>
+                </tr>
+                <tr class="border-b border-lineSoft">
+                  <td class="py-3 pr-6 align-top"><div class="mono">yanked</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">bool</div></td>
+                  <td class="py-3 text-ink-700">True if the version was withdrawn.</td>
+                </tr>
+                <tr class="border-b border-lineSoft">
+                  <td class="py-3 pr-6 align-top"><div class="mono">published_at</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string · RFC 3339</div></td>
+                  <td class="py-3 text-ink-700">Server-assigned publish timestamp.</td>
+                </tr>
+                <tr class="border-b border-lineSoft">
+                  <td class="py-3 pr-6 align-top"><div class="mono">imports</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string[]</div></td>
+                  <td class="py-3 text-ink-700">WIT interfaces imported by the world.</td>
+                </tr>
+                <tr class="border-b border-lineSoft">
+                  <td class="py-3 pr-6 align-top"><div class="mono">exports</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string[]</div></td>
+                  <td class="py-3 text-ink-700">WIT interfaces exported by the world.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article id="schema-error" class="space-y-3">
+          <h3 class="text-[16px] font-semibold tracking-tight mono">Error</h3>
+          <p class="text-[13px] text-ink-500 max-w-2xl">Returned with any non-2xx response.</p>
+          <div class="overflow-x-auto border-t-[1.5px] border-lineSoft">
+            <table class="w-full min-w-[560px] text-[13px]">
+              <tbody class="text-ink-900">
+                <tr class="border-b border-lineSoft">
+                  <td class="py-3 pr-6 align-top w-[180px]"><div class="mono">code</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string · enum</div></td>
+                  <td class="py-3 text-ink-700">Stable machine-readable identifier. See <a href="#errors" class="underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">error codes</a>.</td>
+                </tr>
+                <tr class="border-b border-lineSoft">
+                  <td class="py-3 pr-6 align-top"><div class="mono">message</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string</div></td>
+                  <td class="py-3 text-ink-700">Human-readable explanation. Not stable across versions.</td>
+                </tr>
+                <tr class="border-b border-lineSoft">
+                  <td class="py-3 pr-6 align-top"><div class="mono">request_id</div><div class="text-[11.5px] text-ink-500 mono mt-0.5">string</div></td>
+                  <td class="py-3 text-ink-700">Opaque trace identifier; include in support requests.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+      </div><!-- /content -->
+    </div><!-- /grid -->
+  </main>
+
+  <script>
+    (function () {
+      var btn = document.getElementById("theme-toggle");
+      if (!btn) return;
+      var root = document.documentElement;
+      var mq = window.matchMedia("(prefers-color-scheme: dark)");
+      function currentMode() {
+        var t = root.getAttribute("data-theme");
+        if (t === "dark" || t === "light") return t;
+        return mq.matches ? "dark" : "light";
+      }
+      btn.addEventListener("click", function () {
+        var next = currentMode() === "dark" ? "light" : "dark";
+        root.setAttribute("data-theme", next);
+        try { localStorage.setItem("ds-theme", next); } catch (e) { }
+      });
+    })();
+
+    // Sidebar search — filter endpoint links live, hide empty groups.
+    (function () {
+      var wrap = document.getElementById("search");
+      var input = document.getElementById("search-input");
+      var clear = document.getElementById("search-clear");
+      var sidebar = document.getElementById("sidebar");
+      if (!input || !sidebar) return;
+
+      var groups = sidebar.querySelectorAll(".nav-group");
+      var items = sidebar.querySelectorAll(".nav-group li");
+      // Cache original label text for highlighting.
+      items.forEach(function (li) {
+        var label = li.querySelector("a > span:last-child");
+        if (label) li.__label = label.textContent;
+      });
+
+      function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+      function escapeHtml(s) { return s.replace(/[&<>]/g, function (c) { return ({"&":"&amp;","<":"&lt;",">":"&gt;"})[c]; }); }
+
+      function apply() {
+        var q = input.value.trim().toLowerCase();
+        wrap.classList.toggle("has-value", q.length > 0);
+        var anyVisible = false;
+        var re = q ? new RegExp(escapeRe(q), "ig") : null;
+
+        items.forEach(function (li) {
+          var label = li.__label || "";
+          var hay = (label + " " + (li.dataset.group || "")).toLowerCase();
+          var hit = !q || hay.indexOf(q) !== -1;
+          li.style.display = hit ? "" : "none";
+          var span = li.querySelector("a > span:last-child");
+          if (span) {
+            if (hit && q) {
+              span.innerHTML = escapeHtml(label).replace(re, function (m) {
+                return '<span class="nav-hit">' + escapeHtml(m) + '</span>';
+              });
+            } else {
+              span.textContent = label;
+            }
+          }
+          if (hit) anyVisible = true;
+        });
+
+        groups.forEach(function (g) {
+          var visible = g.querySelectorAll("li:not([style*='display: none'])").length > 0;
+          g.classList.toggle("is-hidden", !visible);
+        });
+        sidebar.classList.toggle("is-empty", q.length > 0 && !anyVisible);
+      }
+
+      // Stash group on each li for matching.
+      groups.forEach(function (g) {
+        var name = g.getAttribute("data-group") || "";
+        g.querySelectorAll("li").forEach(function (li) { li.dataset.group = name; });
+      });
+
+      input.addEventListener("input", apply);
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") { input.value = ""; apply(); input.blur(); }
+        if (e.key === "Enter") {
+          var first = sidebar.querySelector(".nav-group:not(.is-hidden) li:not([style*='display: none']) a");
+          if (first) { e.preventDefault(); first.click(); }
+        }
+      });
+      if (clear) clear.addEventListener("click", function () { input.value = ""; apply(); input.focus(); });
+
+      // Global "/" shortcut to focus.
+      document.addEventListener("keydown", function (e) {
+        if (e.key !== "/") return;
+        var t = e.target;
+        if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+        e.preventDefault();
+        input.focus(); input.select();
+      });
+    })();
+  </script>
+</body>
+
+</html>
