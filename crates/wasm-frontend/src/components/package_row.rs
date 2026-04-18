@@ -64,7 +64,7 @@ fn spans(
             .text(display_name.to_owned())
             .build(),
         Span::builder()
-            .class("hidden sm:inline w-20 shrink-0 text-[13px] text-ink-400")
+            .class("text-[12px] sm:text-[13px] text-ink-400 sm:w-20 sm:shrink-0")
             .text(version.to_owned())
             .build(),
         Span::builder()

@@ -38,7 +38,7 @@ pub(crate) fn document_full_width(title: &str, body_content: &str) -> String {
     document_inner(title, body_content, "", MAIN_CLASS_FULL, false)
 }
 
-const MAIN_CLASS_CENTERED: &str = "flex-1 w-full max-w-6xl mx-auto px-6 sm:px-8 pb-12";
+const MAIN_CLASS_CENTERED: &str = "flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 pb-12";
 const MAIN_CLASS_FULL: &str = "flex-1 w-full";
 
 /// Inner document renderer.
@@ -301,6 +301,7 @@ fn document_inner(
       background-color: var(--c-canvas);
       color: var(--c-ink-900);
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }}
     /* Consistent focus ring for keyboard navigation */
     :focus-visible {{
@@ -467,6 +468,14 @@ fn document_inner(
     .tab-btn {{
       cursor: pointer;
       transition: background-color 0.15s, color 0.15s;
+    }}
+    ::-webkit-scrollbar {{
+      width: 10px;
+      height: 10px;
+    }}
+    ::-webkit-scrollbar-thumb {{
+      background: var(--c-scrollbar);
+      border-radius: 999px;
     }}
     @media (prefers-reduced-motion: reduce) {{
       .tab-btn {{ transition: none; }}

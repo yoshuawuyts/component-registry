@@ -20,7 +20,7 @@ pub(crate) fn item(label: &str, href: &str, state: NavState) -> ListItem {
             "flex items-center px-3 h-9 rounded-md bg-surfaceMuted text-ink-900 font-medium text-[14px] font-mono truncate"
         }
         NavState::Inactive => {
-            "flex items-center px-3 h-9 rounded-md text-ink-700 hover:bg-surfaceMuted text-[14px] font-mono truncate transition-colors"
+            "flex items-center px-3 h-9 rounded-md text-ink-700 hover:bg-surfaceMuted text-[14px] font-mono truncate"
         }
     };
     ListItem::builder()
@@ -32,7 +32,7 @@ pub(crate) fn item(label: &str, href: &str, state: NavState) -> ListItem {
 pub(crate) fn section(label: &str) -> Division {
     Division::builder()
         .division(|lbl| {
-            lbl.class("text-[12px] font-mono uppercase tracking-wider text-ink-500 mb-2")
+            lbl.class(super::detail_row::SECTION_LABEL_CLASS)
                 .text(label.to_owned())
         })
         .build()

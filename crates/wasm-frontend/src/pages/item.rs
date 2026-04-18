@@ -1,6 +1,6 @@
 //! Item detail page (type or function within an interface).
 
-use crate::components::{copy_button, section_heading};
+use crate::components::{copy_button, data_table, section_heading};
 use crate::wit_doc::{FunctionDoc, TypeDoc, TypeKind, TypeRef, WitDocument};
 use html::tables::{Table, TableRow};
 use html::text_content::Division;
@@ -221,13 +221,8 @@ fn render_field_table(heading: &str, fields: &[crate::wit_doc::FieldDoc]) -> Div
     div.heading_2(|h2| h2.class(section_heading::CLASS).text(heading.to_owned()));
 
     let mut table = Table::builder();
-    table.class("w-full text-[13px]");
-    table.table_row(|tr| {
-        tr.class("border-b border-line text-left text-ink-500")
-            .table_header(|th| th.class("py-2 pr-4 font-medium").text("Name"))
-            .table_header(|th| th.class("py-2 pr-4 font-medium").text("Type"))
-            .table_header(|th| th.class("py-2 font-medium").text("Description"))
-    });
+    table.class(data_table::TABLE_CLASS);
+    table.push(data_table::header_3("Name", "Type", "Description"));
     for field in fields {
         table.push(render_field_row(
             &field.name,
@@ -242,17 +237,14 @@ fn render_field_table(heading: &str, fields: &[crate::wit_doc::FieldDoc]) -> Div
 /// Render a single field/param row.
 fn render_field_row(name: &str, ty: &TypeRef, docs: Option<&str>) -> TableRow {
     TableRow::builder()
-        .class("border-b-2 border-line")
+        .class(data_table::ROW_CLASS)
+        .table_cell(|td| td.class(data_table::NAME_CELL_CLASS).text(name.to_owned()))
         .table_cell(|td| {
-            td.class("py-2 pr-4 font-mono text-accent")
-                .text(name.to_owned())
-        })
-        .table_cell(|td| {
-            td.class("py-2 pr-4 font-mono text-ink-900")
+            td.class(data_table::VALUE_CELL_CLASS)
                 .push(super::wit_render::render_type_ref(ty))
         })
         .table_cell(|td| {
-            td.class("py-2 text-ink-700")
+            td.class(data_table::DESC_CELL_CLASS)
                 .text(crate::markdown::render_inline(docs.unwrap_or("")))
         })
         .build()
@@ -264,22 +256,17 @@ fn render_variant_table(cases: &[crate::wit_doc::CaseDoc]) -> Division {
     div.heading_2(|h2| h2.class(section_heading::CLASS).text("Cases"));
 
     let mut table = Table::builder();
-    table.class("w-full text-[13px]");
-    table.table_row(|tr| {
-        tr.class("border-b border-line text-left text-ink-500")
-            .table_header(|th| th.class("py-2 pr-4 font-medium").text("Case"))
-            .table_header(|th| th.class("py-2 pr-4 font-medium").text("Payload"))
-            .table_header(|th| th.class("py-2 font-medium").text("Description"))
-    });
+    table.class(data_table::TABLE_CLASS);
+    table.push(data_table::header_3("Case", "Payload", "Description"));
     for case in cases {
         table.table_row(|tr| {
-            tr.class("border-b-2 border-line")
+            tr.class(data_table::ROW_CLASS)
                 .table_cell(|td| {
-                    td.class("py-2 pr-4 font-mono text-accent")
+                    td.class(data_table::NAME_CELL_CLASS)
                         .text(case.name.clone())
                 })
                 .table_cell(|td| {
-                    td.class("py-2 pr-4 font-mono text-ink-900");
+                    td.class(data_table::VALUE_CELL_CLASS);
                     if let Some(t) = &case.ty {
                         td.push(super::wit_render::render_type_ref(t));
                     } else {
@@ -288,7 +275,7 @@ fn render_variant_table(cases: &[crate::wit_doc::CaseDoc]) -> Division {
                     td
                 })
                 .table_cell(|td| {
-                    td.class("py-2 text-ink-700")
+                    td.class(data_table::DESC_CELL_CLASS)
                         .text(crate::markdown::render_inline(
                             case.docs.as_deref().unwrap_or(""),
                         ))
@@ -304,26 +291,13 @@ fn render_enum_list(cases: &[crate::wit_doc::EnumCaseDoc]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| h2.class(section_heading::CLASS).text("Cases"));
     let mut table = Table::builder();
-    table.class("w-full text-[13px]");
-    table.table_row(|tr| {
-        tr.class("border-b border-line text-left text-ink-500")
-            .table_header(|th| th.class("py-2 pr-4 font-medium").text("Case"))
-            .table_header(|th| th.class("py-2 font-medium").text("Description"))
-    });
+    table.class(data_table::TABLE_CLASS);
+    table.push(data_table::header_2("Case", "Description"));
     for case in cases {
-        table.table_row(|tr| {
-            tr.class("border-b-2 border-line")
-                .table_cell(|td| {
-                    td.class("py-2 pr-4 font-mono text-accent")
-                        .text(case.name.clone())
-                })
-                .table_cell(|td| {
-                    td.class("py-2 text-ink-700")
-                        .text(crate::markdown::render_inline(
-                            case.docs.as_deref().unwrap_or(""),
-                        ))
-                })
-        });
+        table.push(data_table::row_2(
+            &case.name,
+            &crate::markdown::render_inline(case.docs.as_deref().unwrap_or("")),
+        ));
     }
     div.push(table.build());
     div.build()
@@ -334,26 +308,13 @@ fn render_flags_list(flags: &[crate::wit_doc::FlagDoc]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| h2.class(section_heading::CLASS).text("Flags"));
     let mut table = Table::builder();
-    table.class("w-full text-[13px]");
-    table.table_row(|tr| {
-        tr.class("border-b border-line text-left text-ink-500")
-            .table_header(|th| th.class("py-2 pr-4 font-medium").text("Flag"))
-            .table_header(|th| th.class("py-2 font-medium").text("Description"))
-    });
+    table.class(data_table::TABLE_CLASS);
+    table.push(data_table::header_2("Flag", "Description"));
     for flag in flags {
-        table.table_row(|tr| {
-            tr.class("border-b-2 border-line")
-                .table_cell(|td| {
-                    td.class("py-2 pr-4 font-mono text-accent")
-                        .text(flag.name.clone())
-                })
-                .table_cell(|td| {
-                    td.class("py-2 text-ink-700")
-                        .text(crate::markdown::render_inline(
-                            flag.docs.as_deref().unwrap_or(""),
-                        ))
-                })
-        });
+        table.push(data_table::row_2(
+            &flag.name,
+            &crate::markdown::render_inline(flag.docs.as_deref().unwrap_or("")),
+        ));
     }
     div.push(table.build());
     div.build()

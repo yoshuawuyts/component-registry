@@ -8,7 +8,7 @@
 use html::text_content::Division;
 use wasm_meta_registry_client::{KnownPackage, PackageVersion};
 
-use crate::components::{search_bar, section_heading};
+use crate::components::{search_bar, section_group};
 use crate::layout;
 
 /// Context for rendering the package page sidebar.
@@ -61,11 +61,6 @@ fn render_page_inner(
 
     // Build breadcrumbs (extra crumbs only — package name is in the navbar)
     let breadcrumb_html = render_breadcrumb_path(extra_crumbs);
-    let trailing_slash = if is_root {
-        ""
-    } else {
-        r#" <span class="text-ink-400 mx-0.5">/</span>"#
-    };
 
     // Build sidebar metadata
     let sidebar_meta = render_sidebar(ctx, &display_name).to_string();
@@ -73,23 +68,21 @@ fn render_page_inner(
     // Build main content
     let content = body_content;
 
-    // Top navbar with bunny, breadcrumbs, and links
-    // Golden layout below: sidebar left, content right
+    // Breadcrumb bar and golden layout below: sidebar left, content right
     let pkg_url = url_base_for(pkg, version);
+    let chevron = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block text-ink-300 mx-1 align-[-1px]"><path d="m9 18 6-6-6-6"/></svg>"#;
     let pkg_name_html = match (&pkg.wit_namespace, &pkg.wit_name) {
         (Some(ns), Some(name)) if !is_root => {
             format!(
-                r#"<a href="/{ns}" class="text-ink-500 hover:text-ink-900 transition-colors">{ns}</a><span class="text-ink-400">:</span><a href="{pkg_url}" class="text-ink-500 hover:text-ink-900 transition-colors">{name}</a>"#
+                r#"<a href="/{ns}" class="hover:text-ink-900 transition-colors">{ns}</a>{chevron}<a href="{pkg_url}" class="hover:text-ink-900 transition-colors">{name}</a>"#
             )
         }
         (Some(ns), Some(_)) => {
-            format!(
-                r#"<a href="/{ns}" class="text-ink-500 hover:text-ink-900 transition-colors">{ns}</a><span class="text-ink-400">:</span>"#
-            )
+            format!(r#"<a href="/{ns}" class="hover:text-ink-900 transition-colors">{ns}</a>"#)
         }
         _ => {
             format!(
-                r#"<a href="{pkg_url}" class="text-ink-500 hover:text-ink-900 transition-colors">{display_name}</a>"#
+                r#"<a href="{pkg_url}" class="hover:text-ink-900 transition-colors">{display_name}</a>"#
             )
         }
     };
@@ -146,17 +139,17 @@ fn render_page_inner(
 <div class="page-grid pt-3 xl:pt-6">
   <!-- Mobile header: visible < md -->
   <div class="flex md:hidden items-center justify-between px-4 pt-4 pb-3 gap-4">
-    <a href="/" class="text-lg font-mono font-medium text-ink-900 hover:text-accent transition-colors shrink-0">(๑╹ᆺ╹)</a>
+    <a href="/" class="font-semibold text-[14px] text-ink-900 hover:text-accent transition-colors shrink-0">wasm</a>
     <div class="flex items-center gap-3">
       <a href="/docs" class="text-[13px] text-ink-500 hover:text-ink-900 transition-colors">Docs</a>
       <form action="/search" method="get" class="relative flex search-form">
-        <input type="search" name="q" placeholder="Search…" aria-label="Search" class="w-32 h-8 px-3 rounded-md border border-line bg-surface text-[13px] text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent">
+        <input type="search" name="q" placeholder="Search…" aria-label="Search" class="w-24 sm:w-32 h-8 px-3 rounded-md border border-line bg-surface text-[13px] text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent">
       </form>
     </div>
   </div>
-  <aside class="sidebar space-y-5 sidebar-scroll font-mono" style="grid-area:sidebar;position:sticky;top:1.5rem;align-self:start;display:flex;flex-direction:column;height:calc(100vh - 3rem);overflow-y:auto;padding-right:0.75rem;padding-left:0.75rem">
+  <aside class="sidebar space-y-5 sidebar-scroll" style="grid-area:sidebar;position:sticky;top:1.5rem;align-self:start;display:flex;flex-direction:column;height:calc(100vh - 3rem);overflow-y:auto;padding-right:0.75rem;padding-left:0.75rem">
     <div class="space-y-5 flex-1">
-    <div class="flex justify-center mb-4"><a href="/" id="bunny" aria-label="Home" role="link" class="text-lg font-mono font-medium text-ink-900 hover:text-accent transition-colors" style="cursor:pointer;display:inline-block;width:12ch;text-align:left">(๑╹ᆺ╹)</a></div>
+    <div class="mb-4"><a href="/" class="font-semibold text-ink-900 hover:text-accent transition-colors">wasm</a></div>
     {sidebar_meta}
     </div>
     <p class="text-[13px] text-ink-400 pb-6">Made by <a href="https://yosh.is" class="hover:text-ink-900 transition-colors">Yosh Wuyts</a><br>Intended to be donated to the <a href="https://bytecodealliance.org" class="hover:text-ink-900 transition-colors">Bytecode Alliance</a></p>
@@ -167,8 +160,8 @@ fn render_page_inner(
     {topbar_search}
   </div>
   <div style="grid-area:main;min-width:0" class="px-4 md:pr-4 md:pl-0">
-    <div class="flex flex-wrap items-baseline text-lg font-semibold tracking-tight font-mono mb-2">
-      {pkg_name_html}{breadcrumb_html}{trailing_slash}
+    <div class="flex items-center gap-1 text-[14px] text-ink-500 mb-4">
+      {pkg_name_html}{breadcrumb_html}
     </div>
     {content}
   </div>
@@ -179,31 +172,7 @@ fn render_page_inner(
       {rightbar_search}
     </div>
   </aside>
-</div>
-<script>
-(function(){{
-  var b=document.getElementById('bunny');
-  if(!b)return;
-  var anims=[
-    ['(๑╹ᆺ╹)','(๑°ᆺ°)!','(๑◉ᆺ◉)!!'],
-    ['(๑╹ᆺ╹)','(๑°ᆺ°)♪','ヽ(๑≧ᆺ≦)ノ'],
-    ['(๑╹ᆺ╹)','(๑╹ᆺ╹)>','(๑°ᆺ°)>>']
-  ];
-  var seq=anims[Math.floor(Math.random()*anims.length)];
-  var timer=null;
-  b.addEventListener('mouseenter',function(){{
-    if(timer)return;
-    b.textContent=seq[1];
-    timer=setTimeout(function(){{
-      b.textContent=seq[2];
-    }},80);
-  }});
-  b.addEventListener('mouseleave',function(){{
-    if(timer){{clearTimeout(timer);timer=null;}}
-    b.textContent=seq[0];
-  }});
-}})();
-</script>"#
+</div>"#
     );
 
     layout::document_full_width(title, &body)
@@ -214,7 +183,7 @@ fn render_breadcrumb_path(crumbs: &[crate::nav::Crumb]) -> String {
     use std::fmt::Write;
     let mut html = String::new();
     for crumb in crumbs {
-        html.push_str(r#" <span class="text-ink-400 mx-0.5">/</span> "#);
+        html.push_str(r#" <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block text-ink-300 mx-1 align-[-1px]"><path d="m9 18 6-6-6-6"/></svg> "#);
         if let Some(href) = &crumb.href {
             write!(
                 html,
@@ -234,6 +203,9 @@ fn render_breadcrumb_path(crumbs: &[crate::nav::Crumb]) -> String {
     html
 }
 
+/// Sidebar section label class matching the design system Details (section 23).
+const SIDEBAR_LABEL: &str = crate::components::detail_row::SECTION_LABEL_CLASS;
+
 /// Render the right sidebar with all package metadata.
 fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
     let pkg = ctx.pkg;
@@ -242,25 +214,20 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
     let annotations = version_detail.and_then(|d| d.annotations.as_ref());
 
     let mut sidebar = Division::builder();
-    sidebar
-        .class("space-y-4")
-        .style("font-size:0.75rem;line-height:1.125rem");
+    sidebar.class("text-[12px]");
 
-    // Metadata (including version selector)
-    sidebar.division(|wrapper| {
-        wrapper.class("");
-        let mut meta = Division::builder();
-        meta.class("space-y-3 border border-line p-3");
+    // ── Version selector ─────────────────────────────────
+    if !pkg.tags.is_empty() {
+        let url_name = match (&pkg.wit_namespace, &pkg.wit_name) {
+            (Some(ns), Some(name)) => format!("{ns}/{name}"),
+            _ => pkg.repository.clone(),
+        };
+        sidebar.push(render_version_select(pkg, version, &url_name));
+    }
 
-        // Version selector inside metadata
-        if !pkg.tags.is_empty() {
-            let url_name = match (&pkg.wit_namespace, &pkg.wit_name) {
-                (Some(ns), Some(name)) => format!("{ns}/{name}"),
-                _ => pkg.repository.clone(),
-            };
-            meta.push(render_version_select(pkg, version, &url_name));
-        }
-
+    // ── Metadata detail rows ─────────────────────────────
+    sidebar.division(|meta| {
+        meta.class("");
         {
             let registry_url = format!("https://{}/{}", pkg.registry, pkg.repository);
             let registry_display = friendly_registry_name(&pkg.registry);
@@ -289,14 +256,12 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
         if let Some(docs_url) = annotations.and_then(|a| a.documentation.as_deref()) {
             meta.push(meta_link_row("Docs", &abbreviate_url(docs_url), docs_url));
         }
-        // Authors: try OCI annotation first, then component metadata.
         let authors = annotations.and_then(|a| a.authors.as_deref()).or_else(|| {
             version_detail.and_then(|d| d.components.first().and_then(|c| c.authors.as_deref()))
         });
         if let Some(authors) = authors {
             meta.push(meta_row("Authors", authors));
         }
-        // Homepage: try OCI annotation, then component metadata.
         let oci_source = annotations.and_then(|a| a.source.as_deref());
         let homepage = annotations.and_then(|a| a.url.as_deref()).or_else(|| {
             version_detail.and_then(|d| d.components.first().and_then(|c| c.homepage.as_deref()))
@@ -306,14 +271,12 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
         {
             meta.push(meta_link_row("Homepage", &abbreviate_url(url), url));
         }
-        // Source: try component metadata if OCI annotation is absent.
         if oci_source.is_none()
             && let Some(src) =
                 version_detail.and_then(|d| d.components.first().and_then(|c| c.source.as_deref()))
         {
             meta.push(meta_link_row("Source", &abbreviate_url(src), src));
         }
-        // Revision: try OCI annotation, then component metadata.
         let revision = annotations.and_then(|a| a.revision.as_deref()).or_else(|| {
             version_detail.and_then(|d| d.components.first().and_then(|c| c.revision.as_deref()))
         });
@@ -321,123 +284,115 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
             let display = if rev.len() > 12 { &rev[..12] } else { rev };
             meta.push(meta_row("Revision", display));
         }
-        wrapper.push(meta.build());
-        wrapper
+        meta
     });
 
-    // Install command (after metadata)
-    let install_cmd = render_install_command(display_name, version);
-    sidebar.division(|wrapper| {
-        wrapper
-            .class("")
-            .division(|label| {
-                label
-                    .class("text-[12px] font-mono uppercase tracking-wider text-ink-500 mb-2")
-                    .text("Install")
-            })
-            .push(install_cmd)
+    // ── Install command ──────────────────────────────────
+    sidebar.division(|d| {
+        d.class("my-3 border-t-[1.5px] border-rule pt-3")
+            .division(|label| label.class(SIDEBAR_LABEL).text("Install"))
+            .push(render_install_command(display_name, version))
     });
 
-    // Imports & Exports (from version detail worlds)
+    // ── Imports & Exports ────────────────────────────────
     if let Some(detail) = ctx.version_detail {
         let (imports, exports) = collect_imports_exports(detail, pkg, ctx.version);
         if !imports.is_empty() {
-            sidebar.push(build_iface_sidebar_section("Imports", &imports));
+            sidebar.division(|d| {
+                d.class("my-3 border-t-[1.5px] border-rule pt-3")
+                    .push(build_iface_sidebar_section("Imports", &imports))
+            });
         }
         if !exports.is_empty() {
-            sidebar.push(build_iface_sidebar_section("Exports", &exports));
+            sidebar.division(|d| {
+                d.class("my-3 border-t-[1.5px] border-rule pt-3")
+                    .push(build_iface_sidebar_section("Exports", &exports))
+            });
         }
     }
 
-    // Dependencies
+    // ── Dependencies ─────────────────────────────────────
     if !pkg.dependencies.is_empty() {
         sidebar.division(|wrapper| {
-            wrapper.class("").heading_3(|h3| {
-                h3.class("text-[12px] font-mono uppercase tracking-wider text-ink-500 mb-2")
-                    .text("Dependencies")
-            });
-            wrapper.division(|div| {
-                div.class("border border-line p-3");
-                let mut ul = html::text_content::UnorderedList::builder();
-                ul.class("space-y-1");
-                for dep in &pkg.dependencies {
-                    ul.list_item(|li| {
-                        li.class("font-mono text-[13px]");
-                        match dep.package.split_once(':') {
-                            Some((ns, name)) => {
-                                li.anchor(|a| {
-                                    a.href(format!("/{ns}/{name}"))
-                                        .class("text-accent hover:underline")
-                                        .text(dep.package.clone())
-                                });
-                            }
-                            None => {
-                                li.span(|s| s.class("text-ink-900").text(dep.package.clone()));
-                            }
+            wrapper
+                .class("my-3 border-t-[1.5px] border-rule pt-3")
+                .heading_3(|h3| h3.class(SIDEBAR_LABEL).text("Dependencies"));
+            let mut ul = html::text_content::UnorderedList::builder();
+            ul.class("space-y-1");
+            for dep in &pkg.dependencies {
+                ul.list_item(|li| {
+                    li.class("font-mono text-[12px]");
+                    match dep.package.split_once(':') {
+                        Some((ns, name)) => {
+                            li.anchor(|a| {
+                                a.href(format!("/{ns}/{name}"))
+                                    .class("text-accent hover:underline")
+                                    .text(dep.package.clone())
+                            });
                         }
-                        if let Some(v) = &dep.version {
-                            li.span(|s| s.class("text-ink-400 ml-1").text(format!("@{v}")));
+                        None => {
+                            li.span(|s| s.class("text-ink-900").text(dep.package.clone()));
                         }
-                        li
-                    });
-                }
-                div.push(ul.build());
-                div
-            });
+                    }
+                    if let Some(v) = &dep.version {
+                        li.span(|s| s.class("text-ink-400 ml-1").text(format!("@{v}")));
+                    }
+                    li
+                });
+            }
+            wrapper.push(ul.build());
             wrapper
         });
     }
 
-    // Dependents
+    // ── Dependents ───────────────────────────────────────
     let total_dependents = ctx.importers.len() + ctx.exporters.len();
     if total_dependents > 0 {
         sidebar.division(|wrapper| {
-            wrapper.class("").heading_3(|h3| {
-                h3.class("text-[12px] font-mono uppercase tracking-wider text-ink-500 mb-2")
-                    .text(format!("Dependents ({total_dependents})"))
-            });
-            wrapper.division(|div| {
-                div.class("border border-line p-3");
+            wrapper
+                .class("my-3 border-t-[1.5px] border-rule pt-3")
+                .heading_3(|h3| {
+                    h3.class(SIDEBAR_LABEL)
+                        .text(format!("Dependents ({total_dependents})"))
+                });
 
-                let mut all: Vec<&KnownPackage> =
-                    ctx.importers.iter().chain(ctx.exporters.iter()).collect();
-                all.sort_by(|a, b| a.repository.cmp(&b.repository));
-                all.dedup_by(|a, b| a.repository == b.repository);
+            let mut all: Vec<&KnownPackage> =
+                ctx.importers.iter().chain(ctx.exporters.iter()).collect();
+            all.sort_by(|a, b| a.repository.cmp(&b.repository));
+            all.dedup_by(|a, b| a.repository == b.repository);
 
-                let mut ul = html::text_content::UnorderedList::builder();
-                ul.class("space-y-1");
-                for dep_pkg in all.iter().take(10) {
-                    let name = match (&dep_pkg.wit_namespace, &dep_pkg.wit_name) {
-                        (Some(ns), Some(n)) => format!("{ns}:{n}"),
-                        _ => dep_pkg.repository.clone(),
-                    };
-                    ul.list_item(|li| {
-                        li.class("text-[13px]");
-                        match (&dep_pkg.wit_namespace, &dep_pkg.wit_name) {
-                            (Some(ns), Some(n)) => {
-                                li.anchor(|a| {
-                                    a.href(format!("/{ns}/{n}"))
-                                        .class("text-accent hover:underline font-mono")
-                                        .text(name.clone())
-                                });
-                            }
-                            _ => {
-                                li.span(|s| s.class("text-ink-900 font-mono").text(name.clone()));
-                            }
+            let mut ul = html::text_content::UnorderedList::builder();
+            ul.class("space-y-1");
+            for dep_pkg in all.iter().take(10) {
+                let name = match (&dep_pkg.wit_namespace, &dep_pkg.wit_name) {
+                    (Some(ns), Some(n)) => format!("{ns}:{n}"),
+                    _ => dep_pkg.repository.clone(),
+                };
+                ul.list_item(|li| {
+                    li.class("text-[12px]");
+                    match (&dep_pkg.wit_namespace, &dep_pkg.wit_name) {
+                        (Some(ns), Some(n)) => {
+                            li.anchor(|a| {
+                                a.href(format!("/{ns}/{n}"))
+                                    .class("text-accent hover:underline font-mono")
+                                    .text(name.clone())
+                            });
                         }
-                        li
-                    });
-                }
-                div.push(ul.build());
+                        _ => {
+                            li.span(|s| s.class("text-ink-900 font-mono").text(name.clone()));
+                        }
+                    }
+                    li
+                });
+            }
+            wrapper.push(ul.build());
 
-                if all.len() > 10 {
-                    div.paragraph(|p| {
-                        p.class("text-[13px] text-ink-400 mt-1")
-                            .text(format!("and {} more", all.len() - 10))
-                    });
-                }
-                div
-            });
+            if all.len() > 10 {
+                wrapper.paragraph(|p| {
+                    p.class("text-[12px] text-ink-400 mt-1")
+                        .text(format!("and {} more", all.len() - 10))
+                });
+            }
             wrapper
         });
     }
@@ -595,48 +550,40 @@ fn build_iface_sidebar_section(heading: &str, items: &[SidebarIfaceItem]) -> Div
     sorted.sort_by_key(|item| !item.is_internal);
 
     let mut wrapper = Division::builder();
-    wrapper.class("").heading_3(|h3| {
-        h3.class("text-[12px] font-mono uppercase tracking-wider text-ink-500 mb-2")
-            .text(heading)
-    });
-    wrapper.division(|div| {
-        div.class("border border-line p-3");
-        let mut ul = html::text_content::UnorderedList::builder();
-        ul.class("space-y-1");
-        for item in &sorted {
-            ul.list_item(|li| {
-                li.class("font-mono text-[13px]");
-                li.anchor(|a| {
-                    a.href(item.href.clone())
-                        .class("text-accent hover:underline");
-                    a.span(|s| s.text(item.label.clone()));
-                    if let Some(v) = &item.version {
-                        a.span(|s| s.class("text-ink-400 ml-1").text(format!("@{v}")));
-                    }
-                    a
-                });
-                if !item.worlds.is_empty() {
-                    for (i, (w, w_href)) in item.worlds.iter().enumerate() {
-                        let prefix = if i == 0 { " " } else { ", " };
-                        li.anchor(|a| {
-                            a.href(w_href.clone())
-                                .class("text-ink-400 hover:underline ml-1");
-                            if i == 0 {
-                                a.text(format!("({w}"));
-                            } else {
-                                a.text(format!("{prefix}{w}"));
-                            }
-                            a
-                        });
-                    }
-                    li.span(|s| s.class("text-ink-400").text(")"));
+    wrapper.heading_3(|h3| h3.class(SIDEBAR_LABEL).text(heading));
+    let mut ul = html::text_content::UnorderedList::builder();
+    ul.class("space-y-1");
+    for item in &sorted {
+        ul.list_item(|li| {
+            li.class("font-mono text-[12px]");
+            li.anchor(|a| {
+                a.href(item.href.clone())
+                    .class("text-accent hover:underline");
+                a.span(|s| s.text(item.label.clone()));
+                if let Some(v) = &item.version {
+                    a.span(|s| s.class("text-ink-400 ml-1").text(format!("@{v}")));
                 }
-                li
+                a
             });
-        }
-        div.push(ul.build());
-        div
-    });
+            if !item.worlds.is_empty() {
+                for (i, (w, w_href)) in item.worlds.iter().enumerate() {
+                    li.anchor(|a| {
+                        a.href(w_href.clone())
+                            .class("text-ink-400 hover:underline ml-1");
+                        if i == 0 {
+                            a.text(format!("({w}"));
+                        } else {
+                            a.text(format!(", {w}"));
+                        }
+                        a
+                    });
+                }
+                li.span(|s| s.class("text-ink-400").text(")"));
+            }
+            li
+        });
+    }
+    wrapper.push(ul.build());
     wrapper.build()
 }
 
@@ -719,86 +666,33 @@ fn build_iface_href(iface: &wasm_meta_registry_client::WitInterfaceRef) -> Optio
 /// Item colors are determined by [`WorldItemKind`].
 pub(crate) fn render_import_export_section(heading: &str, items: &[ImportExportEntry]) -> Division {
     let mut div = Division::builder();
-    div.heading_2(|h2| {
-        h2.class(section_heading::BORDERED_CLASS)
-            .text(heading.to_owned())
-    });
+    div.push(section_group::header(heading, items.len()));
 
-    // Count names (without version) to detect duplicates that need disambiguation.
-    let mut name_counts = std::collections::HashMap::new();
     for item in items {
-        let name = item.label.split_once('@').map_or(&*item.label, |(n, _)| n);
-        *name_counts.entry(name.to_owned()).or_insert(0u32) += 1;
-    }
-
-    let mut ul = html::text_content::UnorderedList::builder();
-    for item in items {
-        let link_class = match item.item_kind {
-            WorldItemKind::Interface => "text-wit-iface",
-            WorldItemKind::Function => "text-wit-func",
-            WorldItemKind::Resource => "text-wit-resource",
+        let color = match item.item_kind {
+            WorldItemKind::Interface => section_group::ItemColor::Iface,
+            WorldItemKind::Function => section_group::ItemColor::Func,
+            WorldItemKind::Resource => section_group::ItemColor::Resource,
         };
-        ul.list_item(|li| {
-            li.class("py-1 flex gap-4");
-            let (name_part, ver_part) = match item.label.split_once('@') {
-                Some((n, v)) => (n.to_owned(), Some(v.to_owned())),
-                None => (item.label.clone(), None),
-            };
-            // Only show version when needed to disambiguate duplicates.
-            let show_version =
-                ver_part.is_some() && name_counts.get(&name_part).copied().unwrap_or(0) > 1;
-            li.division(|left| {
-                left.class("shrink-0 w-80");
-                // Split "wasi:cli/stdin" into prefix "wasi:cli/" (muted) + "stdin" (colored).
-                let (prefix, highlight) = match name_part.rfind('/') {
-                    Some(pos) => (
-                        Some(name_part[..=pos].to_owned()),
-                        name_part[pos + 1..].to_owned(),
-                    ),
-                    None => (None, name_part.clone()),
-                };
-                match &item.url {
-                    Some(url) => {
-                        left.anchor(|a| {
-                            a.href(url.clone())
-                                .class("block font-mono hover:underline text-[15px]");
-                            if let Some(pfx) = &prefix {
-                                a.span(|s| s.class("text-ink-500").text(pfx.clone()));
-                            }
-                            a.span(|s| s.class(link_class).text(highlight.clone()));
-                            if show_version && let Some(v) = &ver_part {
-                                a.span(|s| s.class("text-ink-400 ml-1").text(format!("@{v}")));
-                            }
-                            a
-                        });
-                    }
-                    None => {
-                        left.span(|s| {
-                            s.class("block font-mono text-[14px]");
-                            if let Some(pfx) = &prefix {
-                                s.span(|ps| ps.class("text-ink-500").text(pfx.clone()));
-                            }
-                            s.span(|hs| hs.class("text-ink-900").text(highlight.clone()));
-                            if show_version && let Some(v) = &ver_part {
-                                s.span(|vs| vs.class("text-ink-400 ml-1").text(format!("@{v}")));
-                            }
-                            s
-                        });
-                    }
-                }
-                left
-            });
-            if let Some(docs) = &item.docs {
-                li.division(|right| {
-                    right
-                        .class("text-[15px] leading-relaxed text-ink-700 min-w-0")
-                        .text(crate::markdown::render_inline(docs))
-                });
-            }
-            li
-        });
+
+        // Extract short name: "wasi:cli/stdin@0.2" → "stdin"
+        let name_without_version = item.label.split_once('@').map_or(&*item.label, |(n, _)| n);
+        let short_name = name_without_version
+            .rfind('/')
+            .map_or(name_without_version, |pos| &name_without_version[pos + 1..]);
+
+        let desc = item.docs.as_deref().unwrap_or("");
+
+        let url = item.url.as_deref().unwrap_or("#");
+
+        div.push(section_group::item_row(
+            short_name,
+            url,
+            color,
+            section_group::Stability::Unknown,
+            desc,
+        ));
     }
-    div.push(ul.build());
     div.build()
 }
 
@@ -860,8 +754,8 @@ fn render_install_command(display_name: &str, version: &str) -> Division {
     Division::builder()
         .division(|div| {
             div.class(
-                "flex items-center gap-2 border border-line \
-                 px-3 py-2 font-mono text-[13px] text-ink-900",
+                "flex items-center gap-2 rounded-md border border-line \
+                 px-3 py-2 font-mono text-[12px] text-ink-900",
             )
             .code(|code| {
                 code.class("flex-1 select-all overflow-hidden whitespace-nowrap text-ellipsis")

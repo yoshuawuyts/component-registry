@@ -6,8 +6,8 @@
 use html::text_content::Division;
 
 use crate::components::{
-    badge, button, empty_state, icon, link_button, metric, package_card, package_row, search_bar,
-    section_group,
+    badge, button, code_block, copy_button, data_table, detail_row, empty_state, icon, link_button,
+    metric, nav_list, package_card, package_row, search_bar, section_group, section_heading,
 };
 use crate::layout;
 
@@ -62,6 +62,8 @@ pub(crate) fn render() -> String {
         .push(div())
         .push(render_regions()) // 21
         .push(div())
+        .push(render_motion()) // 22
+        .push(div())
         .push(render_details()) // 23
         .push(div())
         .push(render_package_cards()) // P1
@@ -69,6 +71,18 @@ pub(crate) fn render() -> String {
         .push(render_package_rows()) // P2
         .push(div())
         .push(render_section_groups()) // P3
+        .push(div())
+        .push(render_code_blocks()) // P4
+        .push(div())
+        .push(render_copy_buttons()) // P5
+        .push(div())
+        .push(render_data_tables()) // P6
+        .push(div())
+        .push(render_nav_lists()) // P7
+        .push(div())
+        .push(render_section_headings()) // P8
+        .push(div())
+        .push(render_sidebar_sections()) // P9
         .build();
 
     layout::document_with_nav("Design System", &body.to_string())
@@ -112,14 +126,14 @@ fn sub(text: &str) -> Division {
 
 fn swatch(label: &str, bg: &str) -> Division {
     Division::builder()
-        .division(|s| s.class(format!("{bg} h-[72px] rounded-lg border border-lineSoft")))
+        .division(|s| s.class(format!("{bg} h-[88px] rounded-lg border border-lineSoft")))
         .division(|n| n.class("mt-2 text-[13px]").text(label.to_owned()))
         .build()
 }
 
 fn tsample(label: &str, cls: &str, text: &str, spec: &str) -> Division {
     Division::builder()
-        .class("py-5 grid grid-cols-[100px_1fr] gap-6 items-baseline")
+        .class("py-5 grid grid-cols-[120px_1fr] gap-6 items-baseline")
         .division(|l| {
             l.class("text-[12px] text-ink-500 font-mono")
                 .text(label.to_owned())
@@ -140,9 +154,11 @@ fn render_header() -> Division {
     Division::builder()
         .division(|d| {
             d.class("flex items-center gap-2 text-[12px] text-ink-500 font-mono uppercase tracking-wider")
-                .text("v1.0 \u{00b7} Foundations \u{00b7} Components \u{00b7} Patterns")
+                .span(|s| s.text("v1.0"))
+                .span(|s| s.class("h-1 w-1 rounded-full bg-ink-300"))
+                .span(|s| s.text("Foundations \u{00b7} Components \u{00b7} Patterns"))
         })
-        .heading_1(|h1| h1.class("mt-3 text-[28px] sm:text-[36px] md:text-[44px] leading-[1.05] font-semibold tracking-tight").text("Design System"))
+        .heading_1(|h1| h1.class("mt-3 text-[36px] md:text-[44px] leading-[1.05] font-semibold tracking-tight").text("Design System"))
         .paragraph(|p| p.class("mt-3 max-w-2xl text-[15px] text-ink-700 leading-relaxed")
             .text("A quiet, data-forward visual language built around soft rules, neutral ink, and a categorical pastel palette. Optimized for dense dashboards and analytical interfaces."))
         .build()
@@ -176,14 +192,21 @@ fn render_toc() -> Division {
         ("#progress", "19 \u{2014} Progress & Spinner"),
         ("#empty", "20 \u{2014} Empty State"),
         ("#regions", "21 \u{2014} Regions"),
+        ("#motion", "22 \u{2014} Motion"),
         ("#details", "23 \u{2014} Details"),
         ("#cards", "P1 \u{2014} Package Cards"),
         ("#rows", "P2 \u{2014} Package Rows"),
         ("#groups", "P3 \u{2014} Section Groups"),
+        ("#codeblocks", "P4 \u{2014} Code Blocks"),
+        ("#copybuttons", "P5 \u{2014} Copy Buttons"),
+        ("#datatables", "P6 \u{2014} Data Tables"),
+        ("#navlists", "P7 \u{2014} Nav Lists"),
+        ("#secheadings", "P8 \u{2014} Section Headings"),
+        ("#sidebarsec", "P9 \u{2014} Sidebar Details"),
     ];
 
     let mut nav = Division::builder();
-    nav.class("py-6 grid grid-flow-col grid-rows-13 md:grid-rows-7 gap-y-2 gap-x-6 text-[13px]");
+    nav.class("py-6 grid grid-flow-col grid-rows-16 md:grid-rows-9 gap-y-2 gap-x-6 text-[13px]");
     for (href, label) in links {
         nav.anchor(|a| {
             a.href(href.to_string())
@@ -223,29 +246,49 @@ fn render_colors() -> Division {
 
 fn render_typography() -> Division {
     Division::builder()
-        .push(sec("typography", "02", "Typography", "System UI stack for native rendering. Tight tracking on display sizes; relaxed for body."))
+        .push(sec("typography", "02", "Typography", "System UI stack for native rendering across platforms. Tight tracking on display sizes; relaxed for body."))
         .division(|s| s.class("divide-y divide-lineSoft")
+            .push(tsample("Display", "text-[44px] leading-[1.05] font-semibold tracking-tight", "Aa Display", "44 / 1.05 / -0.01em / 600"))
             .push(tsample("H1", "text-[28px] leading-[1.15] font-semibold tracking-tight", "Lorem ipsum dolor", "28 / 1.15 / 600"))
             .push(tsample("H2", "text-[22px] font-semibold tracking-tight", "Sit amet consectetur", "22 / 600"))
-            .push(tsample("Lead", "text-[20px] font-semibold tracking-tight leading-tight", "42.7 k", "20 / tight / 600"))
+            .push(tsample("Lead", "text-[20px] font-semibold tracking-tight leading-tight", "42.7 k", "20 / tight / 600 \u{2014} metric value"))
             .push(tsample("Body", "text-[15px] leading-relaxed text-ink-700", "The quick brown fox jumps over the lazy dog.", "15 / 1.6 / 400"))
-            .push(tsample("UI", "text-[14px]", "Navigation item \u{00b7} Table cell", "14 / 400"))
-            .push(tsample("Caption", "text-[12px] text-ink-500", "Aenean lectus \u{00b7} Vivamus aliquet", "12 / 400"))
-            .push(tsample("Micro", "text-[11px] text-ink-500", "Tempor incididunt \u{00b7} ut labore", "11 / 400")))
+            .push(tsample("UI", "text-[14px]", "Navigation item \u{00b7} Table cell", "14 / 400 \u{2014} 13 / 500 (medium)"))
+            .push(tsample("Caption", "text-[12px] text-ink-500", "Aenean lectus \u{00b7} Vivamus aliquet", "12 / 400 / ink-500"))
+            .push(tsample("Micro", "text-[11px] text-ink-500", "Tempor incididunt \u{00b7} ut labore", "11 / 400"))
+            .push(tsample("Inline", "text-[15px] leading-relaxed text-ink-700", "Read the <a href=\"#\" class=\"text-ink-900 underline decoration-line decoration-1 underline-offset-[3px]\">guide</a>, then run <code class=\"px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 font-mono text-[0.875em]\">wasm install</code>. Press <kbd class=\"inline-flex items-center px-1.5 h-5 rounded-sm border border-line bg-surface text-ink-700 font-mono text-[11px]\">\\u{2318}K</kbd> to search.", "link \\u{00b7} code \\u{00b7} kbd")))
         .build()
 }
 
 // ── 03 Spacing & Radius ─────────────────────────────────
 
 fn render_spacing() -> Division {
+    let bar = |width: u32, value: &str, label: &str| -> Division {
+        Division::builder()
+            .class("flex items-center gap-4")
+            .division(|b| b.class("h-3 bg-ink-900").style(format!("width:{width}px")))
+            .span(|s| s.class("text-[13px] font-mono w-12").text(value.to_owned()))
+            .span(|s| s.class("text-[12px] text-ink-500").text(label.to_owned()))
+            .build()
+    };
     Division::builder()
         .push(sec("spacing", "03", "Spacing & Radius", "4px base scale. Radii stay small for a precise, instrumental feel; pills used for selection chips only."))
-        .push(sub("Radius"))
-        .division(|g| g.class("grid grid-cols-2 sm:grid-cols-4 gap-4")
-            .division(|d| d.division(|s| s.class("h-16 bg-surfaceMuted").style("border-radius:2px")).division(|l| l.class("mt-2 text-[13px]").text("sm \u{2014} 2px")))
-            .division(|d| d.division(|s| s.class("h-16 bg-surfaceMuted").style("border-radius:4px")).division(|l| l.class("mt-2 text-[13px]").text("md \u{2014} 4px")))
-            .division(|d| d.division(|s| s.class("h-16 bg-surfaceMuted").style("border-radius:5px")).division(|l| l.class("mt-2 text-[13px]").text("lg \u{2014} 5px")))
-            .division(|d| d.division(|s| s.class("h-16 bg-surfaceMuted rounded-pill")).division(|l| l.class("mt-2 text-[13px]").text("pill \u{2014} 9999px"))))
+        .push(sub("Spacing scale"))
+        .division(|d| d.class("space-y-2")
+            .push(bar(4, "4", "xs"))
+            .push(bar(8, "8", "sm"))
+            .push(bar(12, "12", "md"))
+            .push(bar(16, "16", "lg"))
+            .push(bar(24, "24", "xl"))
+            .push(bar(32, "32", "2xl"))
+            .push(bar(48, "48", "3xl")))
+        .division(|d| d.class("mt-10")
+            .push(sub("Radius"))
+            .division(|g| g.class("grid grid-cols-2 sm:grid-cols-4 gap-4")
+                .division(|d| d.division(|s| s.class("h-16 bg-surfaceMuted").style("border-radius:2px")).division(|l| l.class("mt-2 text-[13px]").text("sm \u{2014} 2px")))
+                .division(|d| d.division(|s| s.class("h-16 bg-surfaceMuted").style("border-radius:4px")).division(|l| l.class("mt-2 text-[13px]").text("md \u{2014} 4px (inputs, bars)")))
+                .division(|d| d.division(|s| s.class("h-16 bg-surfaceMuted").style("border-radius:5px")).division(|l| l.class("mt-2 text-[13px]").text("lg \u{2014} 5px (buttons, cards)")))
+                .division(|d| d.division(|s| s.class("h-16 bg-surfaceMuted rounded-pill")).division(|l| l.class("mt-2 text-[13px]").text("pill \u{2014} 9999px")))))
         .build()
 }
 
@@ -266,7 +309,7 @@ fn render_elevation() -> Division {
                         .division(|t| t.class("text-[13px] font-medium").text("Rule"))
                         .division(|t| {
                             t.class("mt-1 text-[12px] text-ink-500 font-mono")
-                                .text("border 1px lineSoft")
+                                .text("border 1px #E4E4E7")
                         })
                 })
                 .division(|d| {
@@ -274,15 +317,16 @@ fn render_elevation() -> Division {
                         .division(|t| t.class("text-[13px] font-medium").text("Card"))
                         .division(|t| {
                             t.class("mt-1 text-[12px] text-ink-500 font-mono")
-                                .text("shadow-card")
+                                .text("0 1px 0 rgba(20,22,28,.04)")
                         })
                 })
                 .division(|d| {
-                    d.class("p-5 bg-ink-900 text-canvas rounded-md shadow-tooltip")
+                    d.class("p-5 backdrop-blur text-canvas rounded-md shadow-tooltip")
+                        .style("background: var(--c-ink-900)")
                         .division(|t| t.class("text-[13px] font-medium").text("Tooltip"))
                         .division(|t| {
                             t.class("mt-1 text-[12px] text-ink-300 font-mono")
-                                .text("shadow-tooltip")
+                                .text("0 8px 24px -8px rgba(20,22,28,.35)")
                         })
                 })
         })
@@ -307,6 +351,14 @@ fn render_buttons() -> Division {
             .division(|r| r.class("flex flex-wrap items-center gap-3")
                 .push(link_button::render(link_button::Variant::Primary, "#", "Primary"))
                 .push(link_button::render(link_button::Variant::Outline, "#", "Outline"))))
+        .division(|d| d.class("mt-8").push(sub("Icon"))
+            .division(|r| r.class("flex items-center gap-1")
+                .division(|b| b.class("h-8 w-8 grid place-items-center rounded-md hover:bg-surfaceMuted text-ink-700")
+                    .text(icon::svg(icon::Icon::Copy, icon::IconSize::Md).to_owned()))
+                .division(|b| b.class("h-8 w-8 grid place-items-center rounded-md hover:bg-surfaceMuted text-ink-700")
+                    .text(icon::svg(icon::Icon::Check, icon::IconSize::Md).to_owned()))
+                .division(|b| b.class("h-8 w-8 grid place-items-center rounded-md hover:bg-surfaceMuted text-ink-700")
+                    .text(icon::svg(icon::Icon::Search, icon::IconSize::Md).to_owned()))))
         .build()
 }
 
@@ -314,16 +366,32 @@ fn render_buttons() -> Division {
 
 fn render_tabs() -> Division {
     Division::builder()
-        .push(sec("tabs", "06", "Tabs & Pills", "Segmented controls for binary scoping; pills for filterable chips."))
-        .push(sub("Pills"))
-        .division(|r| r.class("flex flex-wrap items-center gap-2 text-[13px]")
-            .span(|s| s.class("inline-flex items-center px-3 h-8 rounded-pill bg-ink-900 text-canvas font-medium").text("Active"))
-            .span(|s| s.class("inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-700").text("Inactive"))
-            .span(|s| s.class("inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-700").text("Another")))
-        .division(|d| d.class("mt-8").push(sub("Segmented"))
-            .division(|seg| seg.class("flex p-1 rounded-lg bg-surfaceMuted w-[200px]")
-                .button(|b| b.type_("button").class("flex-1 h-7 rounded-md bg-ink-900 text-canvas text-[13px] font-medium").text("Lorem"))
-                .button(|b| b.type_("button").class("flex-1 h-7 rounded-md text-[13px] text-ink-500").text("Ipsum"))))
+        .push(sec("tabs", "06", "Tabs & Pills", "Segmented controls for binary scoping; underline tabs for sub-views; pills for filterable chips."))
+        .push(sub("Segmented"))
+        .division(|seg| seg.class("flex p-1 rounded-lg bg-surfaceMuted w-[200px]")
+            .button(|b| b.type_("button").class("flex-1 h-7 rounded-md bg-ink-900 text-canvas text-[13px] font-medium").text("Lorem"))
+            .button(|b| b.type_("button").class("flex-1 h-7 rounded-md text-[13px] text-ink-500").text("Ipsum")))
+        .division(|d| d.class("mt-8").push(sub("Underline tabs"))
+            .division(|tabs| tabs.class("flex items-center gap-6 border-b-[1.5px] border-rule")
+                .division(|t| t.class("relative pb-3 text-[15px] font-medium")
+                    .text("Aenean".to_owned())
+                    .span(|s| s.class("absolute left-0 right-0 -bottom-[1.5px] h-[1.5px] bg-ink-900")))
+                .division(|t| t.class("pb-3 text-[15px] text-ink-500").text("Mauris"))
+                .division(|t| t.class("pb-3 text-[15px] text-ink-500").text("Vivamus"))))
+        .division(|d| d.class("mt-8").push(sub("Pills"))
+            .division(|r| r.class("flex flex-wrap items-center gap-2 text-[13px]")
+                .span(|s| s.class("inline-flex items-center px-3 h-8 rounded-pill bg-ink-900 text-canvas font-medium").text("Tellus"))
+                .span(|s| s.class("inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-700").text("Pellentesque"))
+                .span(|s| s.class("inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-700").text("Vestibulum"))
+                .span(|s| s.class("inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-700").text("Convallis"))))
+        .division(|d| d.class("mt-8").push(sub("Range selector"))
+            .division(|r| r.class("inline-flex items-center gap-1 text-[13px] text-ink-500")
+                .division(|b| b.class("h-7 w-7 grid place-items-center rounded").text("D"))
+                .division(|b| b.class("h-7 w-7 grid place-items-center rounded").text("W"))
+                .division(|b| b.class("h-7 w-7 grid place-items-center rounded text-ink-900 font-medium").text("M"))
+                .division(|b| b.class("h-7 pl-1 pr-3 inline-flex items-center gap-1.5 rounded-pill bg-surfaceMuted text-ink-900")
+                    .span(|s| s.class("h-5 w-5 rounded-full bg-ink-300"))
+                    .text("All".to_owned()))))
         .build()
 }
 
@@ -335,13 +403,15 @@ fn render_navigation() -> Division {
         .division(|nav| {
             nav.class("max-w-[260px]")
                 .division(|ul| ul.class("space-y-px text-[14px]")
-                    .division(|li| li.anchor(|a| a.href("#").class("flex items-center px-3 h-9 rounded-md bg-surfaceMuted text-ink-900 font-medium").text("Active item")))
-                    .division(|li| li.anchor(|a| a.href("#").class("flex items-center px-3 h-9 rounded-md hover:bg-surfaceMuted text-ink-700").text("Pellentesque")))
-                    .division(|li| li.anchor(|a| a.href("#").class("flex items-center px-3 h-9 rounded-md hover:bg-surfaceMuted text-ink-700").text("Vestibulum"))))
+                    .division(|li| li.anchor(|a| a.href("#").class("flex items-center px-3 h-9 rounded-md bg-surfaceMuted text-ink-900 font-medium").text("Tellus")))
+                    .division(|li| li.anchor(|a| a.href("#").class("flex items-center px-3 h-9 rounded-md hover:bg-surfaceMuted text-ink-700").text("Pellentesque Habitant")))
+                    .division(|li| li.anchor(|a| a.href("#").class("flex items-center px-3 h-9 rounded-md hover:bg-surfaceMuted text-ink-700").text("Vestibulum Ante")))
+                    .division(|li| li.anchor(|a| a.href("#").class("flex items-center px-3 h-9 rounded-md hover:bg-surfaceMuted text-ink-700").text("Convallis Dolor"))))
                 .division(|rule| rule.class("my-4 border-t-[1.5px] border-rule"))
                 .division(|ul| ul.class("space-y-px text-[14px]")
                     .division(|li| li.anchor(|a| a.href("#").class("flex items-center px-3 h-9 rounded-md hover:bg-surfaceMuted text-ink-700").text("Faucibus")))
-                    .division(|li| li.anchor(|a| a.href("#").class("flex items-center px-3 h-9 rounded-md hover:bg-surfaceMuted text-ink-700").text("Suspendisse"))))
+                    .division(|li| li.anchor(|a| a.href("#").class("flex items-center px-3 h-9 rounded-md hover:bg-surfaceMuted text-ink-700").text("Suspendisse")))
+                    .division(|li| li.anchor(|a| a.href("#").class("flex items-center px-3 h-9 rounded-md hover:bg-surfaceMuted text-ink-700").text("Aliquam Erat"))))
         })
         .build()
 }
@@ -354,18 +424,37 @@ fn render_metrics() -> Division {
             "metrics",
             "08",
             "Metrics",
-            "Caption label, large value, optional delta.",
+            "Caption label, large value, optional delta. Stacked vertically on desktop; cards on mobile.",
         ))
-        .division(|g| {
-            g.class("grid grid-cols-2 sm:grid-cols-3 gap-6")
-                .push(metric::render("Current Index", "42.7 k", Some("+12.1%")))
-                .push(metric::render("Last Cycle", "38.1 k", Some("+36.0%")))
-                .push(metric::render("Baseline", "22.9 k", None))
+        .division(|d| {
+            d.class("max-w-[180px]")
+                .division(|m| {
+                    m.class("pb-4")
+                        .division(|l| l.class("text-[12px] text-ink-500").text("Current Index"))
+                        .division(|v| v.class("text-[20px] font-semibold tracking-tight leading-tight mt-1").text("42.7 k"))
+                })
+                .division(|m| {
+                    m.class("py-4 border-t-[1.5px] border-rule")
+                        .division(|l| l.class("text-[12px] text-ink-500").text("Last cycle"))
+                        .division(|row| row.class("mt-1 flex items-baseline gap-1.5")
+                            .span(|s| s.class("text-[20px] font-semibold tracking-tight leading-tight").text("38.1 k"))
+                            .span(|s| s.class("text-[11px] font-medium text-positive").text("+12.1%")))
+                })
+                .division(|m| {
+                    m.class("pt-4 border-t-[1.5px] border-rule")
+                        .division(|l| l.class("text-[12px] text-ink-500").text("Two cycles ago"))
+                        .division(|row| row.class("mt-1 flex items-baseline gap-1.5")
+                            .span(|s| s.class("text-[20px] font-semibold tracking-tight leading-tight").text("31.4 k"))
+                            .span(|s| s.class("text-[11px] font-medium text-positive").text("+36.0%")))
+                })
         })
         .division(|d| {
             d.class("mt-8").push(sub("Card variant")).division(|c| {
                 c.class("w-[160px] p-3 rounded-lg border border-line bg-surface")
-                    .push(metric::render("Baseline", "22.9 k", Some("+86.4%")))
+                    .division(|l| l.class("text-[12px] text-ink-500").text("Baseline"))
+                    .division(|row| row.class("mt-1 flex items-baseline gap-1.5")
+                        .span(|s| s.class("text-[18px] font-semibold tracking-tight leading-tight").text("22.9 k"))
+                        .span(|s| s.class("text-[11px] font-medium text-positive").text("+86.4%")))
             })
         })
         .build()
@@ -374,18 +463,59 @@ fn render_metrics() -> Division {
 // ── 09 Labels ────────────────────────────────────────────
 
 fn render_labels() -> Division {
+    let bar = |bg: &str, ink: &str, text: &str| -> Division {
+        Division::builder()
+            .class(format!("h-7 rounded inline-flex items-center px-3 text-[12px] font-medium whitespace-nowrap {bg} {ink}"))
+            .text(text.to_owned())
+            .build()
+    };
     Division::builder()
-        .push(sec("labels", "09", "Labels", "28px tall, 4px radius, label inset 12px. Pastel fill with paired ink for text."))
+        .push(sec("labels", "09", "Labels", "28px tall, 4px radius, label inset 12px. Pastel fill with paired ink for text \u{2014} 4.5:1 contrast minimum."))
         .division(|col| col.class("flex flex-col items-start gap-2")
-            .division(|d| d.class("h-7 rounded-md inline-flex items-center px-3 text-[12px] font-medium bg-cat-blue text-cat-blueInk").text("Blue label"))
-            .division(|d| d.class("h-7 rounded-md inline-flex items-center px-3 text-[12px] font-medium bg-cat-pink text-cat-pinkInk").text("Pink label"))
-            .division(|d| d.class("h-7 rounded-md inline-flex items-center px-3 text-[12px] font-medium bg-cat-green text-cat-greenInk").text("Green label"))
-            .division(|d| d.class("h-7 rounded-md inline-flex items-center px-3 text-[12px] font-medium bg-cat-peach text-cat-peachInk").text("Peach label"))
-            .division(|d| d.class("h-7 rounded-md inline-flex items-center px-3 text-[12px] font-medium bg-cat-lilac text-cat-lilacInk").text("Lilac label"))
-            .division(|d| d.class("h-7 rounded-md inline-flex items-center px-3 text-[12px] font-medium bg-cat-teal text-cat-tealInk").text("Teal label"))
-            .division(|d| d.class("h-7 rounded-md inline-flex items-center px-3 text-[12px] font-medium bg-cat-rust text-cat-rustInk").text("Rust label"))
-            .division(|d| d.class("h-7 rounded-md inline-flex items-center px-3 text-[12px] font-medium bg-cat-plum text-cat-plumInk").text("Plum label"))
-            .division(|d| d.class("h-7 rounded-md inline-flex items-center px-3 text-[12px] font-medium bg-cat-slate text-cat-slateInk").text("Slate label")))
+            .push(bar("bg-cat-blue", "text-cat-blueInk", "Lorem ipsum dolor"))
+            .push(bar("bg-cat-pink", "text-cat-pinkInk", "Sit amet"))
+            .push(bar("bg-cat-cream", "text-cat-creamInk", "Consectetur"))
+            .push(bar("bg-cat-green", "text-cat-greenInk", "Adipiscing elit"))
+            .push(bar("bg-cat-peach", "text-cat-peachInk", "Sed do eiusmod"))
+            .push(bar("bg-cat-lilac", "text-cat-lilacInk", "Tempor incididunt"))
+            .push(bar("bg-cat-teal", "text-cat-tealInk", "Ut labore"))
+            .push(bar("bg-cat-rust", "text-cat-rustInk", "Et dolore magna"))
+            .push(bar("bg-cat-plum", "text-cat-plumInk", "Aliqua enim"))
+            .push(bar("bg-cat-slate", "text-cat-slateInk", "Ad minim veniam")))
+        .build()
+}
+
+// ── 10 Tooltip ───────────────────────────────────────────
+
+fn render_tooltip() -> Division {
+    Division::builder()
+        .push(sec("tooltip", "10", "Tooltip", "Inverted surface with backdrop blur. Caption label above, key/value rows with right-aligned medium values."))
+        .division(|d| {
+            d.class("p-12 bg-canvas border border-line rounded-lg flex items-center justify-center")
+                .division(|tip| {
+                    tip.class("shadow-tooltip rounded-md backdrop-blur text-canvas px-3 py-2 text-[12px] leading-tight")
+                        .style("background: color-mix(in oklab, var(--c-ink-900) 85%, transparent)")
+                        .division(|lbl| lbl.class("text-ink-300").text("Cycle 14 \u{00b7} Aenean"))
+                        .division(|row| row.class("mt-1 flex items-center justify-between gap-6")
+                            .span(|s| s.text("Maxima:"))
+                            .span(|s| s.class("font-medium").text("9.42")))
+                        .division(|row| row.class("flex items-center justify-between gap-6")
+                            .span(|s| s.text("Minima:"))
+                            .span(|s| s.class("font-medium").text("3.18")))
+                })
+        })
+        .build()
+}
+
+// ── 11 Table ─────────────────────────────────────────────
+
+fn render_table() -> Division {
+    Division::builder()
+        .push(sec("table", "11", "Table", "Soft 1px row separators. Tabular numerals; right-aligned values; negatives in pinkInk."))
+        .division(|d| {
+            d.class("overflow-x-auto border-t-[1.5px] border-lineSoft")
+                .text(r#"<table class="w-full min-w-[400px] text-[13px]"><thead><tr class="text-ink-400"><th class="text-left font-normal py-4 pr-6 w-[160px]"></th><th class="text-right font-normal py-4 px-4">Cycle 13</th><th class="text-right font-normal py-4 px-4">Cycle 14</th></tr></thead><tbody class="text-ink-900"><tr class="border-t-[1.5px] border-lineSoft"><td class="py-5 pr-6 font-medium">Lorem inflow</td><td class="text-right px-4 tabular-nums">10 246</td><td class="text-right px-4 tabular-nums">5 642</td></tr><tr class="border-t-[1.5px] border-lineSoft"><td class="py-5 pr-6 font-medium">Dolor outflow</td><td class="text-right px-4 tabular-nums text-negative">\u{2212}984</td><td class="text-right px-4 tabular-nums text-negative">\u{2212}1 889</td></tr><tr class="border-t-[1.5px] border-lineSoft"><td class="py-5 pr-6 font-medium">Net amet</td><td class="text-right px-4 tabular-nums font-medium">9 262</td><td class="text-right px-4 tabular-nums font-medium">3 753</td></tr></tbody></table>"#.to_owned())
+        })
         .build()
 }
 
@@ -411,7 +541,7 @@ fn render_icons() -> Division {
 
 fn render_search() -> Division {
     Division::builder()
-        .push(sec("search", "13", "Search / Form Fields", "Three search bar variants: compact for nav, hero with carousel, and inline for refinement."))
+        .push(sec("search", "13", "Form Fields", "Inputs sit on white surface with a 1px gray border. Three search bar variants: compact, hero, and inline."))
         .push(sub("Compact"))
         .push(search_bar::compact("ds-search-compact"))
         .division(|d| d.class("mt-8").push(sub("Hero"))
@@ -421,126 +551,6 @@ fn render_search() -> Division {
             }))))
         .division(|d| d.class("mt-8").push(sub("Inline"))
             .division(|c| c.class("max-w-lg").push(search_bar::inline("example query"))))
-        .build()
-}
-
-// ── 15 Badges ────────────────────────────────────────────
-
-fn render_badges() -> Division {
-    Division::builder()
-        .push(sec(
-            "badges",
-            "15",
-            "Badges",
-            "Compact pill labels. Use categorical pairs for status; ink for counts and metadata.",
-        ))
-        .push(sub("Status"))
-        .division(|r| {
-            r.class("flex flex-wrap items-center gap-2 text-[12px] font-medium")
-                .push(badge::status("Active", badge::BadgeColor::Green))
-                .push(badge::status("Pending", badge::BadgeColor::Cream))
-                .push(badge::status("Failed", badge::BadgeColor::Pink))
-                .push(badge::status("Info", badge::BadgeColor::Blue))
-                .push(badge::status("Draft", badge::BadgeColor::Muted))
-        })
-        .division(|d| {
-            d.class("mt-6").push(sub("Counts")).division(|r| {
-                r.class("flex flex-wrap items-center gap-2")
-                    .push(badge::count("3"))
-                    .push(badge::count("12"))
-                    .push(badge::count("99+"))
-            })
-        })
-        .build()
-}
-
-// ── 20 Empty State ───────────────────────────────────────
-
-fn render_empty_state() -> Division {
-    Division::builder()
-        .push(sec("empty", "20", "Empty State", "Centered illustration, title, body, and CTA for empty tables, search misses, and first-run views."))
-        .push(empty_state::render(
-            "No lorem yet",
-            "Pellentesque habitant morbi tristique. Get started by creating your first entry.",
-        ))
-        .build()
-}
-
-// ── Package Cards (custom) ───────────────────────────────
-
-fn render_package_cards() -> Division {
-    let demo_pkg = demo_package(
-        "wasi",
-        "http",
-        "HTTP request and response types for WebAssembly components.",
-    );
-
-    Division::builder()
-        .push(sec("cards", "P1", "Package Cards", "Clickable cards used in home and namespace grids. Shows namespace, name, version, and description."))
-        .division(|g| g.class("grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg")
-            .push(package_card::render(&demo_pkg))
-            .push(package_card::render(&demo_package("wasi", "cli", "Command-line interface types and streams."))))
-        .build()
-}
-
-// ── Package Rows (custom) ────────────────────────────────
-
-fn render_package_rows() -> Division {
-    Division::builder()
-        .push(sec("rows", "P2", "Package Rows", "List-style rows for search results and all-packages pages. Name, version, description."))
-        .division(|list| {
-            list.class("divide-y divide-lineSoft max-w-xl")
-                .push(package_row::render(&demo_package("wasi", "http", "HTTP request and response types.")))
-                .push(package_row::render(&demo_package("wasi", "cli", "Command-line interface types.")))
-                .push(package_row::render(&demo_package("wasi", "io", "I/O stream primitives.")))
-        })
-        .build()
-}
-
-// ── Section Groups (custom) ──────────────────────────────
-
-fn render_section_groups() -> Division {
-    Division::builder()
-        .push(sec("groups", "P3", "Section Groups", "Grouped sections with header counts and item rows with colored dots and stability badges. Used on interface detail pages."))
-        .push(section_group::header("Traits", 3))
-        .push(section_group::item_row("Read", "#", section_group::ItemColor::Resource, section_group::Stability::Stable, "Read bytes from a source."))
-        .push(section_group::item_row("Write", "#", section_group::ItemColor::Resource, section_group::Stability::Stable, "Write bytes to a sink."))
-        .push(section_group::item_row("Seek", "#", section_group::ItemColor::Resource, section_group::Stability::Unstable, "Reposition the cursor within a stream."))
-        .division(|d| d.class("mt-8")
-            .push(section_group::header("Functions", 2))
-            .push(section_group::item_row("copy", "#", section_group::ItemColor::Func, section_group::Stability::Stable, "Copy bytes from a reader to a writer."))
-            .push(section_group::item_row("read-all", "#", section_group::ItemColor::Func, section_group::Stability::Unknown, "Read all bytes from a stream into a buffer.")))
-        .build()
-}
-
-// ── Demo data ────────────────────────────────────────────
-
-fn demo_package(ns: &str, name: &str, desc: &str) -> wasm_meta_registry_client::KnownPackage {
-    wasm_meta_registry_client::KnownPackage {
-        registry: "ghcr.io".to_string(),
-        repository: format!("{ns}/{name}"),
-        kind: Some(wasm_meta_registry_client::PackageKind::Interface),
-        description: Some(desc.to_string()),
-        tags: vec!["0.2.0".to_string()],
-        signature_tags: vec![],
-        attestation_tags: vec![],
-        last_seen_at: "2026-01-01T00:00:00Z".to_string(),
-        created_at: "2026-01-01T00:00:00Z".to_string(),
-        wit_namespace: Some(ns.to_string()),
-        wit_name: Some(name.to_string()),
-        dependencies: vec![],
-    }
-}
-
-// ── 11 Table ─────────────────────────────────────────────
-
-fn render_table() -> Division {
-    Division::builder()
-        .push(sec("table", "11", "Table", "Soft 1px row separators. Tabular numerals; right-aligned values; negatives in pinkInk."))
-        .division(|d| {
-            d.class("overflow-x-auto border-t-[1.5px] border-lineSoft")
-                .text(r#"<table class="w-full min-w-[400px] text-[13px]"><thead><tr class="text-ink-400"><th class="text-left font-normal py-4 pr-6 w-[160px]"></th><th class="text-right font-normal py-4 px-4">Cycle 13</th><th class="text-right font-normal py-4 px-4">Cycle 14</th></tr></thead><tbody class="text-ink-900"><tr class="border-t-[1.5px] border-lineSoft"><td class="py-5 pr-6 font-medium">Lorem inflow</td><td class="text-right px-4 tabular-nums">10 246</td><td class="text-right px-4 tabular-nums">5 642</td></tr><tr class="border-t-[1.5px] border-lineSoft"><td class="py-5 pr-6 font-medium">Dolor outflow</td><td class="text-right px-4 tabular-nums text-negative">\u{2212}984</td><td class="text-right px-4 tabular-nums text-negative">\u{2212}1 889</td></tr><tr class="border-t-[1.5px] border-lineSoft"><td class="py-5 pr-6 font-medium">Net amet</td><td class="text-right px-4 tabular-nums font-medium">9 262</td><td class="text-right px-4 tabular-nums font-medium">3 753</td></tr></tbody></table>"#.to_owned())
-        })
         .build()
 }
 
@@ -588,123 +598,39 @@ fn render_toggles() -> Division {
         .build()
 }
 
-// ── 18 Breadcrumb & Pagination ───────────────────────────
+// ── 15 Badges ────────────────────────────────────────────
 
-fn render_breadcrumb() -> Division {
-    let chevron = icon::svg(icon::Icon::ChevronRight, icon::IconSize::Sm);
-    Division::builder()
-        .push(sec("breadcrumb", "18", "Breadcrumb & Pagination", "Breadcrumb uses chevron separators. Pagination is square-buttoned for compact toolbars."))
-        .push(sub("Breadcrumb"))
-        .division(|nav| {
-            nav.class("flex items-center gap-1.5 text-[13px] text-ink-500")
-                .anchor(|a| a.href("#").class("hover:text-ink-900").text("Tellus"))
-                .span(|s| s.class("text-ink-300").text(chevron.to_owned()))
-                .anchor(|a| a.href("#").class("hover:text-ink-900").text("Pellentesque"))
-                .span(|s| s.class("text-ink-300").text(chevron.to_owned()))
-                .span(|s| s.class("text-ink-900 font-medium").text("Vestibulum ante"))
-        })
-        .division(|d| {
-            d.class("mt-8")
-                .push(sub("Pagination"))
-                .division(|row| row.class("inline-flex items-center gap-1 text-[13px]")
-                    .division(|b| b.class("h-8 w-8 grid place-items-center rounded-md border border-line bg-surface hover:bg-surfaceMuted").text("1"))
-                    .division(|b| b.class("h-8 w-8 grid place-items-center rounded-md bg-ink-900 text-canvas font-medium").text("2"))
-                    .division(|b| b.class("h-8 w-8 grid place-items-center rounded-md border border-line bg-surface hover:bg-surfaceMuted").text("3"))
-                    .span(|s| s.class("px-1 text-ink-400").text("\u{2026}"))
-                    .division(|b| b.class("h-8 w-8 grid place-items-center rounded-md border border-line bg-surface hover:bg-surfaceMuted").text("12")))
-        })
-        .build()
-}
-
-// ── 19 Progress & Spinner ────────────────────────────────
-
-fn render_progress() -> Division {
+fn render_badges() -> Division {
     Division::builder()
         .push(sec(
-            "progress",
-            "19",
-            "Progress & Spinner",
-            "Determinate progress bar and skeleton shimmer for placeholder content.",
+            "badges",
+            "15",
+            "Badges",
+            "Compact pill labels. Use categorical pairs for status; ink for counts and metadata.",
         ))
-        .push(sub("Progress bar"))
+        .push(sub("Status"))
+        .division(|r| {
+            r.class("flex flex-wrap items-center gap-2 text-[12px] font-medium")
+                .push(badge::status("Active", badge::BadgeColor::Green))
+                .push(badge::status("Pending", badge::BadgeColor::Cream))
+                .push(badge::status("Failed", badge::BadgeColor::Pink))
+                .push(badge::status("Info", badge::BadgeColor::Blue))
+                .push(badge::status("Draft", badge::BadgeColor::Muted))
+        })
         .division(|d| {
-            d.class("space-y-2 max-w-md").division(|bar| {
-                bar.division(|labels| {
-                    labels
-                        .class("flex justify-between text-[12px] text-ink-500 mb-1")
-                        .span(|s| s.text("Aenean lectus"))
-                        .span(|s| s.class("font-mono").text("68%"))
-                })
-                .division(|track| {
-                    track
-                        .class("h-1.5 w-full rounded-pill bg-surfaceMuted overflow-hidden")
-                        .division(|fill| {
-                            fill.class("h-full bg-ink-900 rounded-pill")
-                                .style("width:68%")
-                        })
-                })
+            d.class("mt-6").push(sub("Counts")).division(|r| {
+                r.class("flex flex-wrap items-center gap-2")
+                    .push(badge::count("3"))
+                    .push(badge::count("12"))
+                    .push(badge::count("99+"))
             })
         })
         .division(|d| {
-            d.class("mt-8").push(sub("Skeleton")).division(|inner| {
-                inner
-                    .class("max-w-md space-y-2")
-                    .division(|s| s.class("h-4 w-2/3 rounded bg-surfaceMuted"))
-                    .division(|s| s.class("h-3 w-full rounded bg-surfaceMuted"))
-                    .division(|s| s.class("h-3 w-5/6 rounded bg-surfaceMuted"))
+            d.class("mt-6").push(sub("Tag")).division(|r| {
+                r.class("flex flex-wrap items-center gap-2 text-[12px]")
+                    .span(|s| s.class("inline-flex items-center gap-1 px-2 h-6 rounded-md border border-line text-ink-700").text("Tellus"))
+                    .span(|s| s.class("inline-flex items-center gap-1 px-2 h-6 rounded-md border border-line text-ink-700").text("Convallis"))
             })
-        })
-        .build()
-}
-
-// ── 21 Regions ───────────────────────────────────────────
-
-fn render_regions() -> Division {
-    Division::builder()
-        .push(sec("regions", "21", "Regions", "Pages use stacked regions. Primary on canvas, secondary on surface. The surface swap is the boundary \u{2014} no rules needed."))
-        .division(|demo| {
-            demo.class("border border-line rounded-lg overflow-hidden")
-                .division(|primary| {
-                    primary.class("bg-canvas p-6")
-                        .division(|lbl| lbl.class("text-[11px] font-mono uppercase tracking-wider text-ink-500").text("Primary region \u{00b7} canvas"))
-                        .division(|h| h.class("mt-3 text-[18px] font-semibold tracking-tight").text("Lorem ipsum dolor sit"))
-                        .division(|grid| grid.class("mt-4 grid grid-cols-3 gap-3")
-                            .division(|b| b.class("h-12 rounded bg-surfaceMuted"))
-                            .division(|b| b.class("h-12 rounded bg-surfaceMuted"))
-                            .division(|b| b.class("h-12 rounded bg-surfaceMuted")))
-                })
-                .division(|secondary| {
-                    secondary.class("bg-surface p-6")
-                        .division(|lbl| lbl.class("text-[11px] font-mono uppercase tracking-wider text-ink-500").text("Secondary region \u{00b7} surface"))
-                        .division(|h| h.class("mt-3 text-[18px] font-semibold tracking-tight").text("Aenean lectus pellentesque"))
-                        .division(|line| line.class("mt-4 h-px bg-lineSoft"))
-                        .division(|grid| grid.class("mt-4 grid grid-cols-4 gap-3 text-[12px] text-ink-500")
-                            .division(|c| c.text("Vestibulum"))
-                            .division(|c| c.text("Convallis"))
-                            .division(|c| c.text("Tempor"))
-                            .division(|c| c.text("Faucibus")))
-                })
-        })
-        .build()
-}
-
-// ── 10 Tooltip ───────────────────────────────────────────
-
-fn render_tooltip() -> Division {
-    Division::builder()
-        .push(sec("tooltip", "10", "Tooltip", "Inverted surface with backdrop blur. Caption label above, key/value rows with right-aligned medium values."))
-        .division(|d| {
-            d.class("p-12 bg-canvas border border-line rounded-lg flex items-center justify-center")
-                .division(|tip| {
-                    tip.class("shadow-tooltip rounded-md bg-ink-900 text-canvas px-3 py-2 text-[12px] leading-tight")
-                        .division(|lbl| lbl.class("text-ink-300").text("Cycle 14 \u{00b7} Aenean"))
-                        .division(|row| row.class("mt-1 flex items-center justify-between gap-6")
-                            .span(|s| s.text("Maxima:"))
-                            .span(|s| s.class("font-medium").text("9.42")))
-                        .division(|row| row.class("flex items-center justify-between gap-6")
-                            .span(|s| s.text("Minima:"))
-                            .span(|s| s.class("font-medium").text("3.18")))
-                })
         })
         .build()
 }
@@ -763,6 +689,213 @@ fn render_modal() -> Division {
         .build()
 }
 
+// ── 18 Breadcrumb & Pagination ───────────────────────────
+
+fn render_breadcrumb() -> Division {
+    let chevron = icon::svg(icon::Icon::ChevronRight, icon::IconSize::Sm);
+    Division::builder()
+        .push(sec("breadcrumb", "18", "Breadcrumb & Pagination", "Breadcrumb uses chevron separators. Pagination is square-buttoned for compact toolbars."))
+        .push(sub("Breadcrumb"))
+        .division(|nav| {
+            nav.class("flex items-center gap-1.5 text-[13px] text-ink-500")
+                .anchor(|a| a.href("#").class("hover:text-ink-900").text("Tellus"))
+                .span(|s| s.class("text-ink-300").text(chevron.to_owned()))
+                .anchor(|a| a.href("#").class("hover:text-ink-900").text("Pellentesque"))
+                .span(|s| s.class("text-ink-300").text(chevron.to_owned()))
+                .span(|s| s.class("text-ink-900 font-medium").text("Vestibulum ante"))
+        })
+        .division(|d| {
+            d.class("mt-8")
+                .push(sub("Pagination"))
+                .division(|row| row.class("inline-flex items-center gap-1 text-[13px]")
+                    .division(|b| b.class("h-8 w-8 grid place-items-center rounded-md border border-line bg-surface text-ink-500 hover:bg-surfaceMuted")
+                        .text(icon::svg(icon::Icon::ChevronRight, icon::IconSize::Sm).replace("m9 18 6-6-6-6", "m15 18-6-6 6-6").to_owned()))
+                    .division(|b| b.class("h-8 w-8 grid place-items-center rounded-md border border-line bg-surface hover:bg-surfaceMuted").text("1"))
+                    .division(|b| b.class("h-8 w-8 grid place-items-center rounded-md bg-ink-900 text-canvas font-medium").text("2"))
+                    .division(|b| b.class("h-8 w-8 grid place-items-center rounded-md border border-line bg-surface hover:bg-surfaceMuted").text("3"))
+                    .span(|s| s.class("px-1 text-ink-400").text("\u{2026}"))
+                    .division(|b| b.class("h-8 w-8 grid place-items-center rounded-md border border-line bg-surface hover:bg-surfaceMuted").text("12"))
+                    .division(|b| b.class("h-8 w-8 grid place-items-center rounded-md border border-line bg-surface text-ink-500 hover:bg-surfaceMuted")
+                        .text(icon::svg(icon::Icon::ChevronRight, icon::IconSize::Sm).to_owned())))
+        })
+        .build()
+}
+
+// ── 19 Progress & Spinner ────────────────────────────────
+
+fn render_progress() -> Division {
+    Division::builder()
+        .push(sec(
+            "progress",
+            "19",
+            "Progress & Spinner",
+            "Determinate progress bar and skeleton shimmer for placeholder content.",
+        ))
+        .push(sub("Progress bar"))
+        .division(|d| {
+            d.class("space-y-2 max-w-md").division(|bar| {
+                bar.division(|labels| {
+                    labels
+                        .class("flex justify-between text-[12px] text-ink-500 mb-1")
+                        .span(|s| s.text("Aenean lectus"))
+                        .span(|s| s.class("font-mono").text("68%"))
+                })
+                .division(|track| {
+                    track
+                        .class("h-1.5 w-full rounded-pill bg-surfaceMuted overflow-hidden")
+                        .division(|fill| {
+                            fill.class("h-full bg-ink-900 rounded-pill")
+                                .style("width:68%")
+                        })
+                })
+            })
+        })
+        .division(|d| {
+            d.class("mt-8").push(sub("Spinner"))
+                .division(|r| r.class("flex items-center gap-4")
+                    .text(r#"<svg class="animate-spin text-ink-900" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg>"#.to_owned())
+                    .text(r#"<svg class="animate-spin text-ink-500" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg>"#.to_owned())
+                    .text(r#"<svg class="animate-spin text-ink-300" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg>"#.to_owned()))
+        })
+        .division(|d| {
+            d.class("mt-8").push(sub("Skeleton")).division(|inner| {
+                inner
+                    .class("max-w-md space-y-2")
+                    .division(|s| s.class("h-4 w-2/3 rounded bg-surfaceMuted"))
+                    .division(|s| s.class("h-3 w-full rounded bg-surfaceMuted"))
+                    .division(|s| s.class("h-3 w-5/6 rounded bg-surfaceMuted"))
+            })
+        })
+        .build()
+}
+
+// ── 20 Empty State ───────────────────────────────────────
+
+fn render_empty_state() -> Division {
+    Division::builder()
+        .push(sec("empty", "20", "Empty State", "Centered illustration, title, body, and CTA for empty tables, search misses, and first-run views."))
+        .push(empty_state::render(
+            "No lorem yet",
+            "Pellentesque habitant morbi tristique. Get started by creating your first entry.",
+        ))
+        .build()
+}
+
+// ── 21 Regions ───────────────────────────────────────────
+
+fn render_regions() -> Division {
+    Division::builder()
+        .push(sec("regions", "21", "Regions", "Pages use stacked regions. Primary on canvas, secondary on surface. The surface swap is the boundary \u{2014} no rules needed."))
+        .division(|demo| {
+            demo.class("border border-line rounded-lg overflow-hidden")
+                .division(|primary| {
+                    primary.class("bg-canvas p-6")
+                        .division(|lbl| lbl.class("text-[11px] font-mono uppercase tracking-wider text-ink-500").text("Primary region \u{00b7} canvas"))
+                        .division(|h| h.class("mt-3 text-[18px] font-semibold tracking-tight").text("Lorem ipsum dolor sit"))
+                        .division(|grid| grid.class("mt-4 grid grid-cols-3 gap-3")
+                            .division(|b| b.class("h-12 rounded bg-surfaceMuted"))
+                            .division(|b| b.class("h-12 rounded bg-surfaceMuted"))
+                            .division(|b| b.class("h-12 rounded bg-surfaceMuted")))
+                })
+                .division(|secondary| {
+                    secondary.class("bg-surface p-6")
+                        .division(|lbl| lbl.class("text-[11px] font-mono uppercase tracking-wider text-ink-500").text("Secondary region \u{00b7} surface"))
+                        .division(|h| h.class("mt-3 text-[18px] font-semibold tracking-tight").text("Aenean lectus pellentesque"))
+                        .division(|line| line.class("mt-4 h-px bg-lineSoft"))
+                        .division(|grid| grid.class("mt-4 grid grid-cols-4 gap-3 text-[12px] text-ink-500")
+                            .division(|c| c.text("Vestibulum"))
+                            .division(|c| c.text("Convallis"))
+                            .division(|c| c.text("Tempor"))
+                            .division(|c| c.text("Faucibus")))
+                })
+        })
+        .division(|d| {
+            d.class("mt-8").push(sub("Rules"))
+                .division(|ul| ul.class("space-y-2 text-[13px] text-ink-700 leading-relaxed")
+                    .division(|li| li.class("flex gap-3")
+                        .span(|s| s.class("font-mono text-ink-500 w-12 shrink-0").text("01"))
+                        .text("The primary region sits on canvas. Use it for the main subject.".to_owned()))
+                    .division(|li| li.class("flex gap-3")
+                        .span(|s| s.class("font-mono text-ink-500 w-12 shrink-0").text("02"))
+                        .text("Secondary regions sit on surface. The boundary is the surface swap itself.".to_owned()))
+                    .division(|li| li.class("flex gap-3")
+                        .span(|s| s.class("font-mono text-ink-500 w-12 shrink-0").text("03"))
+                        .text("Use full-bleed background swap so the boundary reads as a true section break.".to_owned()))
+                    .division(|li| li.class("flex gap-3")
+                        .span(|s| s.class("font-mono text-ink-500 w-12 shrink-0").text("04"))
+                        .text("Maximum two surface swaps per page.".to_owned()))
+                    .division(|li| li.class("flex gap-3")
+                        .span(|s| s.class("font-mono text-ink-500 w-12 shrink-0").text("05"))
+                        .text("Within a region, use lineSoft for internal subdivisions.".to_owned())))
+        })
+        .build()
+}
+
+// ── 22 Motion ────────────────────────────────────────────
+
+fn render_motion() -> Division {
+    Division::builder()
+        .push(sec("motion", "22", "Motion", "Motion is functional: it explains state changes, never decorates them. Most transitions sit between 120\u{2013}260ms on the standard curve."))
+        .push(sub("Durations"))
+        .division(|d| d.class("divide-y divide-lineSoft border-t border-lineSoft")
+            .division(|row| row.class("py-3 grid grid-cols-[80px_80px_1fr] gap-4 items-center text-[13px]")
+                .span(|s| s.class("font-mono").text("fast"))
+                .span(|s| s.class("font-mono text-ink-500").text("120ms"))
+                .span(|s| s.class("text-ink-700").text("Color, opacity, focus rings.")))
+            .division(|row| row.class("py-3 grid grid-cols-[80px_80px_1fr] gap-4 items-center text-[13px]")
+                .span(|s| s.class("font-mono").text("base"))
+                .span(|s| s.class("font-mono text-ink-500").text("180ms"))
+                .span(|s| s.class("text-ink-700").text("Default transition. Hover, expand-collapse.")))
+            .division(|row| row.class("py-3 grid grid-cols-[80px_80px_1fr] gap-4 items-center text-[13px]")
+                .span(|s| s.class("font-mono").text("slow"))
+                .span(|s| s.class("font-mono text-ink-500").text("260ms"))
+                .span(|s| s.class("text-ink-700").text("Position changes, panel slides.")))
+            .division(|row| row.class("py-3 grid grid-cols-[80px_80px_1fr] gap-4 items-center text-[13px]")
+                .span(|s| s.class("font-mono").text("page"))
+                .span(|s| s.class("font-mono text-ink-500").text("360ms"))
+                .span(|s| s.class("text-ink-700").text("Route transitions, modal open."))))
+        .division(|d| d.class("mt-8").push(sub("Easing curves"))
+            .division(|g| g.class("grid grid-cols-1 sm:grid-cols-2 gap-4")
+                .division(|c| c.class("p-4 rounded-md border border-lineSoft")
+                    .division(|h| h.class("flex items-baseline justify-between")
+                        .division(|n| n.class("text-[13px] font-medium").text("Standard"))
+                        .division(|v| v.class("text-[11px] font-mono text-ink-500").text("cubic-bezier(.2,0,0,1)")))
+                    .division(|d2| d2.class("mt-2 text-[12px] text-ink-500").text("Default for state changes \u{2014} hover, focus, expand.")))
+                .division(|c| c.class("p-4 rounded-md border border-lineSoft")
+                    .division(|h| h.class("flex items-baseline justify-between")
+                        .division(|n| n.class("text-[13px] font-medium").text("Entrance"))
+                        .division(|v| v.class("text-[11px] font-mono text-ink-500").text("cubic-bezier(0,0,0,1)")))
+                    .division(|d2| d2.class("mt-2 text-[12px] text-ink-500").text("Elements arriving on screen \u{2014} toasts, popovers, modals.")))
+                .division(|c| c.class("p-4 rounded-md border border-lineSoft")
+                    .division(|h| h.class("flex items-baseline justify-between")
+                        .division(|n| n.class("text-[13px] font-medium").text("Exit"))
+                        .division(|v| v.class("text-[11px] font-mono text-ink-500").text("cubic-bezier(.4,0,1,1)")))
+                    .division(|d2| d2.class("mt-2 text-[12px] text-ink-500").text("Elements leaving \u{2014} dismissed alerts, closed sheets.")))
+                .division(|c| c.class("p-4 rounded-md border border-lineSoft")
+                    .division(|h| h.class("flex items-baseline justify-between")
+                        .division(|n| n.class("text-[13px] font-medium").text("Spring"))
+                        .division(|v| v.class("text-[11px] font-mono text-ink-500").text("cubic-bezier(.34,1.56,.64,1)")))
+                    .division(|d2| d2.class("mt-2 text-[12px] text-ink-500").text("Reserved for direct manipulation feedback \u{2014} toggles, drag-snap.")))))
+        .division(|d| d.class("mt-8").push(sub("Rules"))
+            .division(|ul| ul.class("space-y-2 text-[13px] text-ink-700 leading-relaxed")
+                .division(|li| li.class("flex gap-3")
+                    .span(|s| s.class("font-mono text-ink-500 w-12 shrink-0").text("01"))
+                    .text("Animate transform and opacity only.".to_owned()))
+                .division(|li| li.class("flex gap-3")
+                    .span(|s| s.class("font-mono text-ink-500 w-12 shrink-0").text("02"))
+                    .text("Default to base + standard. Pick another token only when intent demands it.".to_owned()))
+                .division(|li| li.class("flex gap-3")
+                    .span(|s| s.class("font-mono text-ink-500 w-12 shrink-0").text("03"))
+                    .text("Pair entrance and exit asymmetrically: exits 60\u{2013}80% of the entrance duration.".to_owned()))
+                .division(|li| li.class("flex gap-3")
+                    .span(|s| s.class("font-mono text-ink-500 w-12 shrink-0").text("04"))
+                    .text("Spring is for human-initiated, direct manipulation only.".to_owned()))
+                .division(|li| li.class("flex gap-3")
+                    .span(|s| s.class("font-mono text-ink-500 w-12 shrink-0").text("05"))
+                    .text("Honor prefers-reduced-motion \u{2014} collapse to instant or a 60ms cross-fade.".to_owned()))))
+        .build()
+}
+
 // ── 23 Details ───────────────────────────────────────────
 
 fn render_details() -> Division {
@@ -770,7 +903,20 @@ fn render_details() -> Division {
 
     Division::builder()
         .push(sec("details", "23", "Details", "Compact key/value lists for sidebars and inspector panels. Three variants: stacked, inline, and sectioned."))
-        .push(sub("Inline"))
+        .push(sub("Stacked"))
+        .division(|dl| {
+            dl.class("max-w-[220px] space-y-3")
+                .division(|item| item
+                    .division(|dt| dt.class("text-[11px] text-ink-500 uppercase tracking-wider").text("Status"))
+                    .division(|dd| dd.class("text-[14px] mt-0.5").text("Active")))
+                .division(|item| item
+                    .division(|dt| dt.class("text-[11px] text-ink-500 uppercase tracking-wider").text("Owner"))
+                    .division(|dd| dd.class("text-[14px] mt-0.5").text("Aenean Lectus")))
+                .division(|item| item
+                    .division(|dt| dt.class("text-[11px] text-ink-500 uppercase tracking-wider").text("Created"))
+                    .division(|dd| dd.class("text-[14px] mt-0.5 font-mono").text("2026-04-02")))
+        })
+        .division(|d| d.class("mt-8").push(sub("Inline")))
         .division(|dl| {
             dl.class("max-w-[260px]")
                 .push(detail_row::row("Status", detail_row::Value::Text("Active".to_owned())))
@@ -796,5 +942,290 @@ fn render_details() -> Division {
                         .push(detail_row::row("Uptime", detail_row::Value::Text("99.94%".to_owned())))
                 })
         })
+        .division(|d| {
+            d.class("mt-8").push(sub("Sectioned"))
+                .division(|s| {
+                    s.class("max-w-[260px] text-[12px]")
+                        .push(detail_row::row("Status", detail_row::Value::Text("Active".to_owned())))
+                        .push(detail_row::row("Owner", detail_row::Value::Text("Aenean Lectus".to_owned())))
+                        .push(detail_row::section_rule())
+                        .push(detail_row::section_label("Infrastructure"))
+                        .push(detail_row::row("Region", detail_row::Value::Text("eu-west-1".to_owned())))
+                        .push(detail_row::row("Replicas", detail_row::Value::Text("3".to_owned())))
+                        .push(detail_row::row("Uptime", detail_row::Value::Text("99.94%".to_owned())))
+                })
+        })
         .build()
+}
+
+// ── Package Cards (custom) ───────────────────────────────
+
+fn render_package_cards() -> Division {
+    let demo_pkg = demo_package(
+        "wasi",
+        "http",
+        "HTTP request and response types for WebAssembly components.",
+    );
+
+    Division::builder()
+        .push(sec("cards", "P1", "Package Cards", "Clickable cards used in home and namespace grids. Shows namespace, name, version, and description."))
+        .division(|g| g.class("grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg")
+            .push(package_card::render(&demo_pkg))
+            .push(package_card::render(&demo_package("wasi", "cli", "Command-line interface types and streams."))))
+        .build()
+}
+
+// ── Package Rows (custom) ────────────────────────────────
+
+fn render_package_rows() -> Division {
+    Division::builder()
+        .push(sec("rows", "P2", "Package Rows", "List-style rows for search results and all-packages pages. Name, version, description."))
+        .division(|list| {
+            list.class("divide-y divide-lineSoft max-w-xl")
+                .push(package_row::render(&demo_package("wasi", "http", "HTTP request and response types.")))
+                .push(package_row::render(&demo_package("wasi", "cli", "Command-line interface types.")))
+                .push(package_row::render(&demo_package("wasi", "io", "I/O stream primitives.")))
+        })
+        .build()
+}
+
+// ── Section Groups (custom) ──────────────────────────────
+
+fn render_section_groups() -> Division {
+    Division::builder()
+        .push(sec("groups", "P3", "Section Groups", "Grouped sections with header counts and item rows with colored dots and stability badges. Used on interface detail pages."))
+        .push(section_group::header("Traits", 3))
+        .push(section_group::item_row("Read", "#", section_group::ItemColor::Resource, section_group::Stability::Stable, "Read bytes from a source."))
+        .push(section_group::item_row("Write", "#", section_group::ItemColor::Resource, section_group::Stability::Stable, "Write bytes to a sink."))
+        .push(section_group::item_row("Seek", "#", section_group::ItemColor::Resource, section_group::Stability::Unstable, "Reposition the cursor within a stream."))
+        .division(|d| d.class("mt-8")
+            .push(section_group::header("Functions", 2))
+            .push(section_group::item_row("copy", "#", section_group::ItemColor::Func, section_group::Stability::Stable, "Copy bytes from a reader to a writer."))
+            .push(section_group::item_row("read-all", "#", section_group::ItemColor::Func, section_group::Stability::Unknown, "Read all bytes from a stream into a buffer.")))
+        .build()
+}
+
+// ── P4 Code Blocks ───────────────────────────────────────
+
+fn render_code_blocks() -> Division {
+    Division::builder()
+        .push(sec(
+            "codeblocks",
+            "P4",
+            "Code Blocks",
+            "Preformatted code containers with monospace font, border, and horizontal scroll. Used for WIT definitions and install commands.",
+        ))
+        .push(sub("Standard"))
+        .push(
+            html::text_content::PreformattedText::builder()
+                .class(code_block::CLASS)
+                .code(|c| c.text("wasm install wasi:http@0.2.0".to_owned()))
+                .build(),
+        )
+        .division(|d| {
+            d.class("mt-6").push(sub("Multi-line")).push(
+                html::text_content::PreformattedText::builder()
+                    .class(code_block::CLASS)
+                    .code(|c| {
+                        c.text(
+                            "interface poll {\n  resource pollable;\n  poll: func(in: list<borrow<pollable>>) -> list<u32>;\n}"
+                                .to_owned(),
+                        )
+                    })
+                    .build(),
+            )
+        })
+        .build()
+}
+
+// ── P5 Copy Buttons ──────────────────────────────────────
+
+fn render_copy_buttons() -> Division {
+    Division::builder()
+        .push(sec(
+            "copybuttons",
+            "P5",
+            "Copy Buttons",
+            "Page headings with integrated copy-to-clipboard and optional version badge. Used on package, interface, and item detail pages.",
+        ))
+        .push(sub("With version badge"))
+        .text(copy_button::heading_with_copy_and_version(
+            "poll",
+            "Interface",
+            "wasi:io/poll",
+            "text-wit-iface",
+            "",
+            Some("0.2.11"),
+        ))
+        .division(|d| {
+            d.class("mt-8").push(sub("Without version")).text(
+                copy_button::heading_with_copy(
+                    "error-code",
+                    "Enum",
+                    "wasi:http/types/error-code",
+                    "text-wit-enum",
+                    "",
+                ),
+            )
+        })
+        .build()
+}
+
+// ── P6 Data Tables ───────────────────────────────────────
+
+fn render_data_tables() -> Division {
+    use html::tables::Table;
+
+    Division::builder()
+        .push(sec(
+            "datatables",
+            "P6",
+            "Data Tables",
+            "Structured tables for record fields, variant cases, enum members, and flags. Two shapes: 3-column (name, type, description) and 2-column (name, description).",
+        ))
+        .push(sub("3-column"))
+        .division(|d| {
+            let mut table = Table::builder();
+            table.class(data_table::TABLE_CLASS);
+            table.push(data_table::header_3("Name", "Type", "Description"));
+            table.push(data_table::row_2("timeout", "Timeout after N milliseconds."));
+            table.push(data_table::row_2("buffer-size", "Maximum bytes to buffer."));
+            d.push(table.build());
+            d
+        })
+        .division(|d| {
+            d.class("mt-8").push(sub("2-column"));
+            let mut table = Table::builder();
+            table.class(data_table::TABLE_CLASS);
+            table.push(data_table::header_2("Flag", "Description"));
+            table.push(data_table::row_2("readable", "The stream has data available."));
+            table.push(data_table::row_2("writable", "The stream can accept more data."));
+            table.push(data_table::row_2("closed", "The stream has been closed."));
+            d.push(table.build());
+            d
+        })
+        .build()
+}
+
+// ── P7 Nav Lists ─────────────────────────────────────────
+
+fn render_nav_lists() -> Division {
+    use html::text_content::UnorderedList;
+
+    let mut ifaces = UnorderedList::builder();
+    ifaces.class("space-y-px");
+    ifaces.push(nav_list::item("poll", "#", nav_list::NavState::Active));
+    ifaces.push(nav_list::item("streams", "#", nav_list::NavState::Inactive));
+    ifaces.push(nav_list::item("error", "#", nav_list::NavState::Inactive));
+
+    let mut worlds = UnorderedList::builder();
+    worlds.class("space-y-px");
+    worlds.push(nav_list::item("imports", "#", nav_list::NavState::Inactive));
+
+    Division::builder()
+        .push(sec(
+            "navlists",
+            "P7",
+            "Nav Lists",
+            "Sidebar navigation items with active/inactive states and left border accent. Used for interface and world navigation.",
+        ))
+        .division(|d| {
+            d.class("max-w-[260px] bg-surface border border-line p-4")
+                .push(nav_list::section("Interfaces"))
+                .push(ifaces.build())
+                .division(|rule| rule.class("my-3 border-t-[1.5px] border-rule"))
+                .push(nav_list::section("Worlds"))
+                .push(worlds.build())
+        })
+        .build()
+}
+
+// ── P8 Section Headings ──────────────────────────────────
+
+fn render_section_headings() -> Division {
+    Division::builder()
+        .push(sec(
+            "secheadings",
+            "P8",
+            "Section Headings",
+            "Muted h2 headings used to label content sections. Two variants: plain and bordered (with a bottom rule).",
+        ))
+        .push(sub("Plain"))
+        .heading_2(|h2| h2.class(section_heading::CLASS).text("WIT Definition"))
+        .division(|d| {
+            d.class("mt-8")
+                .push(sub("Bordered"))
+                .heading_2(|h2| h2.class(section_heading::BORDERED_CLASS).text("Producers"))
+        })
+        .build()
+}
+
+// ── P9 Sidebar Sections ──────────────────────────────────
+
+fn render_sidebar_sections() -> Division {
+    Division::builder()
+        .push(sec(
+            "sidebarsec",
+            "P9",
+            "Sidebar Details",
+            "Section labels, rule dividers, and detail rows for the sidebar. Uses detail_row primitives.",
+        ))
+        .division(|d| {
+            d.class("max-w-[260px]")
+                .push(detail_row::section_label("Dependencies"))
+                .division(|list| {
+                    list.class("space-y-1")
+                        .division(|link| {
+                            link.class("text-[12px]").anchor(|a| {
+                                a.href("/wasi/io/0.2.11")
+                                    .class("text-accent hover:underline font-mono")
+                                    .text("wasi:io")
+                            })
+                        })
+                        .division(|link| {
+                            link.class("text-[12px]").anchor(|a| {
+                                a.href("/wasi/cli/0.2.11")
+                                    .class("text-accent hover:underline font-mono")
+                                    .text("wasi:cli")
+                            })
+                        })
+                        .division(|link| {
+                            link.class("text-[12px]").anchor(|a| {
+                                a.href("/wasi/http/0.2.11")
+                                    .class("text-accent hover:underline font-mono")
+                                    .text("wasi:http")
+                            })
+                        })
+                })
+                .push(detail_row::section_rule())
+                .push(detail_row::section_label("Metadata"))
+                .push(detail_row::row(
+                    "Version",
+                    detail_row::Value::Text("0.2.11".to_owned()),
+                ))
+                .push(detail_row::row(
+                    "License",
+                    detail_row::Value::Text("Apache-2.0".to_owned()),
+                ))
+        })
+        .build()
+}
+
+// ── Demo data ────────────────────────────────────────────
+
+fn demo_package(ns: &str, name: &str, desc: &str) -> wasm_meta_registry_client::KnownPackage {
+    wasm_meta_registry_client::KnownPackage {
+        registry: "ghcr.io".to_string(),
+        repository: format!("{ns}/{name}"),
+        kind: Some(wasm_meta_registry_client::PackageKind::Interface),
+        description: Some(desc.to_string()),
+        tags: vec!["0.2.0".to_string()],
+        signature_tags: vec![],
+        attestation_tags: vec![],
+        last_seen_at: "2026-01-01T00:00:00Z".to_string(),
+        created_at: "2026-01-01T00:00:00Z".to_string(),
+        wit_namespace: Some(ns.to_string()),
+        wit_name: Some(name.to_string()),
+        dependencies: vec![],
+    }
 }

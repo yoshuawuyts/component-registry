@@ -3,7 +3,7 @@
 use html::text_content::Division;
 use wasm_meta_registry_client::RegistryClient;
 
-use crate::components::package_card;
+use crate::components::{package_row, page_heading};
 use crate::layout;
 
 /// Render the namespace page listing all packages for a publisher.
@@ -32,12 +32,9 @@ fn render_packages(
 
     body.division(|div| {
         div.class("pt-8 pb-8")
-            .heading_1(|h1| {
-                h1.class("text-[28px] font-semibold tracking-tight font-mono")
-                    .text(namespace.to_owned())
-            })
+            .heading_1(|h1| h1.class(page_heading::H1_CLASS).text(namespace.to_owned()))
             .paragraph(|p| {
-                p.class("text-[13px] text-ink-500 mt-2").text(format!(
+                p.class(page_heading::SUBTITLE_CLASS).text(format!(
                     "{} package{}",
                     packages.len(),
                     if packages.len() == 1 { "" } else { "s" }
@@ -53,12 +50,19 @@ fn render_packages(
             })
         });
     } else {
-        let mut grid = Division::builder();
-        grid.class(package_card::grid(3));
+        body.division(|div| {
+            div.class(package_row::HEADER_CLASS)
+                .span(|s| s.class("w-48 shrink-0").text("Package"))
+                .span(|s| s.class("w-20 shrink-0").text("Version"))
+                .span(|s| s.text("Description"))
+        });
+
+        let mut list = Division::builder();
+        list.class("divide-y divide-lineSoft");
         for pkg in packages {
-            grid.push(package_card::render(pkg));
+            list.push(package_row::render(pkg));
         }
-        body.push(grid.build());
+        body.push(list.build());
     }
 
     layout::document_with_nav(namespace, &body.build().to_string())

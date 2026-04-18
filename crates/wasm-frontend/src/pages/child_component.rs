@@ -48,7 +48,7 @@ pub(crate) fn render(
 
     let header = format!(
         r#"<div class="max-w-3xl mb-6">
-  <h2 class="text-[28px] font-semibold tracking-tight font-mono">
+  <h2 class="text-[28px] sm:text-[36px] font-semibold tracking-tight font-mono">
     <span class="{kind_color}">{display_name}</span>
   </h2>
   <span class="text-[13px] text-ink-500 mt-1 block">{subtitle}</span>

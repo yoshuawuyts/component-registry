@@ -5,7 +5,7 @@
 use html::text_content::Division;
 use wasm_meta_registry_client::KnownPackage;
 
-use crate::components::package_row;
+use crate::components::{package_row, page_heading, pagination};
 use crate::layout;
 use wasm_meta_registry_client::{ApiError, RegistryClient};
 
@@ -24,12 +24,9 @@ fn render_packages(packages: &[KnownPackage], offset: u32, limit: u32) -> String
     // Page header with count
     body.division(|div| {
         div.class("pt-8 flex items-baseline justify-between pb-6 border-b-[1.5px] border-rule mb-6")
-            .heading_1(|h1| {
-                h1.class("text-[28px] font-semibold tracking-tight font-mono")
-                    .text("All Packages")
-            })
+            .heading_1(|h1| h1.class(page_heading::H1_CLASS).text("All Packages"))
             .span(|s| {
-                s.class("text-[13px] text-ink-400")
+                s.class(page_heading::SUBTITLE_CLASS)
                     .text(format!("showing {} packages", packages.len()))
             })
     });
@@ -69,10 +66,7 @@ fn render_error(err: &ApiError, offset: u32, limit: u32) -> String {
 
     body.division(|div| {
         div.class("pt-8 pb-6 border-b-[1.5px] border-rule mb-6")
-            .heading_1(|h1| {
-                h1.class("text-[28px] font-semibold tracking-tight font-mono")
-                    .text("All Packages")
-            })
+            .heading_1(|h1| h1.class(page_heading::H1_CLASS).text("All Packages"))
     });
 
     body.division(|div| {
@@ -81,10 +75,7 @@ fn render_error(err: &ApiError, offset: u32, limit: u32) -> String {
                 p.class("text-ink-900 font-medium")
                     .text("Unable to load packages")
             })
-            .paragraph(|p| {
-                p.class("text-[13px] text-ink-500 mt-2")
-                    .text(err.to_string())
-            })
+            .paragraph(|p| p.class(page_heading::SUBTITLE_CLASS).text(err.to_string()))
     });
 
     body.push(render_pagination(&[], offset, limit));
@@ -152,14 +143,11 @@ fn render_pagination_controls(state: &PaginationState) -> Division {
                 "/all?offset={}&limit={}",
                 state.prev_offset, state.effective_limit
             ))
-            .class("px-3 py-1.5 border border-line text-[13px] hover:bg-surfaceMuted transition-colors")
+            .class(pagination::BUTTON_CLASS)
             .text("Previous")
         });
     } else {
-        controls.span(|s| {
-            s.class("px-3 py-1.5 border border-line-light text-[13px] text-ink-400")
-                .text("Previous")
-        });
+        controls.span(|s| s.class(pagination::DISABLED_CLASS).text("Previous"));
     }
     if state.has_next {
         controls.anchor(|a| {
@@ -167,14 +155,11 @@ fn render_pagination_controls(state: &PaginationState) -> Division {
                 "/all?offset={}&limit={}",
                 state.next_offset, state.effective_limit
             ))
-            .class("px-3 py-1.5 border border-line text-[13px] hover:bg-surfaceMuted transition-colors")
+            .class(pagination::BUTTON_CLASS)
             .text("Next")
         });
     } else {
-        controls.span(|s| {
-            s.class("px-3 py-1.5 border border-line-light text-[13px] text-ink-400")
-                .text("Next")
-        });
+        controls.span(|s| s.class(pagination::DISABLED_CLASS).text("Next"));
     }
     controls.build()
 }

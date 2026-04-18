@@ -2,10 +2,10 @@
 
 // r[impl frontend.pages.package-detail]
 
-use crate::components::{copy_button, section_heading};
+use crate::components::{copy_button, section_group, section_heading};
 use crate::wit_doc::WitDocument;
 use html::content::Section;
-use html::text_content::{Division, ListItem, UnorderedList};
+use html::text_content::Division;
 use wasm_meta_registry_client::{KnownPackage, PackageVersion};
 
 use super::package_shell;
@@ -166,12 +166,8 @@ fn render_children_overview(
     kind: &str,
 ) -> Division {
     let mut div = Division::builder();
-    div.heading_2(|h2| {
-        h2.class(section_heading::BORDERED_CLASS)
-            .text(heading.to_owned())
-    });
+    div.push(section_group::header(heading, children.len()));
 
-    let mut ul = UnorderedList::builder();
     for (i, child) in children.iter().enumerate() {
         let fallback = format!("{kind}[{i}]");
         let name = child.name.as_deref().unwrap_or(&fallback);
@@ -181,23 +177,20 @@ fn render_children_overview(
             format!("{url_base}/component/{i}")
         };
 
-        let link_class = if kind == "component" {
-            "font-mono text-[14px] font-medium text-wit-world hover:underline"
+        let color = if kind == "component" {
+            section_group::ItemColor::World
         } else {
-            "font-mono text-[14px] font-medium text-wit-module hover:underline"
+            section_group::ItemColor::Module
         };
 
-        ul.list_item(|li| {
-            li.class("py-1");
-            li.anchor(|a| {
-                a.href(href)
-                    .class(link_class.to_owned())
-                    .text(name.to_owned())
-            });
-            li
-        });
+        div.push(section_group::item_row(
+            name,
+            &href,
+            color,
+            section_group::Stability::Unknown,
+            "",
+        ));
     }
-    div.push(ul.build());
     div.build()
 }
 
@@ -228,86 +221,46 @@ fn build_dep_urls(
 fn render_interface_overview(doc: &WitDocument) -> Division {
     let mut container = Division::builder();
     container.class("space-y-1");
-    container.heading_2(|h2| {
-        h2.class("text-[16px] font-medium text-ink-500 mb-2 pb-2 border-b border-lineSoft")
-            .text("Interfaces")
-    });
+    container.push(section_group::header("Interfaces", doc.interfaces.len()));
 
-    let mut ul = UnorderedList::builder();
-    ul.class("");
     for iface in &doc.interfaces {
-        ul.push(render_interface_row(iface));
+        let desc = iface
+            .docs
+            .as_deref()
+            .map(|d| crate::markdown::render_inline(&first_sentence(d)))
+            .unwrap_or_default();
+        container.push(section_group::item_row(
+            &iface.name,
+            &iface.url,
+            section_group::ItemColor::Iface,
+            section_group::Stability::Unknown,
+            &desc,
+        ));
     }
-    container.push(ul.build());
     container.build()
-}
-
-/// Render a single interface row: linked name + doc excerpt.
-fn render_interface_row(iface: &crate::wit_doc::InterfaceDoc) -> ListItem {
-    let mut li = ListItem::builder();
-    li.class("py-2 flex gap-4");
-
-    li.division(|left| {
-        left.class("shrink-0 w-44").anchor(|a| {
-            a.href(iface.url.clone())
-                .class("font-mono text-[14px] font-medium text-wit-iface hover:underline")
-                .text(iface.name.clone())
-        })
-    });
-
-    // Right: doc excerpt
-    if let Some(docs) = &iface.docs {
-        li.division(|right| {
-            right
-                .class("text-[15px] leading-relaxed text-ink-700 min-w-0")
-                .text(crate::markdown::render_inline(&first_sentence(docs)))
-        });
-    }
-
-    li.build()
 }
 
 /// Render the worlds overview section.
 fn render_world_overview(doc: &WitDocument) -> Division {
     let mut container = Division::builder();
     container.class("space-y-1");
-    container.heading_2(|h2| {
-        h2.class("text-[16px] font-medium text-ink-500 mb-2 pb-2 border-b border-lineSoft")
-            .text("Worlds")
-    });
+    container.push(section_group::header("Worlds", doc.worlds.len()));
 
-    let mut ul = UnorderedList::builder();
-    ul.class("");
     for world in &doc.worlds {
-        ul.push(render_world_row(world));
+        let desc = world
+            .docs
+            .as_deref()
+            .map(|d| crate::markdown::render_inline(&first_sentence(d)))
+            .unwrap_or_default();
+        container.push(section_group::item_row(
+            &world.name,
+            &world.url,
+            section_group::ItemColor::World,
+            section_group::Stability::Unknown,
+            &desc,
+        ));
     }
-    container.push(ul.build());
     container.build()
-}
-
-/// Render a single world row: linked name + doc excerpt.
-fn render_world_row(world: &crate::wit_doc::WorldDoc) -> ListItem {
-    let mut li = ListItem::builder();
-    li.class("py-1 flex gap-4");
-
-    li.division(|left| {
-        left.class("shrink-0 w-44").anchor(|a| {
-            a.href(world.url.clone())
-                .class("font-mono text-[14px] font-medium text-wit-world hover:underline")
-                .text(world.name.clone())
-        })
-    });
-
-    // Right: doc excerpt
-    if let Some(docs) = &world.docs {
-        li.division(|right| {
-            right
-                .class("text-[15px] leading-relaxed text-ink-700 min-w-0")
-                .text(crate::markdown::render_inline(&first_sentence(docs)))
-        });
-    }
-
-    li.build()
 }
 
 /// Render raw WIT text in a pre-formatted code block (fallback).
@@ -396,38 +349,26 @@ fn render_producers(producers: &[wasm_meta_registry_client::ProducerEntry]) -> D
     }
 
     let mut div = Division::builder();
-    div.heading_2(|h2| h2.class(section_heading::BORDERED_CLASS).text("Producers"));
+    div.push(section_group::header("Producers", filtered.len()));
 
-    let mut ul = UnorderedList::builder();
     for entry in &filtered {
-        let name = entry.name.clone();
-        let version = entry.version.clone();
+        let version = &entry.version;
         let display_version = version
             .split_once(" (")
             .map_or_else(|| version.clone(), |(before, _)| before.to_owned());
-        let tooltip = if version.is_empty() {
-            name.clone()
+        let desc = if display_version.is_empty() {
+            String::new()
         } else {
-            format!("{name} {version}")
+            format!("v{display_version}")
         };
-        ul.list_item(|li| {
-            li.class("py-1");
-            li.span(|s| {
-                s.class("font-mono text-[14px] min-w-0 truncate")
-                    .title(tooltip);
-                s.span(|n| n.class("text-accent").text(name));
-                if !display_version.is_empty() {
-                    s.span(|v| {
-                        v.class("text-ink-400 ml-1")
-                            .text(format!("@{display_version}"))
-                    });
-                }
-                s
-            });
-            li
-        });
+        div.push(section_group::item_row(
+            &entry.name,
+            "#",
+            section_group::ItemColor::Accent,
+            section_group::Stability::Unknown,
+            &desc,
+        ));
     }
-    div.push(ul.build());
     div.build()
 }
 

@@ -38,7 +38,7 @@ pub(crate) fn render(variant: Variant, size: Size, label: &str) -> Division {
         .button(|btn| {
             btn.type_("button")
                 .class(format!(
-                    "{height} px-3 inline-flex items-center gap-2 rounded-lg text-[13px] transition-colors {style}"
+                    "{height} px-3 inline-flex items-center gap-2 rounded-lg text-[13px] {style}"
                 ))
                 .text(label.to_owned())
         })

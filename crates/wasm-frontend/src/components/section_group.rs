@@ -73,7 +73,7 @@ impl Stability {
 
 /// Render a grouped section header with title and count.
 ///
-/// Produces: `Records — 3 items`
+/// Produces: `Records — 3 items ∨`
 pub(crate) fn header(title: &str, count: usize) -> Division {
     let count_label = match count {
         1 => "1 item".to_owned(),
@@ -85,9 +85,14 @@ pub(crate) fn header(title: &str, count: usize) -> Division {
             h2.class("text-[16px] font-semibold tracking-tight")
                 .text(title.to_owned())
         })
-        .span(|s| {
-            s.class("text-[12px] text-ink-400 shrink-0")
-                .text(count_label)
+        .division(|right| {
+            right
+                .class("flex items-center gap-1.5 shrink-0")
+                .span(|s| {
+                    s.class("text-[12px] text-ink-400")
+                        .text(count_label)
+                })
+                .text(r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-400"><path d="m6 9 6 6 6-6"/></svg>"#.to_owned())
         })
         .build()
 }
@@ -105,7 +110,9 @@ pub(crate) fn item_row(
     let text_class = color.text_class();
 
     let mut row = Division::builder();
-    row.class("flex items-start gap-3 py-3 px-4 bg-surface rounded-lg shadow-card mb-2 last:mb-0");
+    row.class(
+        "flex items-start gap-3 py-3 px-3 sm:px-4 bg-surface rounded-lg shadow-card mb-2 last:mb-0",
+    );
 
     // Colored dot
     row.division(|dot| {
@@ -124,7 +131,7 @@ pub(crate) fn item_row(
             let nr = name_row.class("flex items-baseline gap-2").anchor(|a| {
                 a.href(url.to_owned())
                     .class(format!(
-                        "font-mono text-[14px] font-medium hover:underline {text_class}"
+                        "font-mono text-[14px] font-medium hover:underline truncate {text_class}"
                     ))
                     .text(name.to_owned())
             });

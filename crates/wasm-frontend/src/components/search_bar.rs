@@ -41,7 +41,7 @@ pub(crate) fn compact(input_id: &str) -> Division {
                         .placeholder("Search\u{2026}")
                         .aria_label("Search")
                         .id(input_id.to_owned())
-                        .class("w-48 h-9 px-3 pr-10 rounded-md border border-line bg-surface text-[14px] text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent")
+                        .class("w-full sm:w-48 h-9 px-3 pr-10 rounded-md border border-line bg-surface text-[14px] text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent")
                 })
                 .span(|kbd| {
                     kbd.class("search-kbd")
@@ -94,7 +94,7 @@ pub(crate) fn hero(cfg: &SearchBar) -> Division {
             })
             .button(|btn| {
                 btn.type_("submit")
-                    .class("h-10 px-4 rounded-r-md bg-ink-900 text-canvas text-[13px] font-medium border border-l-0 border-ink-900 hover:bg-ink-700 transition-colors")
+                    .class("h-10 px-4 rounded-r-md border-[1.5px] border-l-0 border-ink-900 bg-surface text-ink-900 text-[13px] font-medium hover:bg-surfaceMuted")
                     .text("Search")
             })
     });

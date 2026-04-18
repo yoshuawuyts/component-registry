@@ -2,7 +2,7 @@
 
 use html::text_content::Division;
 
-use crate::components::link_button;
+use crate::components::{link_button, page_heading};
 use crate::layout;
 
 /// Render an error page with a description of what went wrong.
@@ -11,7 +11,7 @@ pub(crate) fn render(message: &str) -> String {
     let body = Division::builder()
         .class("text-center py-20")
         .heading_1(|h1| {
-            h1.class("text-[28px] font-semibold tracking-tight font-mono text-ink-900")
+            h1.class(format!("{} text-ink-900", page_heading::H1_CLASS))
                 .text("Something went wrong")
         })
         .paragraph(|p| {

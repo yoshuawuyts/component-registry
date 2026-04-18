@@ -46,7 +46,7 @@ pub(crate) fn heading_with_copy_and_version(
 
     format!(
         r#"<div class="max-w-3xl mb-6">
-  <h2 class="text-[28px] font-semibold tracking-tight font-mono flex items-baseline gap-2 group flex-wrap">
+  <h2 class="text-[28px] sm:text-[36px] font-semibold tracking-tight font-mono flex items-baseline gap-2 group flex-wrap">
     <span class="{color_class}">{name}</span>{version_badge}
     <button id="copy-fqn-btn" class="text-ink-400 hover:text-ink-900 transition-opacity cursor-pointer opacity-0 group-hover:opacity-100" style="font-size:0.5em;vertical-align:middle" title="Copy item path to clipboard">{copy_icon}</button>
   </h2>

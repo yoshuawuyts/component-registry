@@ -3,6 +3,7 @@
 use html::text_content::Division;
 
 use crate::components::code_block;
+use crate::components::page_heading;
 use crate::layout;
 
 /// Render the downloads page with install instructions.
@@ -11,15 +12,15 @@ pub(crate) fn render() -> String {
     let body = Division::builder()
         .class("pt-8 max-w-[65ch]")
         .heading_1(|h1| {
-            h1.class("text-[28px] font-semibold tracking-tight font-mono mb-6")
+            h1.class(format!("{} mb-6", page_heading::H1_CLASS))
                 .text("Downloads")
         })
         .paragraph(|p| {
-            p.class("text-ink-700 leading-relaxed")
+            p.class(page_heading::BODY_CLASS)
                 .text("Install the wasm CLI to manage WebAssembly components from your terminal.")
         })
         .heading_2(|h2| {
-            h2.class("text-[22px] font-semibold tracking-tight font-mono mt-10 mb-4")
+            h2.class(page_heading::H2_CLASS)
                 .text("Quick install")
         })
         .division(|d| {
@@ -54,7 +55,7 @@ pub(crate) fn render() -> String {
                 })
         })
         .heading_2(|h2| {
-            h2.class("text-[22px] font-semibold tracking-tight font-mono mt-10 mb-4")
+            h2.class(page_heading::H2_CLASS)
                 .text("From source")
         })
         .push(
