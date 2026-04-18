@@ -389,6 +389,79 @@
       font-size:10.5px;color:var(--c-ink-500);
       padding:1px 6px;border:1px solid var(--c-line-soft);border-radius:3px;
     }
+
+    /* ========================================================
+       Per-command entry — quieter, more editorial.
+       Each command is its own block separated by a strong rule
+       (the same one used between top-level sections of the
+       design system). Inside the block, structure is conveyed
+       through whitespace and small labels rather than tables
+       and underlined headers.
+       ======================================================== */
+    .cmd-entry{
+      margin-top:56px;
+      padding-top:32px;
+      border-top:1.5px solid var(--c-rule);
+    }
+    .cmd-entry:first-of-type{
+      margin-top:32px;padding-top:0;border-top:none;
+    }
+    .cmd-entry-head{
+      display:flex;align-items:baseline;justify-content:space-between;
+      gap:16px;flex-wrap:wrap;margin-bottom:8px;
+    }
+    .cmd-entry-head h2{
+      font-size:22px;font-weight:600;letter-spacing:-0.01em;
+      display:flex;align-items:baseline;gap:6px;
+    }
+    .cmd-entry-head .aux{
+      display:flex;align-items:center;gap:6px;color:var(--c-ink-500);
+    }
+    .cmd-tagline{
+      color:var(--c-ink-700);font-size:14px;line-height:1.6;
+      margin:0 0 22px;max-width:72ch;
+    }
+    .cmd-body > * + *{margin-top:28px;}
+    .cmd-body .prose{margin-top:24px;}
+    .cmd-body .prose + *{margin-top:24px;}
+
+    /* Quiet field label: replaces uppercase mono "ARGUMENTS" / "FLAGS" */
+    .field-head{
+      font-size:12px;color:var(--c-ink-500);
+      margin:0 0 12px;font-weight:500;
+      letter-spacing:0;text-transform:none;
+      font-family:inherit;
+    }
+
+    /* Two-column definition list for arguments and flags.
+       Key column is mono and sized to its content (with a sensible
+       minimum); description wraps in the right column. Type and
+       required/danger annotations live as a small meta line under
+       the key, so the description column stays clean prose. */
+    dl.opts{
+      display:grid;
+      grid-template-columns:minmax(180px,max-content) 1fr;
+      column-gap:32px;row-gap:18px;
+      font-size:13px;margin:0;
+    }
+    dl.opts dt{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+      color:var(--c-ink-900);padding-top:1px;line-height:1.45;
+    }
+    dl.opts dt .alt{color:var(--c-ink-500);}
+    dl.opts dt .meta{
+      display:block;margin-top:4px;
+      font-size:11px;color:var(--c-ink-500);font-weight:400;
+    }
+    dl.opts dt .meta .danger{color:var(--c-cat-pinkInk);}
+    dl.opts dt .meta .req{color:var(--c-ink-700);}
+    dl.opts dd{margin:0;color:var(--c-ink-700);line-height:1.6;}
+    dl.opts dd .hint{display:block;color:var(--c-ink-500);font-size:12px;margin-top:4px;}
+    @media (max-width:720px){
+      dl.opts{grid-template-columns:1fr;row-gap:4px;}
+      dl.opts dd{margin:0 0 14px;}
+      dl.opts dd:last-of-type{margin-bottom:0;}
+    }
   </style>
 </head>
 
@@ -757,106 +830,86 @@
       <!-- ============================== -->
       <!-- registry add                  -->
       <!-- ============================== -->
-      <section id="cmd-registry-add" class="mt-14">
-        <div class="section-head">
-          <h2 class="text-[20px] font-semibold tracking-tight flex items-baseline gap-2">
-            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
-            <span class="mono">wasm registry add</span>
-            <a href="#cmd-registry-add" class="anchor text-[14px]">§</a>
-          </h2>
-          <div class="flex items-center gap-2">
+      <section id="cmd-registry-add" class="cmd-entry">
+        <header class="cmd-entry-head">
+          <h2><span class="mono">wasm registry add</span><a href="#cmd-registry-add" class="anchor text-[14px]">§</a></h2>
+          <div class="aux">
             <span class="since-tag">1.2.0</span>
+            <a href="#" class="src-link">source</a>
             <a href="#" class="src-link">man</a>
           </div>
-        </div>
+        </header>
+        <p class="cmd-tagline">Register a new namespace and point it at an OCI registry URL.</p>
+        <pre class="code synopsis"><span class="cmd">wasm registry add</span> <span class="ar">&lt;name&gt;</span> <span class="ar">&lt;url&gt;</span> <span class="dim">[</span><span class="fl">--scope</span> <span class="ar">&lt;scope&gt;</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--default</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--insecure</span><span class="dim">]</span></pre>
 
-        <div class="sub-section">
-          <div class="sub-header">
-            <pre class="code synopsis"><span class="cmd">wasm registry add</span> <span class="ar">&lt;name&gt;</span> <span class="ar">&lt;url&gt;</span> <span class="dim">[</span><span class="fl">--scope</span> <span class="ar">&lt;scope&gt;</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--default</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--insecure</span><span class="dim">]</span></pre>
-          </div>
-
+        <div class="cmd-body">
           <div class="prose max-w-[72ch]">
             <p>
-              Registers a <strong>namespace</strong> and the OCI URL it resolves to. The namespace must be a
-              bare identifier (e.g. <span class="icode">wasi</span>, <span class="icode">acme</span>); it
-              becomes the prefix used in package coordinates like
-              <span class="icode">acme:my-component@1.0.0</span>.
+              The namespace must be a bare identifier (e.g. <span class="icode">wasi</span>,
+              <span class="icode">acme</span>) and becomes the prefix used in package coordinates
+              like <span class="icode">acme:my-component@1.0.0</span>.
             </p>
           </div>
 
-          <div class="sub-head">Arguments</div>
-          <table class="def">
-            <thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead>
-            <tbody>
-              <tr>
-                <td class="k">name <span class="tag req ml-1.5 align-middle">required</span></td>
-                <td class="t">string</td>
-                <td class="d">
-                  Namespace identifier. Must match <span class="icode">[a-z][a-z0-9-]{0,38}</span>.
-                  <span class="hint">Reserved: <span class="icode">wasi</span>, <span class="icode">wasm</span>, <span class="icode">component</span>.</span>
-                </td>
-              </tr>
-              <tr>
-                <td class="k">url <span class="tag req ml-1.5 align-middle">required</span></td>
-                <td class="t">url</td>
-                <td class="d">
-                  OCI-compatible registry endpoint, e.g. <span class="icode">https://ghcr.io/acme</span>.
-                  <span class="hint">The <span class="icode">https://</span> scheme is required unless <span class="icode">--insecure</span> is passed.</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div>
+            <div class="field-head">Arguments</div>
+            <dl class="opts">
+              <dt>name<span class="meta"><span class="req">string</span> · required</span></dt>
+              <dd>
+                Namespace identifier. Must match <span class="icode">[a-z][a-z0-9-]{0,38}</span>.
+                <span class="hint">Reserved: <span class="icode">wasi</span>, <span class="icode">wasm</span>, <span class="icode">component</span>.</span>
+              </dd>
 
-          <div class="sub-head">Flags</div>
-          <table class="def">
-            <thead><tr><th>Flag</th><th>Type</th><th>Description</th></tr></thead>
-            <tbody>
-              <tr>
-                <td class="k">--scope <span class="alt">&lt;scope&gt;</span></td>
-                <td class="t">user · project · system</td>
-                <td class="d">
-                  Where to write the registry entry.
-                  <span class="hint">Defaults to <span class="icode">user</span>. <span class="icode">project</span> requires a <span class="icode">wasm.toml</span>.</span>
-                </td>
-              </tr>
-              <tr>
-                <td class="k">--default</td>
-                <td class="t">flag</td>
-                <td class="d">Make this registry the default target for <span class="icode">publish</span>.</td>
-              </tr>
-              <tr>
-                <td class="k">--insecure</td>
-                <td class="t">flag <span class="tag danger ml-1 align-middle">danger</span></td>
-                <td class="d">
-                  Allow plaintext <span class="icode">http://</span> URLs and skip TLS verification.
-                  <span class="hint">Use only against trusted local mirrors.</span>
-                </td>
-              </tr>
-              <tr>
-                <td class="k">--token <span class="alt">&lt;token&gt;</span></td>
-                <td class="t">string</td>
-                <td class="d">
-                  Authenticate immediately after adding. Equivalent to running
-                  <span class="icode">wasm registry login</span> afterwards.
-                  <span class="hint">Prefer reading from <span class="icode">$WASM_REGISTRY_TOKEN</span> for unattended setup.</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+              <dt>url<span class="meta"><span class="req">url</span> · required</span></dt>
+              <dd>
+                OCI-compatible registry endpoint, e.g. <span class="icode">https://ghcr.io/acme</span>.
+                <span class="hint">The <span class="icode">https://</span> scheme is required unless <span class="icode">--insecure</span> is passed.</span>
+              </dd>
+            </dl>
+          </div>
 
-          <div class="sub-head">Examples</div>
-          <div class="space-y-3">
-            <pre class="code term"><span class="cm"># Add a public registry under the "acme" namespace</span>
+          <div>
+            <div class="field-head">Options</div>
+            <dl class="opts">
+              <dt>--scope <span class="alt">&lt;scope&gt;</span><span class="meta">user · project · system</span></dt>
+              <dd>
+                Where to write the registry entry.
+                <span class="hint">Defaults to <span class="icode">user</span>. <span class="icode">project</span> requires a <span class="icode">wasm.toml</span>.</span>
+              </dd>
+
+              <dt>--default<span class="meta">flag</span></dt>
+              <dd>Make this registry the default target for <span class="icode">publish</span>.</dd>
+
+              <dt>--insecure<span class="meta">flag · <span class="danger">danger</span></span></dt>
+              <dd>
+                Allow plaintext <span class="icode">http://</span> URLs and skip TLS verification.
+                <span class="hint">Use only against trusted local mirrors.</span>
+              </dd>
+
+              <dt>--token <span class="alt">&lt;token&gt;</span><span class="meta">string</span></dt>
+              <dd>
+                Authenticate immediately after adding. Equivalent to running
+                <span class="icode">wasm registry login</span> afterwards.
+                <span class="hint">Prefer reading from <span class="icode">$WASM_REGISTRY_TOKEN</span> for unattended setup.</span>
+              </dd>
+            </dl>
+          </div>
+
+          <div>
+            <div class="field-head">Examples</div>
+            <div class="space-y-3">
+              <pre class="code term"><span class="cm"># Add a public registry under the "acme" namespace</span>
 <span class="pr">$ </span><span class="cmd">wasm registry add</span> <span class="ar">acme</span> <span class="ar">https://ghcr.io/acme</span>
 <span class="ok">added</span> registry <span class="dim">acme</span> → https://ghcr.io/acme <span class="dim">(scope: user)</span></pre>
 
-            <pre class="code term"><span class="cm"># Add a project-local mirror and make it the default</span>
+              <pre class="code term"><span class="cm"># Add a project-local mirror and make it the default</span>
 <span class="pr">$ </span><span class="cmd">wasm registry add</span> <span class="ar">internal</span> <span class="ar">https://oci.corp/wasm</span> <span class="fl">--scope</span> <span class="ar">project</span> <span class="fl">--default</span>
 <span class="ok">added</span> registry <span class="dim">internal</span> → https://oci.corp/wasm <span class="dim">(scope: project)</span>
 <span class="ok">default</span> registry set to <span class="dim">internal</span></pre>
+            </div>
           </div>
 
-          <div class="callout warn mt-4">
+          <div class="callout warn">
             <span class="label">Caveat</span>
             Adding a registry does <strong>not</strong> verify its reachability. Run
             <span class="icode">wasm registry list --check</span> to probe the configured endpoints.
@@ -867,185 +920,152 @@
       <!-- ============================== -->
       <!-- registry remove                -->
       <!-- ============================== -->
-      <section id="cmd-registry-remove" class="mt-14">
-        <div class="section-head">
-          <h2 class="text-[20px] font-semibold tracking-tight flex items-baseline gap-2">
-            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
-            <span class="mono">wasm registry remove</span>
-            <a href="#cmd-registry-remove" class="anchor text-[14px]">§</a>
-          </h2>
-          <div class="flex items-center gap-2">
+      <section id="cmd-registry-remove" class="cmd-entry">
+        <header class="cmd-entry-head">
+          <h2><span class="mono">wasm registry remove</span><a href="#cmd-registry-remove" class="anchor text-[14px]">§</a></h2>
+          <div class="aux">
             <span class="since-tag">1.2.0</span>
+            <a href="#" class="src-link">source</a>
             <a href="#" class="src-link">man</a>
           </div>
-        </div>
+        </header>
+        <p class="cmd-tagline">Forget a registered namespace. Locally cached artifacts are kept by default.</p>
+        <pre class="code synopsis"><span class="cmd">wasm registry remove</span> <span class="ar">&lt;name&gt;</span> <span class="dim">[</span><span class="fl">--scope</span> <span class="ar">&lt;scope&gt;</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--purge</span><span class="dim">]</span></pre>
 
-        <div class="sub-section">
-          <div class="sub-header">
-            <pre class="code synopsis"><span class="cmd">wasm registry remove</span> <span class="ar">&lt;name&gt;</span> <span class="dim">[</span><span class="fl">--scope</span> <span class="ar">&lt;scope&gt;</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--purge</span><span class="dim">]</span></pre>
-          </div>
-
+        <div class="cmd-body">
           <div class="prose max-w-[72ch]">
             <p>
-              Removes the entry for <span class="icode">name</span> from the configuration scope. By default,
-              cached artifacts pulled from this registry remain on disk so that pinned, already-resolved
-              dependencies continue to build offline.
+              Removes the entry for <span class="icode">name</span> from the configuration scope.
+              Cached artifacts remain on disk so that pinned, already-resolved dependencies
+              continue to build offline.
             </p>
           </div>
 
-          <div class="sub-head">Flags</div>
-          <table class="def">
-            <thead><tr><th>Flag</th><th>Type</th><th>Description</th></tr></thead>
-            <tbody>
-              <tr>
-                <td class="k">--scope <span class="alt">&lt;scope&gt;</span></td>
-                <td class="t">user · project · system</td>
-                <td class="d">Scope to remove from. Defaults to the highest-priority scope that defines <span class="icode">name</span>.</td>
-              </tr>
-              <tr>
-                <td class="k">--purge</td>
-                <td class="t">flag</td>
-                <td class="d">Also delete cached artifacts under <span class="icode">$WASM_CACHE_DIR/registry/&lt;name&gt;/</span>.</td>
-              </tr>
-            </tbody>
-          </table>
+          <div>
+            <div class="field-head">Options</div>
+            <dl class="opts">
+              <dt>--scope <span class="alt">&lt;scope&gt;</span><span class="meta">user · project · system</span></dt>
+              <dd>Scope to remove from. Defaults to the highest-priority scope that defines <span class="icode">name</span>.</dd>
 
-          <div class="sub-head">Example</div>
-          <pre class="code term"><span class="pr">$ </span><span class="cmd">wasm registry remove</span> <span class="ar">internal</span> <span class="fl">--purge</span>
+              <dt>--purge<span class="meta">flag</span></dt>
+              <dd>Also delete cached artifacts under <span class="icode">$WASM_CACHE_DIR/registry/&lt;name&gt;/</span>.</dd>
+            </dl>
+          </div>
+
+          <div>
+            <div class="field-head">Example</div>
+            <pre class="code term"><span class="pr">$ </span><span class="cmd">wasm registry remove</span> <span class="ar">internal</span> <span class="fl">--purge</span>
 <span class="ok">removed</span> registry <span class="dim">internal</span>
 <span class="ok">purged</span> 142 cached artifacts <span class="dim">(348 MB freed)</span></pre>
+          </div>
         </div>
       </section>
 
       <!-- ============================== -->
       <!-- registry list                  -->
       <!-- ============================== -->
-      <section id="cmd-registry-list" class="mt-14">
-        <div class="section-head">
-          <h2 class="text-[20px] font-semibold tracking-tight flex items-baseline gap-2">
-            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
-            <span class="mono">wasm registry list</span>
-            <a href="#cmd-registry-list" class="anchor text-[14px]">§</a>
-          </h2>
-          <div class="flex items-center gap-2">
+      <section id="cmd-registry-list" class="cmd-entry">
+        <header class="cmd-entry-head">
+          <h2><span class="mono">wasm registry list</span><a href="#cmd-registry-list" class="anchor text-[14px]">§</a></h2>
+          <div class="aux">
             <span class="since-tag">1.2.0</span>
+            <a href="#" class="src-link">source</a>
             <a href="#" class="src-link">man</a>
           </div>
-        </div>
+        </header>
+        <p class="cmd-tagline">Print the effective set of registries, with the source of each entry.</p>
+        <pre class="code synopsis"><span class="cmd">wasm registry list</span> <span class="dim">[</span><span class="fl">--scope</span> <span class="ar">&lt;scope&gt;</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--check</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--format</span> <span class="ar">&lt;fmt&gt;</span><span class="dim">]</span></pre>
 
-        <div class="sub-section">
-          <div class="sub-header">
-            <pre class="code synopsis"><span class="cmd">wasm registry list</span> <span class="dim">[</span><span class="fl">--scope</span> <span class="ar">&lt;scope&gt;</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--check</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--format</span> <span class="ar">&lt;fmt&gt;</span><span class="dim">]</span></pre>
-          </div>
-
+        <div class="cmd-body">
           <div class="prose max-w-[72ch]">
             <p>
-              Prints the effective registry configuration. Entries are sorted by precedence
-              (project &gt; user &gt; system); when the same namespace is defined in multiple scopes,
-              only the winning entry is printed unless <span class="icode">--all</span> is given.
+              Entries are sorted by precedence (project &gt; user &gt; system). When the same
+              namespace is defined in multiple scopes, only the winning entry is printed unless
+              <span class="icode">--all</span> is given.
             </p>
           </div>
 
-          <div class="sub-head">Flags</div>
-          <table class="def">
-            <thead><tr><th>Flag</th><th>Type</th><th>Description</th></tr></thead>
-            <tbody>
-              <tr>
-                <td class="k">--scope <span class="alt">&lt;scope&gt;</span></td>
-                <td class="t">user · project · system</td>
-                <td class="d">Restrict output to one scope.</td>
-              </tr>
-              <tr>
-                <td class="k">--all</td>
-                <td class="t">flag</td>
-                <td class="d">Show shadowed entries too, with the scope marked.</td>
-              </tr>
-              <tr>
-                <td class="k">--check</td>
-                <td class="t">flag</td>
-                <td class="d">Probe each endpoint and report reachability + auth state.</td>
-              </tr>
-              <tr>
-                <td class="k">--format <span class="alt">&lt;fmt&gt;</span></td>
-                <td class="t">table · json · toml</td>
-                <td class="d">Output format. <span class="icode">json</span> and <span class="icode">toml</span> are stable for scripting.</td>
-              </tr>
-            </tbody>
-          </table>
+          <div>
+            <div class="field-head">Options</div>
+            <dl class="opts">
+              <dt>--scope <span class="alt">&lt;scope&gt;</span><span class="meta">user · project · system</span></dt>
+              <dd>Restrict output to one scope.</dd>
 
-          <div class="sub-head">Output</div>
-          <pre class="code term"><span class="pr">$ </span><span class="cmd">wasm registry list</span> <span class="fl">--check</span>
+              <dt>--all<span class="meta">flag</span></dt>
+              <dd>Show shadowed entries too, with the scope marked.</dd>
+
+              <dt>--check<span class="meta">flag</span></dt>
+              <dd>Probe each endpoint and report reachability and auth state.</dd>
+
+              <dt>--format <span class="alt">&lt;fmt&gt;</span><span class="meta">table · json · toml</span></dt>
+              <dd>Output format. <span class="icode">json</span> and <span class="icode">toml</span> are stable for scripting.</dd>
+            </dl>
+          </div>
+
+          <div>
+            <div class="field-head">Output</div>
+            <pre class="code term"><span class="pr">$ </span><span class="cmd">wasm registry list</span> <span class="fl">--check</span>
 <span class="dim">NAME       URL                              SCOPE     STATUS</span>
 internal   https://oci.corp/wasm            project   <span class="ok">ok</span>     <span class="dim">authenticated</span>
 acme       https://ghcr.io/acme             user      <span class="ok">ok</span>     <span class="dim">anonymous</span>
 wasi       https://wa.dev/wasi              system    <span class="ok">ok</span>     <span class="dim">anonymous</span>
 mirror     http://10.0.0.4:5000             user      <span class="er">fail</span>   <span class="dim">connection refused</span></pre>
+          </div>
         </div>
       </section>
 
       <!-- ============================== -->
       <!-- registry login                 -->
       <!-- ============================== -->
-      <section id="cmd-registry-login" class="mt-14">
-        <div class="section-head">
-          <h2 class="text-[20px] font-semibold tracking-tight flex items-baseline gap-2">
-            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
-            <span class="mono">wasm registry login</span>
-            <a href="#cmd-registry-login" class="anchor text-[14px]">§</a>
-          </h2>
-          <div class="flex items-center gap-2">
+      <section id="cmd-registry-login" class="cmd-entry">
+        <header class="cmd-entry-head">
+          <h2><span class="mono">wasm registry login</span><a href="#cmd-registry-login" class="anchor text-[14px]">§</a></h2>
+          <div class="aux">
             <span class="since-tag">1.4.0</span>
+            <a href="#" class="src-link">source</a>
             <a href="#" class="src-link">man</a>
           </div>
-        </div>
+        </header>
+        <p class="cmd-tagline">Store credentials for a registry in the OS keychain.</p>
+        <pre class="code synopsis"><span class="cmd">wasm registry login</span> <span class="ar">&lt;name&gt;</span> <span class="dim">[</span><span class="fl">--token</span> <span class="ar">&lt;token&gt;</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--username</span> <span class="ar">&lt;user&gt;</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--password-stdin</span><span class="dim">]</span></pre>
 
-        <div class="sub-section">
-          <div class="sub-header">
-            <pre class="code synopsis"><span class="cmd">wasm registry login</span> <span class="ar">&lt;name&gt;</span> <span class="dim">[</span><span class="fl">--token</span> <span class="ar">&lt;token&gt;</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--username</span> <span class="ar">&lt;user&gt;</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--password-stdin</span><span class="dim">]</span></pre>
-          </div>
-
+        <div class="cmd-body">
           <div class="prose max-w-[72ch]">
             <p>
-              Prompts for credentials and stores them in the platform keychain
-              (<span class="icode">Keychain</span> on macOS, <span class="icode">Credential Manager</span>
-              on Windows, <span class="icode">libsecret</span> on Linux). If no keychain is available,
-              <span class="icode">wasm</span> falls back to a <em>mode-600</em> file under
+              Credentials are stored in the platform keychain (<span class="icode">Keychain</span>
+              on macOS, <span class="icode">Credential Manager</span> on Windows,
+              <span class="icode">libsecret</span> on Linux). If no keychain is available,
+              <span class="icode">wasm</span> falls back to a mode-600 file under
               <span class="icode">$WASM_CONFIG_DIR/credentials.toml</span> and warns once.
             </p>
           </div>
 
-          <div class="sub-head">Flags</div>
-          <table class="def">
-            <thead><tr><th>Flag</th><th>Type</th><th>Description</th></tr></thead>
-            <tbody>
-              <tr>
-                <td class="k">--token <span class="alt">&lt;token&gt;</span></td>
-                <td class="t">string</td>
-                <td class="d">Bearer token. Mutually exclusive with <span class="icode">--username</span>.</td>
-              </tr>
-              <tr>
-                <td class="k">--username <span class="alt">&lt;user&gt;</span></td>
-                <td class="t">string</td>
-                <td class="d">Username for basic auth. Password is prompted on a TTY.</td>
-              </tr>
-              <tr>
-                <td class="k">--password-stdin</td>
-                <td class="t">flag</td>
-                <td class="d">Read the password / token from stdin instead of prompting.</td>
-              </tr>
-            </tbody>
-          </table>
+          <div>
+            <div class="field-head">Options</div>
+            <dl class="opts">
+              <dt>--token <span class="alt">&lt;token&gt;</span><span class="meta">string</span></dt>
+              <dd>Bearer token. Mutually exclusive with <span class="icode">--username</span>.</dd>
 
-          <div class="sub-head">Examples</div>
-          <div class="space-y-3">
-            <pre class="code term"><span class="cm"># Interactive token prompt</span>
+              <dt>--username <span class="alt">&lt;user&gt;</span><span class="meta">string</span></dt>
+              <dd>Username for basic auth. Password is prompted on a TTY.</dd>
+
+              <dt>--password-stdin<span class="meta">flag</span></dt>
+              <dd>Read the password or token from stdin instead of prompting.</dd>
+            </dl>
+          </div>
+
+          <div>
+            <div class="field-head">Examples</div>
+            <div class="space-y-3">
+              <pre class="code term"><span class="cm"># Interactive token prompt</span>
 <span class="pr">$ </span><span class="cmd">wasm registry login</span> <span class="ar">acme</span>
 Token (input hidden): <span class="dim">****</span>
 <span class="ok">ok</span> stored credentials for <span class="dim">acme</span> in <span class="dim">macOS Keychain</span></pre>
 
-            <pre class="code term"><span class="cm"># Unattended (CI)</span>
+              <pre class="code term"><span class="cm"># Unattended (CI)</span>
 <span class="pr">$ </span><span class="cmd">echo</span> <span class="st">"$REGISTRY_TOKEN"</span> | <span class="cmd">wasm registry login</span> <span class="ar">acme</span> <span class="fl">--password-stdin</span>
 <span class="ok">ok</span> stored credentials for <span class="dim">acme</span></pre>
+            </div>
           </div>
         </div>
       </section>
@@ -1053,64 +1073,56 @@ Token (input hidden): <span class="dim">****</span>
       <!-- ============================== -->
       <!-- registry logout                -->
       <!-- ============================== -->
-      <section id="cmd-registry-logout" class="mt-14">
-        <div class="section-head">
-          <h2 class="text-[20px] font-semibold tracking-tight flex items-baseline gap-2">
-            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
-            <span class="mono">wasm registry logout</span>
-            <a href="#cmd-registry-logout" class="anchor text-[14px]">§</a>
-          </h2>
-          <div class="flex items-center gap-2">
+      <section id="cmd-registry-logout" class="cmd-entry">
+        <header class="cmd-entry-head">
+          <h2><span class="mono">wasm registry logout</span><a href="#cmd-registry-logout" class="anchor text-[14px]">§</a></h2>
+          <div class="aux">
             <span class="since-tag">1.4.0</span>
+            <a href="#" class="src-link">source</a>
             <a href="#" class="src-link">man</a>
           </div>
-        </div>
+        </header>
+        <p class="cmd-tagline">Remove credentials for a registry from the OS keychain.</p>
+        <pre class="code synopsis"><span class="cmd">wasm registry logout</span> <span class="ar">&lt;name&gt;</span> <span class="dim">[</span><span class="fl">--all</span><span class="dim">]</span></pre>
 
-        <div class="sub-section">
-          <div class="sub-header">
-            <pre class="code synopsis"><span class="cmd">wasm registry logout</span> <span class="ar">&lt;name&gt;</span> <span class="dim">[</span><span class="fl">--all</span><span class="dim">]</span></pre>
-          </div>
+        <div class="cmd-body">
           <div class="prose max-w-[72ch]">
             <p>
-              Removes credentials for <span class="icode">name</span> from the keychain.
-              Pass <span class="icode">--all</span> to clear credentials for every configured registry.
-              The registry entry itself is preserved — only the secret is dropped.
+              Pass <span class="icode">--all</span> to clear credentials for every configured
+              registry. The registry entry itself is preserved — only the secret is dropped.
             </p>
           </div>
 
-          <div class="sub-head">Example</div>
-          <pre class="code term"><span class="pr">$ </span><span class="cmd">wasm registry logout</span> <span class="ar">acme</span>
+          <div>
+            <div class="field-head">Example</div>
+            <pre class="code term"><span class="pr">$ </span><span class="cmd">wasm registry logout</span> <span class="ar">acme</span>
 <span class="ok">ok</span> cleared credentials for <span class="dim">acme</span></pre>
+          </div>
         </div>
       </section>
 
       <!-- ============================== -->
       <!-- registry publish               -->
       <!-- ============================== -->
-      <section id="cmd-registry-publish" class="mt-14">
-        <div class="section-head">
-          <h2 class="text-[20px] font-semibold tracking-tight flex items-baseline gap-2">
-            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
-            <span class="mono">wasm registry publish</span>
-            <a href="#cmd-registry-publish" class="anchor text-[14px]">§</a>
-          </h2>
-          <div class="flex items-center gap-2">
+      <section id="cmd-registry-publish" class="cmd-entry">
+        <header class="cmd-entry-head">
+          <h2><span class="mono">wasm registry publish</span><a href="#cmd-registry-publish" class="anchor text-[14px]">§</a></h2>
+          <div class="aux">
             <span class="since-tag">1.3.0</span>
+            <a href="#" class="src-link">source</a>
             <a href="#" class="src-link">man</a>
           </div>
-        </div>
+        </header>
+        <p class="cmd-tagline">Build and upload the current package to a registry.</p>
+        <pre class="code synopsis"><span class="cmd">wasm registry publish</span> <span class="dim">[</span><span class="ar">&lt;path&gt;</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--registry</span> <span class="ar">&lt;name&gt;</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--tag</span> <span class="ar">&lt;tag&gt;</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--dry-run</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--allow-dirty</span><span class="dim">]</span></pre>
 
-        <div class="sub-section">
-          <div class="sub-header">
-            <pre class="code synopsis"><span class="cmd">wasm registry publish</span> <span class="dim">[</span><span class="ar">&lt;path&gt;</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--registry</span> <span class="ar">&lt;name&gt;</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--tag</span> <span class="ar">&lt;tag&gt;</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--dry-run</span><span class="dim">]</span> <span class="dim">[</span><span class="fl">--allow-dirty</span><span class="dim">]</span></pre>
-          </div>
-
+        <div class="cmd-body">
           <div class="prose max-w-[72ch]">
             <p>
-              Builds the package at <span class="icode">path</span> (defaulting to the current directory),
-              produces an OCI artifact, and pushes it to the target registry. The version published is the
-              one declared in <span class="icode">wasm.toml</span>; re-publishing the same version is
-              rejected unless <span class="icode">--overwrite</span> is set on a registry that allows it.
+              Builds the package at <span class="icode">path</span>, produces an OCI artifact, and
+              pushes it to the target registry. The version published is the one declared in
+              <span class="icode">wasm.toml</span>; re-publishing the same version is rejected
+              unless <span class="icode">--overwrite</span> is set on a registry that allows it.
             </p>
             <p>
               Publishing is performed in three stages — <strong>build</strong>, <strong>sign</strong>,
@@ -1119,63 +1131,47 @@ Token (input hidden): <span class="dim">****</span>
             </p>
           </div>
 
-          <div class="sub-head">Arguments</div>
-          <table class="def">
-            <thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead>
-            <tbody>
-              <tr>
-                <td class="k">path <span class="tag opt ml-1.5 align-middle">optional</span></td>
-                <td class="t">path</td>
-                <td class="d">Directory containing a <span class="icode">wasm.toml</span>. Defaults to <span class="icode">.</span>.</td>
-              </tr>
-            </tbody>
-          </table>
+          <div>
+            <div class="field-head">Arguments</div>
+            <dl class="opts">
+              <dt>path<span class="meta">path · optional</span></dt>
+              <dd>Directory containing a <span class="icode">wasm.toml</span>. Defaults to <span class="icode">.</span>.</dd>
+            </dl>
+          </div>
 
-          <div class="sub-head">Flags</div>
-          <table class="def">
-            <thead><tr><th>Flag</th><th>Type</th><th>Description</th></tr></thead>
-            <tbody>
-              <tr>
-                <td class="k">--registry <span class="alt">&lt;name&gt;</span></td>
-                <td class="t">string</td>
-                <td class="d">Target registry. Defaults to the one marked <span class="icode">default = true</span>.</td>
-              </tr>
-              <tr>
-                <td class="k">--tag <span class="alt">&lt;tag&gt;</span></td>
-                <td class="t">string <span class="tag repeat ml-1 align-middle">repeatable</span></td>
-                <td class="d">Additional OCI tag to push (e.g. <span class="icode">latest</span>, <span class="icode">canary</span>).</td>
-              </tr>
-              <tr>
-                <td class="k">--stage <span class="alt">&lt;stage&gt;</span></td>
-                <td class="t">build · sign · push</td>
-                <td class="d">Run only the named stage. Useful for splitting CI jobs.</td>
-              </tr>
-              <tr>
-                <td class="k">--dry-run</td>
-                <td class="t">flag</td>
-                <td class="d">Print what would be uploaded without contacting the registry.</td>
-              </tr>
-              <tr>
-                <td class="k">--allow-dirty</td>
-                <td class="t">flag</td>
-                <td class="d">Publish even when the working tree has uncommitted changes.</td>
-              </tr>
-              <tr>
-                <td class="k">--overwrite</td>
-                <td class="t">flag <span class="tag danger ml-1 align-middle">danger</span></td>
-                <td class="d">Replace an existing version on registries that permit it.</td>
-              </tr>
-            </tbody>
-          </table>
+          <div>
+            <div class="field-head">Options</div>
+            <dl class="opts">
+              <dt>--registry <span class="alt">&lt;name&gt;</span><span class="meta">string</span></dt>
+              <dd>Target registry. Defaults to the one marked <span class="icode">default = true</span>.</dd>
 
-          <div class="sub-head">Example</div>
-          <pre class="code term"><span class="pr">$ </span><span class="cmd">wasm registry publish</span> <span class="fl">--registry</span> <span class="ar">acme</span> <span class="fl">--tag</span> <span class="ar">latest</span>
+              <dt>--tag <span class="alt">&lt;tag&gt;</span><span class="meta">string · repeatable</span></dt>
+              <dd>Additional OCI tag to push (e.g. <span class="icode">latest</span>, <span class="icode">canary</span>).</dd>
+
+              <dt>--stage <span class="alt">&lt;stage&gt;</span><span class="meta">build · sign · push</span></dt>
+              <dd>Run only the named stage. Useful for splitting CI jobs.</dd>
+
+              <dt>--dry-run<span class="meta">flag</span></dt>
+              <dd>Print what would be uploaded without contacting the registry.</dd>
+
+              <dt>--allow-dirty<span class="meta">flag</span></dt>
+              <dd>Publish even when the working tree has uncommitted changes.</dd>
+
+              <dt>--overwrite<span class="meta">flag · <span class="danger">danger</span></span></dt>
+              <dd>Replace an existing version on registries that permit it.</dd>
+            </dl>
+          </div>
+
+          <div>
+            <div class="field-head">Example</div>
+            <pre class="code term"><span class="pr">$ </span><span class="cmd">wasm registry publish</span> <span class="fl">--registry</span> <span class="ar">acme</span> <span class="fl">--tag</span> <span class="ar">latest</span>
 <span class="dim">[1/3]</span> build      <span class="ok">✓</span>  <span class="dim">acme:hello@0.4.2 (1.2 MB)</span>
 <span class="dim">[2/3]</span> sign       <span class="ok">✓</span>  <span class="dim">cosign · 1 signature</span>
 <span class="dim">[3/3]</span> push       <span class="ok">✓</span>  <span class="dim">ghcr.io/acme/hello → sha256:8c4a…f12</span>
 <span class="ok">published</span> <span class="dim">acme:hello@0.4.2 + tag latest in 4.1s</span></pre>
+          </div>
 
-          <div class="callout info mt-4">
+          <div class="callout info">
             <span class="label">Tip</span>
             Pair <span class="icode">--dry-run</span> with <span class="icode">--format json</span>
             to feed the planned upload manifest into review tooling before publishing.
