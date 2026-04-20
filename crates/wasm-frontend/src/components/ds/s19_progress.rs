@@ -2,7 +2,7 @@
 
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r##"<div class="space-y-8">
+    let content = r#"<div class="space-y-8">
           <div>
             <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Progress bar</h3>
             <div class="space-y-2 max-w-md">
@@ -74,7 +74,7 @@ pub(crate) fn render() -> String {
               <div class="ds-skel h-3 w-5/6 rounded bg-surfaceMuted"></div>
             </div>
           </div>
-        </div>"##;
+        </div>"#;
     super::section(
         "progress",
         "19",

@@ -26,96 +26,95 @@ pub(crate) fn render(pkg: &KnownPackage) -> Division {
         _ => None,
     };
 
-    match (&pkg.wit_namespace, &pkg.wit_name) {
-        (Some(ns), Some(name)) => Division::builder()
-            .anchor(|a| {
-                let card = a
-                    .href(format!("/{ns}/{name}"))
-                    .class("flex flex-col h-full bg-surface p-5 rounded-lg shadow-card card-lift");
+    if let (Some(ns), Some(name)) = (&pkg.wit_namespace, &pkg.wit_name) {
+        Division::builder()
+    .anchor(|a| {
+        let card = a
+            .href(format!("/{ns}/{name}"))
+            .class("flex flex-col h-full bg-surface p-5 rounded-lg shadow-card card-lift");
 
-                // Header: namespace + version
-                card.span(|s| {
-                    s.class("flex justify-between items-start gap-2")
-                        .span(|left| {
-                            left.class("text-[12px] text-ink-500 font-mono leading-tight truncate")
-                                .text(ns.clone())
-                        })
-                        .span(|right| {
-                            right
-                                .class("text-[11px] text-ink-400 font-mono shrink-0")
-                                .text(version.clone())
-                        })
-                });
+        // Header: namespace + version
+        card.span(|s| {
+            s.class("flex justify-between items-start gap-2")
+                .span(|left| {
+                    left.class("text-[12px] text-ink-500 font-mono leading-tight truncate")
+                        .text(ns.clone())
+                })
+                .span(|right| {
+                    right
+                        .class("text-[11px] text-ink-400 font-mono shrink-0")
+                        .text(version.clone())
+                })
+        });
 
-                // Name
-                card.span(|s| {
-                    s.class("block text-[16px] font-semibold tracking-tight leading-snug mt-1 truncate")
-                        .text(name.clone())
-                });
+        // Name
+        card.span(|s| {
+            s.class("block text-[16px] font-semibold tracking-tight leading-snug mt-1 truncate")
+                .text(name.clone())
+        });
 
-                // Description
-                card.span(|s| {
-                    s.class("block text-[13px] text-ink-700 mt-3 overflow-hidden leading-relaxed")
-                        .style("display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 2.5rem")
-                        .text(crate::markdown::render_inline(description))
-                });
+        // Description
+        card.span(|s| {
+            s.class("block text-[13px] text-ink-700 mt-3 overflow-hidden leading-relaxed")
+                .style("display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 2.5rem")
+                .text(crate::markdown::render_inline(description))
+        });
 
-                // Kind badge (bottom)
-                if let Some((badge_cls, badge_text)) = kind_badge {
-                    card.span(|s| {
-                        s.class("mt-3 flex")
-                            .span(|badge| {
-                                badge
-                                    .class(format!(
-                                        "inline-flex items-center px-2 h-5 rounded-pill text-[11px] font-medium {badge_cls}"
-                                    ))
-                                    .text(badge_text.to_owned())
-                            })
-                    });
-                }
-
-                card
-            })
-            .build(),
-        _ => {
-            let display_name = pkg.repository.clone();
-            let mut card = Division::builder();
-            card.class("flex flex-col h-full bg-surface p-5 rounded-lg shadow-card card-lift");
-
+        // Kind badge (bottom)
+        if let Some((badge_cls, badge_text)) = kind_badge {
             card.span(|s| {
-                s.class("flex justify-between items-start gap-2")
-                    .span(|left| {
-                        left.class("text-[16px] font-semibold tracking-tight leading-snug truncate")
-                            .text(display_name)
-                    })
-                    .span(|right| {
-                        right
-                            .class("text-[11px] text-ink-400 font-mono shrink-0 mt-0.5")
-                            .text(version.clone())
+                s.class("mt-3 flex")
+                    .span(|badge| {
+                        badge
+                            .class(format!(
+                                "inline-flex items-center px-2 h-5 rounded-pill text-[11px] font-medium {badge_cls}"
+                            ))
+                            .text(badge_text.to_owned())
                     })
             });
-
-            card.span(|s| {
-                s.class("block text-[13px] text-ink-700 mt-3 overflow-hidden leading-relaxed")
-                    .style("display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 2.5rem")
-                    .text(crate::markdown::render_inline(description))
-            });
-
-            if let Some((badge_cls, badge_text)) = kind_badge {
-                card.span(|s| {
-                    s.class("mt-3 flex")
-                        .span(|badge| {
-                            badge
-                                .class(format!(
-                                    "inline-flex items-center px-2 h-5 rounded-pill text-[11px] font-medium {badge_cls}"
-                                ))
-                                .text(badge_text.to_owned())
-                        })
-                });
-            }
-
-            card.build()
         }
+
+        card
+    })
+    .build()
+    } else {
+        let display_name = pkg.repository.clone();
+        let mut card = Division::builder();
+        card.class("flex flex-col h-full bg-surface p-5 rounded-lg shadow-card card-lift");
+
+        card.span(|s| {
+            s.class("flex justify-between items-start gap-2")
+                .span(|left| {
+                    left.class("text-[16px] font-semibold tracking-tight leading-snug truncate")
+                        .text(display_name)
+                })
+                .span(|right| {
+                    right
+                        .class("text-[11px] text-ink-400 font-mono shrink-0 mt-0.5")
+                        .text(version.clone())
+                })
+        });
+
+        card.span(|s| {
+            s.class("block text-[13px] text-ink-700 mt-3 overflow-hidden leading-relaxed")
+                .style("display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 2.5rem")
+                .text(crate::markdown::render_inline(description))
+        });
+
+        if let Some((badge_cls, badge_text)) = kind_badge {
+            card.span(|s| {
+                s.class("mt-3 flex")
+                    .span(|badge| {
+                        badge
+                            .class(format!(
+                                "inline-flex items-center px-2 h-5 rounded-pill text-[11px] font-medium {badge_cls}"
+                            ))
+                            .text(badge_text.to_owned())
+                    })
+            });
+        }
+
+        card.build()
     }
 }
 

@@ -35,8 +35,8 @@ pub(crate) fn heading_with_copy_and_version(
     docs_html: &str,
     version: Option<&str>,
 ) -> String {
-    let copy_icon = icon::svg(Icon::Copy, IconSize::Md);
-    let check_icon = icon::svg(Icon::Check, IconSize::Md);
+    let copy_icon = icon::svg(Icon::Copy, &IconSize::Md);
+    let check_icon = icon::svg(Icon::Check, &IconSize::Md);
 
     let version_badge = version.map_or_else(String::new, |v| {
         format!(

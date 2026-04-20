@@ -20,8 +20,8 @@ const PRIMARY_CLASS: &str = "h-9 px-4 inline-flex items-center rounded-lg bg-ink
 const OUTLINE_CLASS: &str = "h-9 px-4 inline-flex items-center rounded-lg border-[1.5px] border-ink-900 bg-surface text-ink-900 text-[13px] hover:bg-surfaceMuted";
 
 /// Render an anchor styled as a button.
-pub(crate) fn render(variant: Variant, href: &str, label: &str) -> Anchor {
-    let class = match variant {
+pub(crate) fn render(variant: &Variant, href: &str, label: &str) -> Anchor {
+    let class = match *variant {
         Variant::Primary => PRIMARY_CLASS,
         Variant::Outline => OUTLINE_CLASS,
     };

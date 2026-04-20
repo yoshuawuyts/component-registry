@@ -2,7 +2,7 @@
 
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r##"<div class="p-12 bg-canvas border border-line rounded-lg flex items-start justify-center">
+    let content = r#"<div class="p-12 bg-canvas border border-line rounded-lg flex items-start justify-center">
           <div class="w-56 rounded-md bg-surface border border-line shadow-tooltip py-1 text-[13px]">
             <div class="px-3 py-1.5 text-[11px] mono uppercase tracking-wider text-ink-400">Aenean</div>
             <button class="w-full text-left px-3 h-8 hover:bg-surfaceMuted flex items-center gap-2">
@@ -44,7 +44,7 @@ pub(crate) fn render() -> String {
               Delete
             </button>
           </div>
-        </div>"##;
+        </div>"#;
     super::section(
         "dropdown",
         "16",

@@ -322,7 +322,7 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
                 .class("my-3 border-t-[1.5px] border-rule pt-3")
                 .heading_3(|h3| h3.class(SIDEBAR_LABEL).text("Dependents"));
             wrapper.anchor(|a| {
-                a.href(format!("/search?q={}", display_name))
+                a.href(format!("/search?q={display_name}"))
                     .class("text-[13px] text-accent hover:underline")
                     .text("Search for dependent packages \u{2192}")
             });
@@ -434,8 +434,8 @@ pub(crate) fn render_import_export_section(heading: &str, items: &[ImportExportE
         div.push(section_group::item_row(
             short_name,
             url,
-            color,
-            section_group::Stability::Unknown,
+            &color,
+            &section_group::Stability::Unknown,
             desc,
         ));
     }

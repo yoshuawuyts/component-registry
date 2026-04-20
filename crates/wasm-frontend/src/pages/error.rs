@@ -20,7 +20,7 @@ pub(crate) fn render(message: &str) -> String {
         })
         .division(|d| {
             d.class("mt-8").push(link_button::render(
-                link_button::Variant::Primary,
+                &link_button::Variant::Primary,
                 "/",
                 "Go to Home",
             ))

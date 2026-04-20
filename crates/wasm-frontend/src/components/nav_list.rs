@@ -14,8 +14,8 @@ pub(crate) enum NavState {
 }
 
 /// Render a single nav list item (link with active/inactive styling).
-pub(crate) fn item(label: &str, href: &str, state: NavState) -> ListItem {
-    let cls = match state {
+pub(crate) fn item(label: &str, href: &str, state: &NavState) -> ListItem {
+    let cls = match *state {
         NavState::Active => {
             "flex items-center px-3 h-9 rounded-md bg-surfaceMuted text-ink-900 font-medium text-[14px] truncate"
         }
@@ -29,6 +29,7 @@ pub(crate) fn item(label: &str, href: &str, state: NavState) -> ListItem {
 }
 
 /// Render a labelled nav list section (eyebrow label + list of items).
+#[allow(dead_code)]
 pub(crate) fn section(label: &str) -> Division {
     Division::builder()
         .division(|lbl| {
@@ -39,6 +40,7 @@ pub(crate) fn section(label: &str) -> Division {
 }
 
 /// Render a list wrapper for nav items.
+#[allow(dead_code)]
 pub(crate) fn list() -> UnorderedList {
     UnorderedList::builder().class("space-y-px").build()
 }

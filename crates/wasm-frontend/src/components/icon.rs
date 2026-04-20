@@ -4,6 +4,7 @@
 //! `currentColor` so they inherit the parent's text color.
 
 /// Icon identity.
+#[allow(dead_code)]
 pub(crate) enum Icon {
     /// Clipboard copy icon.
     Copy,
@@ -16,6 +17,7 @@ pub(crate) enum Icon {
 }
 
 /// Icon display size.
+#[allow(dead_code)]
 pub(crate) enum IconSize {
     /// 12×12 — small chevrons, inline markers.
     Sm,
@@ -26,8 +28,8 @@ pub(crate) enum IconSize {
 }
 
 /// Return the raw SVG string for the given icon at the given size.
-pub(crate) fn svg(icon: Icon, size: IconSize) -> &'static str {
-    let w = match size {
+pub(crate) fn svg(icon: Icon, size: &IconSize) -> &'static str {
+    let w = match *size {
         IconSize::Sm => 12,
         IconSize::Md => 14,
         IconSize::Lg => 16,
@@ -52,9 +54,9 @@ pub(crate) fn svg(icon: Icon, size: IconSize) -> &'static str {
             "<svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='8'/><path d='m21 21-4.3-4.3'/></svg>"
         }
         // Fallback: return the most common size for each icon
-        (Icon::Copy, _) => svg(Icon::Copy, IconSize::Md),
-        (Icon::Check, _) => svg(Icon::Check, IconSize::Md),
-        (Icon::ChevronRight, _) => svg(Icon::ChevronRight, IconSize::Sm),
-        (Icon::Search, _) => svg(Icon::Search, IconSize::Md),
+        (Icon::Copy, _) => svg(Icon::Copy, &IconSize::Md),
+        (Icon::Check, _) => svg(Icon::Check, &IconSize::Md),
+        (Icon::ChevronRight, _) => svg(Icon::ChevronRight, &IconSize::Sm),
+        (Icon::Search, _) => svg(Icon::Search, &IconSize::Md),
     }
 }

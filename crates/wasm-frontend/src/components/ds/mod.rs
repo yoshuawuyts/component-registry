@@ -4,7 +4,6 @@
 //! Shared helpers live at the module level; individual sections are submodules.
 
 use html::content::Section;
-use html::text_content::Division;
 
 /// Render a standard design-system section with the two-column
 /// `[200px | 1fr]` grid layout used by every numbered section.
@@ -44,6 +43,8 @@ pub(crate) fn section(id: &str, num: &str, title: &str, desc: &str, content: &st
 }
 
 /// Render a subsection heading (h3).
+/// Render a subsection heading (h3).
+#[allow(dead_code)]
 pub(crate) fn sub(text: &str) -> String {
     let text = text.to_owned();
     html::content::Heading3::builder()

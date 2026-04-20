@@ -6,6 +6,7 @@
 use html::text_content::Division;
 
 /// Render a metric with label, value, and optional delta.
+#[allow(dead_code)]
 pub(crate) fn render(label: &str, value: &str, delta: Option<&str>) -> Division {
     let mut d = Division::builder();
     d.division(|inner| {

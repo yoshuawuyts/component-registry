@@ -4,6 +4,7 @@
 //! namespace, downloads, docs, about, error).
 
 /// Class string for the display-sized page heading used on item detail pages.
+#[allow(dead_code)]
 pub(crate) const DISPLAY_CLASS: &str = "text-[28px] sm:text-[36px] font-semibold tracking-tight";
 
 /// Class string for the primary page heading (h1).

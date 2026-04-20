@@ -70,7 +70,7 @@ fn render_nav_card(ctx: &SidebarContext<'_>, pkg_url: &str) -> Division {
                 } else {
                     NavState::Inactive
                 };
-                ul.push(nav_list::item(&world.name, &world.url, state));
+                ul.push(nav_list::item(&world.name, &world.url, &state));
             }
             d.push(ul.build());
             d
@@ -99,7 +99,7 @@ fn render_nav_card(ctx: &SidebarContext<'_>, pkg_url: &str) -> Division {
                 } else {
                     NavState::Inactive
                 };
-                ul.push(nav_list::item(&iface.name, &iface.url, state));
+                ul.push(nav_list::item(&iface.name, &iface.url, &state));
             }
             d.push(ul.build());
             d

@@ -6,6 +6,7 @@
 use html::text_content::Division;
 
 /// Semantic color for a WIT item type.
+#[allow(dead_code)]
 pub(crate) enum ItemColor {
     /// Records, variants — structural data types.
     Struct,
@@ -103,8 +104,8 @@ pub(crate) fn header(title: &str, count: usize) -> Division {
 pub(crate) fn item_row(
     name: &str,
     url: &str,
-    color: ItemColor,
-    stability: Stability,
+    color: &ItemColor,
+    stability: &Stability,
     description: &str,
 ) -> Division {
     let text_class = color.text_class();

@@ -14,7 +14,7 @@ pub(crate) fn render(
     version: &str,
     version_detail: Option<&PackageVersion>,
     iface: &InterfaceDoc,
-    _doc: &WitDocument,
+    doc: &WitDocument,
 ) -> String {
     let display_name = package_shell::display_name_for(pkg);
     let title = format!("{display_name} — {}", iface.name);
@@ -99,7 +99,7 @@ pub(crate) fn render(
     let nav = super::sidebar::render_sidebar(&super::sidebar::SidebarContext {
         display_name: &display_name,
         version,
-        doc: _doc,
+        doc,
         active: super::sidebar::SidebarActive::Interface(&iface.name),
     });
 
@@ -129,8 +129,8 @@ fn render_type_section(heading: &str, types: &[&TypeDoc]) -> Division {
         div.push(section_group::item_row(
             &ty.name,
             &ty.url,
-            wit_kind_to_color(&ty.kind),
-            wit_stability(&ty.stability),
+            &wit_kind_to_color(&ty.kind),
+            &wit_stability(&ty.stability),
             &desc,
         ));
     }
@@ -152,8 +152,8 @@ fn render_function_section(functions: &[FunctionDoc]) -> Division {
         div.push(section_group::item_row(
             &func.name,
             &func.url,
-            section_group::ItemColor::Func,
-            wit_stability(&func.stability),
+            &section_group::ItemColor::Func,
+            &wit_stability(&func.stability),
             &desc,
         ));
     }

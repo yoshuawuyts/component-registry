@@ -2,7 +2,7 @@
 
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r##"<div class="space-y-12">
+    let content = r#"<div class="space-y-12">
           <!-- Three-column · the docs reference layout -->
           <div>
             <div class="text-[12px] text-ink-500 mb-3">Three-column · sidebar · reading · on this page</div>
@@ -182,7 +182,7 @@ pub(crate) fn render() -> String {
               </li>
             </ul>
           </div>
-        </div>"##;
+        </div>"#;
     super::section(
         "grid",
         "21",

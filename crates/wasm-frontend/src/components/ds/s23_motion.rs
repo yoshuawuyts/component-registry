@@ -2,7 +2,7 @@
 
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r##"<div class="space-y-10">
+    let content = r#"<div class="space-y-10">
           <!-- Curves -->
           <div>
             <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Easing curves</h3>
@@ -154,7 +154,7 @@ pub(crate) fn render() -> String {
               </li>
             </ul>
           </div>
-        </div>"##;
+        </div>"#;
     super::section(
         "motion",
         "23",

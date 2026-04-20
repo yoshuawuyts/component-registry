@@ -202,8 +202,8 @@ fn render_children_overview(
         div.push(section_group::item_row(
             name,
             &href,
-            color,
-            section_group::Stability::Unknown,
+            &color,
+            &section_group::Stability::Unknown,
             "",
         ));
     }
@@ -248,8 +248,8 @@ fn render_interface_overview(doc: &WitDocument) -> Division {
         container.push(section_group::item_row(
             &iface.name,
             &iface.url,
-            section_group::ItemColor::Iface,
-            section_group::Stability::Unknown,
+            &section_group::ItemColor::Iface,
+            &section_group::Stability::Unknown,
             &desc,
         ));
     }
@@ -271,8 +271,8 @@ fn render_world_overview(doc: &WitDocument) -> Division {
         container.push(section_group::item_row(
             &world.name,
             &world.url,
-            section_group::ItemColor::World,
-            section_group::Stability::Unknown,
+            &section_group::ItemColor::World,
+            &section_group::Stability::Unknown,
             &desc,
         ));
     }
@@ -380,8 +380,8 @@ fn render_producers(producers: &[wasm_meta_registry_client::ProducerEntry]) -> D
         div.push(section_group::item_row(
             &entry.name,
             "#",
-            section_group::ItemColor::Accent,
-            section_group::Stability::Unknown,
+            &section_group::ItemColor::Accent,
+            &section_group::Stability::Unknown,
             &desc,
         ));
     }

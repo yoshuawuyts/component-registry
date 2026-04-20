@@ -29,12 +29,12 @@ pub(crate) fn render() -> String {
             actions
                 .class("mt-8 flex flex-wrap gap-3 text-[13px]")
                 .push(link_button::render(
-                    link_button::Variant::Primary,
+                    &link_button::Variant::Primary,
                     "/",
                     "Browse packages",
                 ))
                 .push(link_button::render(
-                    link_button::Variant::Outline,
+                    &link_button::Variant::Outline,
                     "/search",
                     "Search",
                 ))

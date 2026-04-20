@@ -2,7 +2,7 @@
 
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r##"<div class="space-y-10">
+    let content = r#"<div class="space-y-10">
           <!-- Install variant: kicker + title + tagline + copyable install command -->
           <div>
             <div class="text-[12px] text-ink-500 mb-3">Package · with install command</div>
@@ -74,7 +74,7 @@ pub(crate) fn render() -> String {
               </li>
             </ul>
           </div>
-        </div>"##;
+        </div>"#;
     super::section(
         "c-page-header",
         "C03",

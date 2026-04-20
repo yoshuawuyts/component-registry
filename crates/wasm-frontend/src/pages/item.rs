@@ -53,7 +53,7 @@ pub(crate) fn render_type(
     version_detail: Option<&PackageVersion>,
     iface_name: &str,
     ty: &TypeDoc,
-    _doc: &WitDocument,
+    doc: &WitDocument,
 ) -> String {
     let display_name = package_shell::display_name_for(pkg);
     let title = format!("{display_name} \u{2014} {iface_name}::{}", ty.name);
@@ -90,7 +90,7 @@ pub(crate) fn render_type(
     let nav = super::sidebar::render_sidebar(&super::sidebar::SidebarContext {
         display_name: &display_name,
         version,
-        doc: _doc,
+        doc,
         active: super::sidebar::SidebarActive::Item(iface_name, &ty.name),
     });
 
@@ -121,7 +121,7 @@ pub(crate) fn render_function(
     version_detail: Option<&PackageVersion>,
     iface_name: &str,
     func: &FunctionDoc,
-    _doc: &WitDocument,
+    doc: &WitDocument,
 ) -> String {
     let display_name = package_shell::display_name_for(pkg);
     let title = format!("{display_name} \u{2014} {iface_name}::{}", func.name);
@@ -153,7 +153,7 @@ pub(crate) fn render_function(
     let nav = super::sidebar::render_sidebar(&super::sidebar::SidebarContext {
         display_name: &display_name,
         version,
-        doc: _doc,
+        doc,
         active: super::sidebar::SidebarActive::Item(iface_name, &func.name),
     });
 

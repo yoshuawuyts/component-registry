@@ -2,7 +2,7 @@
 
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r##"<div class="space-y-12">
+    let content = r#"<div class="space-y-12">
           <!-- Definition · the workhorse — request/response fields, CLI flags, env vars, schema docs -->
           <div>
             <div class="text-[12px] text-ink-500 mb-3">Definition · identifier and meaning</div>
@@ -124,7 +124,7 @@ pub(crate) fn render() -> String {
               so the next column aligns down the page.
             </p>
           </div>
-        </div>"##;
+        </div>"#;
     super::section(
         "table",
         "11",

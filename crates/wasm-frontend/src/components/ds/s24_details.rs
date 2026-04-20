@@ -2,7 +2,7 @@
 
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r##"<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    let content = r#"<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
           <!-- Stacked -->
           <div>
             <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Stacked</h3>
@@ -182,7 +182,7 @@ pub(crate) fn render() -> String {
               </div>
             </div>
           </div>
-        </div>"##;
+        </div>"#;
     super::section(
         "details",
         "24",

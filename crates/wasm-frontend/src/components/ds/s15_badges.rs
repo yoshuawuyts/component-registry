@@ -2,7 +2,7 @@
 
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r##"<div class="space-y-6">
+    let content = r#"<div class="space-y-6">
           <div>
             <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Status</h3>
             <div class="flex flex-wrap items-center gap-2 text-[12px] font-medium">
@@ -49,7 +49,7 @@ pub(crate) fn render() -> String {
                 class="inline-flex items-center gap-1 px-2 h-6 rounded-md border border-line text-ink-700">Convallis</span>
             </div>
           </div>
-        </div>"##;
+        </div>"#;
     super::section(
         "badges",
         "15",

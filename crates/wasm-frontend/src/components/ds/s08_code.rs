@@ -2,7 +2,7 @@
 
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r##"<div class="space-y-12">
+    let content = r#"<div class="space-y-12">
 
           <!-- Plain · single panel -->
           <div>
@@ -146,7 +146,7 @@ pub(crate) fn render() -> String {
               </li>
             </ul>
           </div>
-        </div>"##;
+        </div>"#;
     super::section(
         "code",
         "08",

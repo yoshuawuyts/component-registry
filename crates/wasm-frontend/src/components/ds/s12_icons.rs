@@ -2,7 +2,7 @@
 
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r##"<div class="space-y-10">
+    let content = r#"<div class="space-y-10">
 
           <!-- In context: small-form examples used across the docs surfaces -->
           <div>
@@ -260,7 +260,7 @@ pub(crate) fn render() -> String {
               </div>
             </div>
           </div>
-        </div>"##;
+        </div>"#;
     super::section(
         "icons",
         "12",

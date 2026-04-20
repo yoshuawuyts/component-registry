@@ -2,7 +2,7 @@
 
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r##"<div class="border border-line rounded-lg p-12 text-center bg-surface">
+    let content = r#"<div class="border border-line rounded-lg p-12 text-center bg-surface">
           <div class="mx-auto h-12 w-12 grid place-items-center rounded-full bg-surfaceMuted text-ink-500">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
               stroke-linecap="round" stroke-linejoin="round">
@@ -23,7 +23,7 @@ pub(crate) fn render() -> String {
             </svg>
             Create entry
           </button>
-        </div>"##;
+        </div>"#;
     super::section(
         "empty",
         "20",

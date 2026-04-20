@@ -14,7 +14,7 @@ pub(crate) fn render(
     version: &str,
     version_detail: Option<&PackageVersion>,
     world: &WorldDoc,
-    _doc: &WitDocument,
+    doc: &WitDocument,
 ) -> String {
     let display_name = package_shell::display_name_for(pkg);
     let title = format!("{display_name} \u{2014} {}", world.name);
@@ -64,7 +64,7 @@ pub(crate) fn render(
     let nav = super::sidebar::render_sidebar(&super::sidebar::SidebarContext {
         display_name: &display_name,
         version,
-        doc: _doc,
+        doc,
         active: super::sidebar::SidebarActive::World(&world.name),
     });
 

@@ -2,7 +2,7 @@
 
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r##"<div class="relative rounded-lg p-8 md:p-12 overflow-hidden bg-canvas">
+    let content = r#"<div class="relative rounded-lg p-8 md:p-12 overflow-hidden bg-canvas">
           <!-- Simulate the page beneath: a faint preview of content -->
           <div class="absolute inset-0 p-6 select-none pointer-events-none" aria-hidden="true">
             <div class="h-3 w-40 rounded mb-3" style="background: var(--c-ink-300);"></div>
@@ -37,7 +37,7 @@ pub(crate) fn render() -> String {
                 class="h-8 px-3 rounded-lg bg-surfaceMuted text-ink-900 text-[13px] hover:bg-ink-300">Confirm</button>
             </div>
           </div>
-        </div>"##;
+        </div>"#;
     super::section(
         "modal",
         "17",

@@ -2,7 +2,7 @@
 
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r##"<div class="space-y-8">
+    let content = r#"<div class="space-y-8">
           <!-- Live demo -->
           <div class="border border-line rounded-lg overflow-hidden">
             <!-- Primary region -->
@@ -61,7 +61,7 @@ pub(crate) fn render() -> String {
               </li>
             </ul>
           </div>
-        </div>"##;
+        </div>"#;
     super::section(
         "regions",
         "22",

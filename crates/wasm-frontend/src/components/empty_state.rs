@@ -6,6 +6,7 @@
 use html::text_content::Division;
 
 /// Render an empty state with icon, title, description, and optional action.
+#[allow(dead_code)]
 pub(crate) fn render(title: &str, description: &str) -> Division {
     Division::builder()
         .class("border border-line rounded-lg p-12 text-center bg-surface")
