@@ -1,68 +1,85 @@
 //! 14 — Checkbox, Radio, Switch.
 
-const SVG_0: &str = r#"<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"> <path d="M20 6 9 17l-5-5" /> </svg>"#;
+use html::text_content::Division;
+
+const SVG_CHECK: &str = r#"<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>"#;
 
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = format!(
-        r#"<div class="space-y-8">
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Checkbox</h3>
-            <div class="space-y-2">
-              <label class="flex items-center gap-2 text-[14px]">
-                <span class="grid place-items-center h-4 w-4 rounded bg-ink-900 text-canvas">
-                  {SVG_0}
-                </span>
-                Aenean lectus
-              </label>
-              <label class="flex items-center gap-2 text-[14px]">
-                <span class="h-4 w-4 rounded border border-line bg-surface"></span>
-                Vestibulum ante
-              </label>
-              <label class="flex items-center gap-2 text-[14px] text-ink-400">
-                <span class="h-4 w-4 rounded border border-lineSoft bg-surfaceMuted"></span>
-                Disabled
-              </label>
-            </div>
-          </div>
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Radio</h3>
-            <div class="space-y-2">
-              <label class="flex items-center gap-2 text-[14px]">
-                <span class="grid place-items-center h-4 w-4 rounded-full border border-ink-900">
-                  <span class="h-2 w-2 rounded-full bg-ink-900"></span>
-                </span>
-                Lorem option
-              </label>
-              <label class="flex items-center gap-2 text-[14px]">
-                <span class="h-4 w-4 rounded-full border border-line bg-surface"></span>
-                Ipsum option
-              </label>
-            </div>
-          </div>
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Switch</h3>
-            <div class="space-y-3">
-              <label class="flex items-center gap-3 text-[14px]">
-                <span class="relative inline-flex h-5 w-9 items-center rounded-full bg-ink-900">
-                  <span class="inline-block h-4 w-4 rounded-full bg-surface translate-x-[18px]"></span>
-                </span>
-                Enabled
-              </label>
-              <label class="flex items-center gap-3 text-[14px]">
-                <span class="relative inline-flex h-5 w-9 items-center rounded-full bg-ink-300">
-                  <span class="inline-block h-4 w-4 rounded-full bg-surface translate-x-[2px]"></span>
-                </span>
-                Disabled
-              </label>
-            </div>
-          </div>
-        </div>"#
-    );
+    let content = Division::builder()
+        .class("space-y-8")
+        // Checkbox
+        .division(|d| {
+            d.heading_3(|h| h.class("text-[13px] mono uppercase tracking-wider text-ink-500 mb-3").text("Checkbox"))
+                .division(|g| {
+                    g.class("space-y-2")
+                        .label(|l| {
+                            l.class("flex items-center gap-2 text-[14px]")
+                                .span(|s| s.class("grid place-items-center h-4 w-4 rounded bg-ink-900 text-canvas").text(SVG_CHECK))
+                                .text(" Aenean lectus")
+                        })
+                        .label(|l| {
+                            l.class("flex items-center gap-2 text-[14px]")
+                                .span(|s| s.class("h-4 w-4 rounded border border-line bg-surface"))
+                                .text(" Vestibulum ante")
+                        })
+                        .label(|l| {
+                            l.class("flex items-center gap-2 text-[14px] text-ink-400")
+                                .span(|s| s.class("h-4 w-4 rounded border border-lineSoft bg-surfaceMuted"))
+                                .text(" Disabled")
+                        })
+                })
+        })
+        // Radio
+        .division(|d| {
+            d.heading_3(|h| h.class("text-[13px] mono uppercase tracking-wider text-ink-500 mb-3").text("Radio"))
+                .division(|g| {
+                    g.class("space-y-2")
+                        .label(|l| {
+                            l.class("flex items-center gap-2 text-[14px]")
+                                .span(|s| {
+                                    s.class("grid place-items-center h-4 w-4 rounded-full border border-ink-900")
+                                        .span(|dot| dot.class("h-2 w-2 rounded-full bg-ink-900"))
+                                })
+                                .text(" Lorem option")
+                        })
+                        .label(|l| {
+                            l.class("flex items-center gap-2 text-[14px]")
+                                .span(|s| s.class("h-4 w-4 rounded-full border border-line bg-surface"))
+                                .text(" Ipsum option")
+                        })
+                })
+        })
+        // Switch
+        .division(|d| {
+            d.heading_3(|h| h.class("text-[13px] mono uppercase tracking-wider text-ink-500 mb-3").text("Switch"))
+                .division(|g| {
+                    g.class("space-y-3")
+                        .label(|l| {
+                            l.class("flex items-center gap-3 text-[14px]")
+                                .span(|s| {
+                                    s.class("relative inline-flex h-5 w-9 items-center rounded-full bg-ink-900")
+                                        .span(|knob| knob.class("inline-block h-4 w-4 rounded-full bg-surface translate-x-[18px]"))
+                                })
+                                .text(" Enabled")
+                        })
+                        .label(|l| {
+                            l.class("flex items-center gap-3 text-[14px]")
+                                .span(|s| {
+                                    s.class("relative inline-flex h-5 w-9 items-center rounded-full bg-ink-300")
+                                        .span(|knob| knob.class("inline-block h-4 w-4 rounded-full bg-surface translate-x-[2px]"))
+                                })
+                                .text(" Disabled")
+                        })
+                })
+        })
+        .build()
+        .to_string();
+
     super::section(
         "toggles",
         "14",
-        "Checkbox · Radio · Switch",
+        "Checkbox \u{00b7} Radio \u{00b7} Switch",
         "All controls render in ink-900 when active. 16px hit area minimum on each control; full-row click target via wrapping label.",
         &content,
     )

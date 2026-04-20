@@ -1,55 +1,82 @@
 //! 15 — Badges.
 
-const SVG_0: &str = r#"<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M18 6 6 18" /> <path d="m6 6 12 12" /> </svg>"#;
+use html::text_content::Division;
+
+const SVG_CLOSE: &str = r#"<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>"#;
+
+/// Status badge entries: (bg, ink, dot_class, label).
+const STATUSES: &[(&str, &str, &str)] = &[
+    (
+        "bg-cat-green text-cat-greenInk",
+        "bg-cat-greenInk",
+        "Active",
+    ),
+    (
+        "bg-cat-cream text-cat-creamInk",
+        "bg-cat-creamInk",
+        "Pending",
+    ),
+    ("bg-cat-pink text-cat-pinkInk", "bg-cat-pinkInk", "Failed"),
+    ("bg-cat-blue text-cat-blueInk", "bg-cat-blueInk", "Info"),
+];
 
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = format!(
-        r#"<div class="space-y-6">
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Status</h3>
-            <div class="flex flex-wrap items-center gap-2 text-[12px] font-medium">
-              <span class="inline-flex items-center gap-1.5 px-2 h-6 rounded-pill bg-cat-green text-cat-greenInk">
-                <span class="h-1.5 w-1.5 rounded-full bg-cat-greenInk"></span>Active
-              </span>
-              <span class="inline-flex items-center gap-1.5 px-2 h-6 rounded-pill bg-cat-cream text-cat-creamInk">
-                <span class="h-1.5 w-1.5 rounded-full bg-cat-creamInk"></span>Pending
-              </span>
-              <span class="inline-flex items-center gap-1.5 px-2 h-6 rounded-pill bg-cat-pink text-cat-pinkInk">
-                <span class="h-1.5 w-1.5 rounded-full bg-cat-pinkInk"></span>Failed
-              </span>
-              <span class="inline-flex items-center gap-1.5 px-2 h-6 rounded-pill bg-cat-blue text-cat-blueInk">
-                <span class="h-1.5 w-1.5 rounded-full bg-cat-blueInk"></span>Info
-              </span>
-              <span class="inline-flex items-center px-2 h-6 rounded-pill bg-surfaceMuted text-ink-700">Draft</span>
-            </div>
-          </div>
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Counts</h3>
-            <div class="flex flex-wrap items-center gap-2 text-[12px] font-medium">
-              <span
-                class="inline-flex items-center px-1.5 min-w-[20px] h-5 rounded-pill bg-ink-700 text-canvas justify-center">3</span>
-              <span
-                class="inline-flex items-center px-1.5 min-w-[20px] h-5 rounded-pill bg-surfaceMuted text-ink-700 border border-line justify-center">12</span>
-              <span
-                class="inline-flex items-center px-1.5 min-w-[20px] h-5 rounded-pill bg-cat-pink text-cat-pinkInk justify-center">99+</span>
-            </div>
-          </div>
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Tag</h3>
-            <div class="flex flex-wrap items-center gap-2 text-[12px]">
-              <span class="inline-flex items-center gap-1 px-2 h-6 rounded-md border border-line text-ink-700">
-                Tellus
-                <button class="text-ink-400 hover:text-ink-900">
-                  {SVG_0}
-                </button>
-              </span>
-              <span
-                class="inline-flex items-center gap-1 px-2 h-6 rounded-md border border-line text-ink-700">Convallis</span>
-            </div>
-          </div>
-        </div>"#
-    );
+    let mut status_row = Division::builder();
+    status_row.class("flex flex-wrap items-center gap-2 text-[12px] font-medium");
+    for (badge_cls, dot_cls, label) in STATUSES {
+        let badge_cls =
+            format!("inline-flex items-center gap-1.5 px-2 h-6 rounded-pill {badge_cls}");
+        let dot_cls = format!("h-1.5 w-1.5 rounded-full {dot_cls}");
+        let label = (*label).to_owned();
+        let span = html::inline_text::Span::builder()
+            .class(badge_cls)
+            .span(|s| s.class(dot_cls))
+            .text(label)
+            .build();
+        status_row.push(span);
+    }
+    status_row.span(|s| {
+        s.class("inline-flex items-center px-2 h-6 rounded-pill bg-surfaceMuted text-ink-700")
+            .text("Draft")
+    });
+
+    let content = Division::builder()
+        .class("space-y-6")
+        // Status
+        .division(|d| {
+            d.heading_3(|h| h.class("text-[13px] mono uppercase tracking-wider text-ink-500 mb-3").text("Status"))
+                .push(status_row.build())
+        })
+        // Counts
+        .division(|d| {
+            d.heading_3(|h| h.class("text-[13px] mono uppercase tracking-wider text-ink-500 mb-3").text("Counts"))
+                .division(|g| {
+                    g.class("flex flex-wrap items-center gap-2 text-[12px] font-medium")
+                        .span(|s| s.class("inline-flex items-center px-1.5 min-w-[20px] h-5 rounded-pill bg-ink-700 text-canvas justify-center").text("3"))
+                        .span(|s| s.class("inline-flex items-center px-1.5 min-w-[20px] h-5 rounded-pill bg-surfaceMuted text-ink-700 border border-line justify-center").text("12"))
+                        .span(|s| s.class("inline-flex items-center px-1.5 min-w-[20px] h-5 rounded-pill bg-cat-pink text-cat-pinkInk justify-center").text("99+"))
+                })
+        })
+        // Tags
+        .division(|d| {
+            d.heading_3(|h| h.class("text-[13px] mono uppercase tracking-wider text-ink-500 mb-3").text("Tag"))
+                .division(|g| {
+                    g.class("flex flex-wrap items-center gap-2 text-[12px]")
+                        .span(|s| {
+                            s.class("inline-flex items-center gap-1 px-2 h-6 rounded-md border border-line text-ink-700")
+                                .text("Tellus")
+                                .button(|b| b.class("text-ink-400 hover:text-ink-900").text(SVG_CLOSE))
+                        })
+                        .span(|s| {
+                            s.class("inline-flex items-center gap-1 px-2 h-6 rounded-md border border-line text-ink-700")
+                                .text("Convallis")
+                        })
+                })
+        })
+        .build()
+        .to_string();
+
     super::section(
         "badges",
         "15",

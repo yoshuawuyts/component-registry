@@ -1,160 +1,190 @@
 //! 23 — Motion.
 
-const SVG_0: &str = r#"<svg class="ease-curve mt-3" viewBox="0 0 200 56" preserveAspectRatio="none"> <path class="track" d="M0,56 L200,56 M0,0 L0,56" /> <path class="curve" d="M0,56 C40,56 0,0 200,0" /> </svg>"#;
-const SVG_1: &str = r#"<svg class="ease-curve mt-3" viewBox="0 0 200 56" preserveAspectRatio="none"> <path class="track" d="M0,56 L200,56 M0,0 L0,56" /> <path class="curve" d="M0,56 C0,56 0,0 200,0" /> </svg>"#;
-const SVG_2: &str = r#"<svg class="ease-curve mt-3" viewBox="0 0 200 56" preserveAspectRatio="none"> <path class="track" d="M0,56 L200,56 M0,0 L0,56" /> <path class="curve" d="M0,56 C80,56 200,56 200,0" /> </svg>"#;
-const SVG_3: &str = r#"<svg class="ease-curve mt-3" viewBox="0 0 200 56" preserveAspectRatio="none"> <path class="track" d="M0,56 L200,56 M0,0 L0,56" /> <path class="curve" d="M0,56 C68,56 120,-18 200,0" /> </svg>"#;
+use html::text_content::Division;
+
+const SVG_STANDARD: &str = r#"<svg class="ease-curve mt-3" viewBox="0 0 200 56" preserveAspectRatio="none"><path class="track" d="M0,56 L200,56 M0,0 L0,56" /><path class="curve" d="M0,56 C40,56 0,0 200,0" /></svg>"#;
+const SVG_ENTRANCE: &str = r#"<svg class="ease-curve mt-3" viewBox="0 0 200 56" preserveAspectRatio="none"><path class="track" d="M0,56 L200,56 M0,0 L0,56" /><path class="curve" d="M0,56 C0,56 0,0 200,0" /></svg>"#;
+const SVG_EXIT: &str = r#"<svg class="ease-curve mt-3" viewBox="0 0 200 56" preserveAspectRatio="none"><path class="track" d="M0,56 L200,56 M0,0 L0,56" /><path class="curve" d="M0,56 C80,56 200,56 200,0" /></svg>"#;
+const SVG_SPRING: &str = r#"<svg class="ease-curve mt-3" viewBox="0 0 200 56" preserveAspectRatio="none"><path class="track" d="M0,56 L200,56 M0,0 L0,56" /><path class="curve" d="M0,56 C68,56 120,-18 200,0" /></svg>"#;
+
+struct Curve {
+    name: &'static str,
+    value: &'static str,
+    svg: &'static str,
+    desc: &'static str,
+}
+
+const CURVES: &[Curve] = &[
+    Curve {
+        name: "Standard",
+        value: "cubic-bezier(.2,0,0,1)",
+        svg: SVG_STANDARD,
+        desc: "Default for state changes \u{2014} hover, focus, expand.",
+    },
+    Curve {
+        name: "Entrance",
+        value: "cubic-bezier(0,0,0,1)",
+        svg: SVG_ENTRANCE,
+        desc: "Elements arriving on screen \u{2014} toasts, popovers, modals.",
+    },
+    Curve {
+        name: "Exit",
+        value: "cubic-bezier(.4,0,1,1)",
+        svg: SVG_EXIT,
+        desc: "Elements leaving \u{2014} dismissed alerts, closed sheets.",
+    },
+    Curve {
+        name: "Spring",
+        value: "cubic-bezier(.34,1.56,.64,1)",
+        svg: SVG_SPRING,
+        desc: "Reserved for direct manipulation feedback \u{2014} toggles, drag-snap.",
+    },
+];
+
+const DURATIONS: &[(&str, &str, &str)] = &[
+    ("fast", "120ms", "Color, opacity, focus rings."),
+    (
+        "base",
+        "180ms",
+        "Default transition. Hover, expand-collapse.",
+    ),
+    ("slow", "260ms", "Position changes, panel slides."),
+    ("page", "360ms", "Route transitions, modal open."),
+];
+
+const PREVIEWS: &[(&str, &str)] = &[
+    ("fast \u{00b7} std", "t-fast"),
+    ("base \u{00b7} std", "t-base"),
+    ("slow \u{00b7} std", "t-slow"),
+    ("page \u{00b7} spring", "t-spring"),
+];
+
+const RULES: &[(&str, &str)] = &[
+    (
+        "01",
+        r#"Animate <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">transform</code> and <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">opacity</code> only. Avoid <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">width</code>, <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">height</code>, <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">top</code>."#,
+    ),
+    (
+        "02",
+        r#"Default to <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">base</code> + <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">standard</code>. Pick another token only when intent demands it."#,
+    ),
+    (
+        "03",
+        r#"Pair entrance and exit asymmetrically: enter on <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">entrance</code>, leave on <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">exit</code>, exits 60\u{2013}80% of the entrance duration."#,
+    ),
+    (
+        "04",
+        "Spring is for human-initiated, direct manipulation only. Never for system events.",
+    ),
+    (
+        "05",
+        r#"Honor <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">prefers-reduced-motion</code> \u{2014} collapse to instant or to a 60ms cross-fade."#,
+    ),
+];
 
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = format!(
-        r#"<div class="space-y-10">
-          <!-- Curves -->
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Easing curves</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="p-4 rounded-md border border-lineSoft">
-                <div class="flex items-baseline justify-between">
-                  <div class="text-[13px] font-medium">Standard</div>
-                  <div class="text-[11px] mono text-ink-500">cubic-bezier(.2,0,0,1)</div>
-                </div>
-                {SVG_0}
-                <div class="mt-2 text-[12px] text-ink-500">Default for state changes — hover, focus, expand.</div>
-              </div>
-              <div class="p-4 rounded-md border border-lineSoft">
-                <div class="flex items-baseline justify-between">
-                  <div class="text-[13px] font-medium">Entrance</div>
-                  <div class="text-[11px] mono text-ink-500">cubic-bezier(0,0,0,1)</div>
-                </div>
-                {SVG_1}
-                <div class="mt-2 text-[12px] text-ink-500">Elements arriving on screen — toasts, popovers, modals.</div>
-              </div>
-              <div class="p-4 rounded-md border border-lineSoft">
-                <div class="flex items-baseline justify-between">
-                  <div class="text-[13px] font-medium">Exit</div>
-                  <div class="text-[11px] mono text-ink-500">cubic-bezier(.4,0,1,1)</div>
-                </div>
-                {SVG_2}
-                <div class="mt-2 text-[12px] text-ink-500">Elements leaving — dismissed alerts, closed sheets.</div>
-              </div>
-              <div class="p-4 rounded-md border border-lineSoft">
-                <div class="flex items-baseline justify-between">
-                  <div class="text-[13px] font-medium">Spring</div>
-                  <div class="text-[11px] mono text-ink-500">cubic-bezier(.34,1.56,.64,1)</div>
-                </div>
-                {SVG_3}
-                <div class="mt-2 text-[12px] text-ink-500">Reserved for direct manipulation feedback — toggles,
-                  drag-snap.</div>
-              </div>
-            </div>
-          </div>
+    // Curves grid
+    let mut curves_grid = Division::builder();
+    curves_grid.class("grid grid-cols-1 md:grid-cols-2 gap-4");
+    for c in CURVES {
+        let card = Division::builder()
+            .class("p-4 rounded-md border border-lineSoft")
+            .division(|hdr| {
+                hdr.class("flex items-baseline justify-between")
+                    .division(|n| n.class("text-[13px] font-medium").text(c.name))
+                    .division(|v| v.class("text-[11px] mono text-ink-500").text(c.value))
+            })
+            .text(c.svg)
+            .division(|d| d.class("mt-2 text-[12px] text-ink-500").text(c.desc))
+            .build();
+        curves_grid.push(card);
+    }
 
-          <!-- Durations -->
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Durations</h3>
-            <div class="divide-y divide-lineSoft border-t border-lineSoft">
-              <div class="py-3 grid grid-cols-[80px_80px_1fr] gap-4 items-center text-[13px]">
-                <span class="mono">fast</span><span class="mono text-ink-500">120ms</span><span
-                  class="text-ink-700">Color, opacity, focus rings.</span>
-              </div>
-              <div class="py-3 grid grid-cols-[80px_80px_1fr] gap-4 items-center text-[13px]">
-                <span class="mono">base</span><span class="mono text-ink-500">180ms</span><span
-                  class="text-ink-700">Default transition. Hover, expand-collapse.</span>
-              </div>
-              <div class="py-3 grid grid-cols-[80px_80px_1fr] gap-4 items-center text-[13px]">
-                <span class="mono">slow</span><span class="mono text-ink-500">260ms</span><span
-                  class="text-ink-700">Position changes, panel slides.</span>
-              </div>
-              <div class="py-3 grid grid-cols-[80px_80px_1fr] gap-4 items-center text-[13px]">
-                <span class="mono">page</span><span class="mono text-ink-500">360ms</span><span
-                  class="text-ink-700">Route transitions, modal open.</span>
-              </div>
-            </div>
-          </div>
+    // Durations
+    let mut dur_rows = Division::builder();
+    dur_rows.class("divide-y divide-lineSoft border-t border-lineSoft");
+    for (name, ms, desc) in DURATIONS {
+        let row = Division::builder()
+            .class("py-3 grid grid-cols-[80px_80px_1fr] gap-4 items-center text-[13px]")
+            .span(|s| s.class("mono").text(*name))
+            .span(|s| s.class("mono text-ink-500").text(*ms))
+            .span(|s| s.class("text-ink-700").text(*desc))
+            .build();
+        dur_rows.push(row);
+    }
 
-          <!-- Live preview -->
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Preview <span
-                class="font-normal normal-case text-ink-400">(hover row)</span></h3>
-            <div class="space-y-2">
-              <div
-                class="motion-track group flex items-center gap-4 p-2 rounded-md border border-lineSoft hover:bg-canvas">
-                <span class="mono text-[12px] text-ink-500 w-20">fast · std</span>
-                <div class="relative flex-1 h-8">
-                  <div class="motion-target t-fast"></div>
-                </div>
-              </div>
-              <div
-                class="motion-track group flex items-center gap-4 p-2 rounded-md border border-lineSoft hover:bg-canvas">
-                <span class="mono text-[12px] text-ink-500 w-20">base · std</span>
-                <div class="relative flex-1 h-8">
-                  <div class="motion-target t-base"></div>
-                </div>
-              </div>
-              <div
-                class="motion-track group flex items-center gap-4 p-2 rounded-md border border-lineSoft hover:bg-canvas">
-                <span class="mono text-[12px] text-ink-500 w-20">slow · std</span>
-                <div class="relative flex-1 h-8">
-                  <div class="motion-target t-slow"></div>
-                </div>
-              </div>
-              <div
-                class="motion-track group flex items-center gap-4 p-2 rounded-md border border-lineSoft hover:bg-canvas">
-                <span class="mono text-[12px] text-ink-500 w-20">page · spring</span>
-                <div class="relative flex-1 h-8">
-                  <div class="motion-target t-spring"></div>
-                </div>
-              </div>
-            </div>
-          </div>
+    // Preview tracks
+    let mut preview_rows = Division::builder();
+    preview_rows.class("space-y-2");
+    for (label, target_class) in PREVIEWS {
+        let row = Division::builder()
+            .class("motion-track group flex items-center gap-4 p-2 rounded-md border border-lineSoft hover:bg-canvas")
+            .span(|s| s.class("mono text-[12px] text-ink-500 w-20").text(*label))
+            .division(|track| {
+                track.class("relative flex-1 h-8")
+                    .division(|target| target.class(format!("motion-target {target_class}")))
+            })
+            .build();
+        preview_rows.push(row);
+    }
 
-          <!-- Rules -->
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Rules</h3>
-            <ul class="space-y-2 text-[13px] text-ink-700 leading-relaxed">
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">01</span>
-                <p>Animate <code
-                    class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">transform</code> and
-                  <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">opacity</code>
-                  only. Avoid <code
-                    class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">width</code>, <code
-                    class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">height</code>, <code
-                    class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">top</code>.
-                </p>
-              </li>
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">02</span>
-                <p>Default to <code
-                    class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">base</code> + <code
-                    class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">standard</code>.
-                  Pick
-                  another token only when intent demands it.</p>
-              </li>
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">03</span>
-                <p>Pair entrance and exit
-                  asymmetrically: enter on <code
-                    class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">entrance</code>,
-                  leave
-                  on <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">exit</code>,
-                  exits 60–80% of the entrance duration.</p>
-              </li>
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">04</span>
-                <p>Spring is for
-                  human-initiated, direct manipulation only. Never for system events.</p>
-              </li>
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">05</span>
-                <p>Honor <code
-                    class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">prefers-reduced-motion</code>
-                  — collapse to instant or to a 60ms cross-fade.</p>
-              </li>
-            </ul>
-          </div>
-        </div>"#
-    );
+    // Rules
+    let mut rules_ul = html::text_content::UnorderedList::builder();
+    rules_ul.class("space-y-2 text-[13px] text-ink-700 leading-relaxed");
+    for (num, text) in RULES {
+        let num = (*num).to_owned();
+        let text = (*text).to_owned();
+        let li = html::text_content::ListItem::builder()
+            .class("flex gap-3")
+            .span(|s| s.class("mono text-ink-500 w-12 shrink-0").text(num))
+            .paragraph(|p| p.text(text))
+            .build();
+        rules_ul.push(li);
+    }
+
+    let content = Division::builder()
+        .class("space-y-10")
+        .division(|d| {
+            d.heading_3(|h| {
+                h.class("text-[13px] mono uppercase tracking-wider text-ink-500 mb-3")
+                    .text("Easing curves")
+            })
+            .push(curves_grid.build())
+        })
+        .division(|d| {
+            d.heading_3(|h| {
+                h.class("text-[13px] mono uppercase tracking-wider text-ink-500 mb-3")
+                    .text("Durations")
+            })
+            .push(dur_rows.build())
+        })
+        .division(|d| {
+            d.heading_3(|h| {
+                h.class("text-[13px] mono uppercase tracking-wider text-ink-500 mb-3")
+                    .text("Preview ")
+                    .span(|s| {
+                        s.class("font-normal normal-case text-ink-400")
+                            .text("(hover row)")
+                    })
+            })
+            .push(preview_rows.build())
+        })
+        .division(|d| {
+            d.heading_3(|h| {
+                h.class("text-[13px] mono uppercase tracking-wider text-ink-500 mb-3")
+                    .text("Rules")
+            })
+            .push(rules_ul.build())
+        })
+        .build()
+        .to_string();
+
     super::section(
         "motion",
         "23",
         "Motion",
-        "Motion is functional: it explains state changes, never decorates them. Most transitions sit between 120\u{2013}260ms on the <code class=\"px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]\">standard</code> curve. Anything longer needs a reason.",
+        r#"Motion is functional: it explains state changes, never decorates them. Most transitions sit between 120–260ms on the <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">standard</code> curve. Anything longer needs a reason."#,
         &content,
     )
 }

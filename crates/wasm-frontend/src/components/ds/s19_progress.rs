@@ -1,77 +1,75 @@
 //! 19 — Progress & Spinner.
 
-const SVG_0: &str = r#"<svg class="ds-spinner text-ink-900" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"> <path d="M21 12a9 9 0 1 1-6.2-8.55" /> </svg>"#;
-const SVG_1: &str = r#"<svg class="ds-spinner text-ink-500" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"> <path d="M21 12a9 9 0 1 1-6.2-8.55" /> </svg>"#;
-const SVG_2: &str = r#"<svg class="ds-spinner text-ink-300" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"> <path d="M21 12a9 9 0 1 1-6.2-8.55" /> </svg>"#;
+use html::text_content::Division;
+
+const SVG_SPIN_SM: &str = r#"<svg class="ds-spinner text-ink-900" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.55" /></svg>"#;
+const SVG_SPIN_MD: &str = r#"<svg class="ds-spinner text-ink-500" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.55" /></svg>"#;
+const SVG_SPIN_LG: &str = r#"<svg class="ds-spinner text-ink-300" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.55" /></svg>"#;
+
+fn progress_bar(label: &'static str, pct: &'static str, fill_class: &'static str) -> Division {
+    Division::builder()
+        .division(|labels| {
+            labels
+                .class("flex justify-between text-[12px] text-ink-500 mb-1")
+                .span(|s| s.text(label))
+                .span(|s| s.class("mono").text(pct))
+        })
+        .division(|track| {
+            track
+                .class("h-1.5 w-full rounded-pill bg-surfaceMuted overflow-hidden")
+                .division(|fill| {
+                    fill.class(format!("h-full {fill_class} rounded-pill"))
+                        .style(format!("width:{pct}"))
+                })
+        })
+        .build()
+}
 
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = format!(
-        r#"<div class="space-y-8">
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Progress bar</h3>
-            <div class="space-y-2 max-w-md">
-              <div>
-                <div class="flex justify-between text-[12px] text-ink-500 mb-1"><span>Aenean lectus</span><span
-                    class="mono">68%</span></div>
-                <div class="h-1.5 w-full rounded-pill bg-surfaceMuted overflow-hidden">
-                  <div class="h-full bg-ink-900 rounded-pill" style="width:68%"></div>
-                </div>
-              </div>
-              <div>
-                <div class="flex justify-between text-[12px] text-ink-500 mb-1"><span>Pellentesque</span><span
-                    class="mono">24%</span></div>
-                <div class="h-1.5 w-full rounded-pill bg-surfaceMuted overflow-hidden">
-                  <div class="h-full bg-cat-greenInk rounded-pill" style="width:24%"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Spinner</h3>
-            <style>
-              @keyframes ds-spin {{
-                to {{
-                  transform: rotate(360deg);
-                }}
-              }}
+    let content = Division::builder()
+        .class("space-y-8")
+        // Progress bar
+        .division(|d| {
+            d.heading_3(|h| {
+                h.class("text-[13px] mono uppercase tracking-wider text-ink-500 mb-3")
+                    .text("Progress bar")
+            })
+            .division(|g| {
+                g.class("space-y-2 max-w-md")
+                    .push(progress_bar("Aenean lectus", "68%", "bg-ink-900"))
+                    .push(progress_bar("Pellentesque", "24%", "bg-cat-greenInk"))
+            })
+        })
+        // Spinner
+        .division(|d| {
+            d.heading_3(|h| {
+                h.class("text-[13px] mono uppercase tracking-wider text-ink-500 mb-3")
+                    .text("Spinner")
+            })
+            .division(|g| {
+                g.class("flex items-center gap-4")
+                    .text(SVG_SPIN_SM)
+                    .text(SVG_SPIN_MD)
+                    .text(SVG_SPIN_LG)
+            })
+        })
+        // Skeleton
+        .division(|d| {
+            d.heading_3(|h| {
+                h.class("text-[13px] mono uppercase tracking-wider text-ink-500 mb-3")
+                    .text("Skeleton")
+            })
+            .division(|g| {
+                g.class("max-w-md space-y-2")
+                    .division(|s| s.class("ds-skel h-4 w-2/3 rounded bg-surfaceMuted"))
+                    .division(|s| s.class("ds-skel h-3 w-full rounded bg-surfaceMuted"))
+                    .division(|s| s.class("ds-skel h-3 w-5/6 rounded bg-surfaceMuted"))
+            })
+        })
+        .build()
+        .to_string();
 
-              .ds-spinner {{
-                animation: ds-spin 0.8s linear infinite;
-              }}
-
-              @keyframes ds-pulse {{
-
-                0%,
-                100% {{
-                  opacity: 1;
-                }}
-
-                50% {{
-                  opacity: .5;
-                }}
-              }}
-
-              .ds-skel {{
-                animation: ds-pulse 1.4s ease-in-out infinite;
-              }}
-            </style>
-            <div class="flex items-center gap-4">
-              {SVG_0}
-              {SVG_1}
-              {SVG_2}
-            </div>
-          </div>
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Skeleton</h3>
-            <div class="max-w-md space-y-2">
-              <div class="ds-skel h-4 w-2/3 rounded bg-surfaceMuted"></div>
-              <div class="ds-skel h-3 w-full rounded bg-surfaceMuted"></div>
-              <div class="ds-skel h-3 w-5/6 rounded bg-surfaceMuted"></div>
-            </div>
-          </div>
-        </div>"#
-    );
     super::section(
         "progress",
         "19",
