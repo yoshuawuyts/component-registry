@@ -28,28 +28,28 @@ const SVG_CHEV_SPLIT: &str = concat!(
     "</svg>"
 );
 const SVG_COPY: &str = concat!(
-    r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">"#,
-    include_str!("../../../../../vendor/lucide/copy-16x16.svg"),
+    r#"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">"#,
+    include_str!("../../../../../vendor/lucide/copy.svg"),
     "</svg>"
 );
 const SVG_CHECK: &str = concat!(
-    r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">"#,
-    include_str!("../../../../../vendor/lucide/check-16x16.svg"),
+    r#"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">"#,
+    include_str!("../../../../../vendor/lucide/check.svg"),
     "</svg>"
 );
 const SVG_COPY_LONG: &str = concat!(
-    r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">"#,
-    include_str!("../../../../../vendor/lucide/copy-16x16.svg"),
+    r#"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">"#,
+    include_str!("../../../../../vendor/lucide/copy.svg"),
     "</svg>"
 );
 const SVG_FAIL: &str = concat!(
-    r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">"#,
-    include_str!("../../../../../vendor/lucide/x-sharp-16x16.svg"),
+    r#"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">"#,
+    include_str!("../../../../../vendor/lucide/x.svg"),
     "</svg>"
 );
 const SVG_COPY_DISABLED: &str = concat!(
-    r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">"#,
-    include_str!("../../../../../vendor/lucide/copy-16x16.svg"),
+    r#"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">"#,
+    include_str!("../../../../../vendor/lucide/copy.svg"),
     "</svg>"
 );
 const SVG_MINUS: &str = concat!(

@@ -51,9 +51,9 @@ expression: "crate::components::ds::pretty_html(&render())"
                   </nav>
                 </div>
                 <button type="button" class="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-[13px] text-ink-500 flex items-center gap-2 hover:bg-surfaceMuted hover:text-ink-700 transition-colors">
-                  <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                    <circle cx="7" cy="7" r="4.5" />
-                    <path d="m10.5 10.5 3 3" />
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
                   </svg>
                   <span class="truncate">
                     Search commands, flags, env vars…
@@ -73,8 +73,8 @@ expression: "crate::components::ds::pretty_html(&render())"
                     Changelog
                   </a>
                   <button type="button" aria-label="Toggle color theme" class="inline-flex items-center justify-center h-7 w-7 rounded-md border border-line bg-surface text-ink-700 hover:bg-surfaceMuted hover:text-ink-900 transition-colors">
-                    <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z" />
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                     </svg>
                   </button>
                 </div>
@@ -122,9 +122,9 @@ expression: "crate::components::ds::pretty_html(&render())"
                   </nav>
                 </div>
                 <button type="button" class="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-[13px] text-ink-500 flex items-center gap-2 hover:bg-surfaceMuted hover:text-ink-700 transition-colors">
-                  <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                    <circle cx="7" cy="7" r="4.5" />
-                    <path d="m10.5 10.5 3 3" />
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
                   </svg>
                   <span class="truncate">
                     Search…
@@ -138,8 +138,8 @@ expression: "crate::components::ds::pretty_html(&render())"
                     Reference
                   </a>
                   <button type="button" aria-label="Toggle color theme" class="inline-flex items-center justify-center h-7 w-7 rounded-md border border-line bg-surface text-ink-700 hover:bg-surfaceMuted hover:text-ink-900">
-                    <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z" />
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                     </svg>
                   </button>
                 </div>
@@ -176,8 +176,10 @@ expression: "crate::components::ds::pretty_html(&render())"
                 <div class="sticky top-0 z-10 bg-canvas/90 backdrop-blur border-b hairline">
                   <div class="px-3 h-12 flex items-center gap-2">
                     <button type="button" aria-label="Open menu" class="inline-flex items-center justify-center h-8 w-8 -ml-1 rounded-md text-ink-700 hover:bg-surfaceMuted hover:text-ink-900 flex-shrink-0">
-                      <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                        <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" />
+                      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M4 5h16" />
+                        <path d="M4 12h16" />
+                        <path d="M4 19h16" />
                       </svg>
                     </button>
                     <nav aria-label="Breadcrumb" class="flex items-center gap-1 mono text-[13px] text-ink-500 min-w-0">
@@ -192,9 +194,9 @@ expression: "crate::components::ds::pretty_html(&render())"
                       </span>
                     </nav>
                     <button type="button" aria-label="Search" class="ml-auto inline-flex items-center justify-center h-8 w-8 -mr-1 rounded-md text-ink-700 hover:bg-surfaceMuted hover:text-ink-900 flex-shrink-0">
-                      <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                        <circle cx="7" cy="7" r="4.5" />
-                        <path d="m10.5 10.5 3 3" />
+                      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="m21 21-4.3-4.3" />
                       </svg>
                     </button>
                   </div>
@@ -221,8 +223,9 @@ expression: "crate::components::ds::pretty_html(&render())"
               <div class="sticky top-0 z-30 bg-canvas/90 backdrop-blur border-b hairline">
                 <div class="px-3 h-12 flex items-center gap-2">
                   <button type="button" aria-label="Close menu" class="inline-flex items-center justify-center h-8 w-8 -ml-1 rounded-md text-ink-900 bg-surfaceMuted flex-shrink-0">
-                    <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                      <path d="m3.5 3.5 9 9M12.5 3.5l-9 9" />
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                      <path d="M18 6 6 18" />
+                      <path d="m6 6 12 12" />
                     </svg>
                   </button>
                   <nav aria-label="Breadcrumb" class="flex items-center gap-1 mono text-[13px] text-ink-500 min-w-0">
@@ -237,9 +240,9 @@ expression: "crate::components::ds::pretty_html(&render())"
                     </span>
                   </nav>
                   <button disabled type="button" aria-label="Search" class="ml-auto inline-flex items-center justify-center h-8 w-8 -mr-1 rounded-md text-ink-400 flex-shrink-0">
-                    <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                      <circle cx="7" cy="7" r="4.5" />
-                      <path d="m10.5 10.5 3 3" />
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="m21 21-4.3-4.3" />
                     </svg>
                   </button>
                 </div>
@@ -308,14 +311,14 @@ expression: "crate::components::ds::pretty_html(&render())"
                 <div class="sticky top-0 z-10 bg-canvas/90 backdrop-blur border-b hairline">
                   <div class="px-3 h-12 flex items-center gap-2">
                     <button type="button" aria-label="Cancel search" class="inline-flex items-center justify-center h-8 w-8 -ml-1 rounded-md text-ink-700 hover:bg-surfaceMuted hover:text-ink-900 flex-shrink-0">
-                      <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="m11 3.5-5 5 5 5" />
+                      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m15 18-6-6 6-6" />
                       </svg>
                     </button>
                     <div class="flex-1 h-8 px-2.5 rounded-md border border-ink-900 bg-canvas text-[13px] text-ink-900 flex items-center gap-2 min-w-0">
-                      <svg class="h-3.5 w-3.5 text-ink-500 flex-shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                        <circle cx="7" cy="7" r="4.5" />
-                        <path d="m10.5 10.5 3 3" />
+                      <svg class="h-3.5 w-3.5 text-ink-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="m21 21-4.3-4.3" />
                       </svg>
                       <span class="mono truncate">
                         wasi:htt

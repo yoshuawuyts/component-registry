@@ -3,8 +3,8 @@
 use html::text_content::Division;
 
 const SVG_COPY: &str = concat!(
-    r#"<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">"#,
-    include_str!("../../../../../vendor/lucide/copy-16x16.svg"),
+    r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">"#,
+    include_str!("../../../../../vendor/lucide/copy.svg"),
     "</svg>"
 );
 

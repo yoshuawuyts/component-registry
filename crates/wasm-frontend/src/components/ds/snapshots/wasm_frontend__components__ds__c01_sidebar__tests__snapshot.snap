@@ -29,8 +29,8 @@ expression: "crate::components::ds::pretty_html(&render())"
             <span class="mono">
               v2.4.0 (latest)
             </span>
-            <svg class="h-3 w-3 text-ink-500" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="m3 4.5 3 3 3-3" />
+            <svg class="h-3 w-3 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="m6 9 6 6 6-6" />
             </svg>
           </button>
         </div>
@@ -75,8 +75,8 @@ expression: "crate::components::ds::pretty_html(&render())"
           </a>
           <details open>
             <summary class="tree-link active">
-              <svg class="chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="m4 2 3 3-3 3" />
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m9 18 6-6-6-6" />
               </svg>
               <span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilacInk);">
                 G
@@ -125,8 +125,8 @@ expression: "crate::components::ds::pretty_html(&render())"
           </details>
           <details>
             <summary class="tree-link">
-              <svg class="chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="m4 2 3 3-3 3" />
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m9 18 6-6-6-6" />
               </svg>
               <span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilacInk);">
                 G
@@ -141,8 +141,8 @@ expression: "crate::components::ds::pretty_html(&render())"
           </details>
           <details>
             <summary class="tree-link">
-              <svg class="chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="m4 2 3 3-3 3" />
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m9 18 6-6-6-6" />
               </svg>
               <span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilacInk);">
                 G

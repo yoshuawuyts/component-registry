@@ -13,28 +13,28 @@ const SVG_CHEV_RIGHT: &str = concat!(
     "</svg>"
 );
 const SVG_SEARCH_SM: &str = concat!(
-    r#"<svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">"#,
-    include_str!("../../../../../vendor/lucide/search-16x16.svg"),
+    r#"<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">"#,
+    include_str!("../../../../../vendor/lucide/search.svg"),
     "</svg>"
 );
 const SVG_MOON_SM: &str = concat!(
-    r#"<svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">"#,
-    include_str!("../../../../../vendor/lucide/moon-16x16.svg"),
+    r#"<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/moon.svg"),
     "</svg>"
 );
 const SVG_HAMBURGER: &str = concat!(
-    r#"<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">"#,
-    include_str!("../../../../../vendor/lucide/menu-16x16.svg"),
+    r#"<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">"#,
+    include_str!("../../../../../vendor/lucide/menu.svg"),
     "</svg>"
 );
 const SVG_SEARCH_LG: &str = concat!(
-    r#"<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">"#,
-    include_str!("../../../../../vendor/lucide/search-16x16.svg"),
+    r#"<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">"#,
+    include_str!("../../../../../vendor/lucide/search.svg"),
     "</svg>"
 );
 const SVG_CLOSE: &str = concat!(
-    r#"<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">"#,
-    include_str!("../../../../../vendor/lucide/x-16x16.svg"),
+    r#"<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">"#,
+    include_str!("../../../../../vendor/lucide/x.svg"),
     "</svg>"
 );
 const SVG_HOME_NAV: &str = concat!(
@@ -63,13 +63,13 @@ const SVG_MOON_NAV: &str = concat!(
     "</svg>"
 );
 const SVG_BACK: &str = concat!(
-    r#"<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">"#,
-    include_str!("../../../../../vendor/lucide/chevron-left-sm-16x16.svg"),
+    r#"<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/chevron-left.svg"),
     "</svg>"
 );
 const SVG_SEARCH_NAV: &str = concat!(
-    r#"<svg class="h-3.5 w-3.5 text-ink-500 flex-shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">"#,
-    include_str!("../../../../../vendor/lucide/search-16x16.svg"),
+    r#"<svg class="h-3.5 w-3.5 text-ink-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">"#,
+    include_str!("../../../../../vendor/lucide/search.svg"),
     "</svg>"
 );
 

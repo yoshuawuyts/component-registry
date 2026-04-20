@@ -4,8 +4,8 @@ use html::content::Navigation;
 use html::text_content::Division;
 
 const SVG_UP: &str = concat!(
-    r#"<svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">"#,
-    include_str!("../../../../../vendor/lucide/chevron-up-12x12.svg"),
+    r#"<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">"#,
+    include_str!("../../../../../vendor/lucide/chevron-up.svg"),
     "</svg>"
 );
 
