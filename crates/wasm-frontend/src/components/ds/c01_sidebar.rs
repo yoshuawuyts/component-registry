@@ -1,8 +1,16 @@
 //! C01 — Nested Sidebar.
 
+const SVG_0: &str = r#"<svg class="h-3 w-3 text-ink-500" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"> <path d="m3 4.5 3 3 3-3" /> </svg>"#;
+const SVG_1: &str = r#"<svg class="chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"> <path d="m4 2 3 3-3 3" /> </svg>"#;
+const SVG_2: &str = r#"<svg class="chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"> <path d="m4 2 3 3-3 3" /> </svg>"#;
+const SVG_3: &str = r#"<svg class="chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"> <path d="m4 2 3 3-3 3" /> </svg>"#;
+const SVG_4: &str = r#"<svg class="h-3.5 w-3.5 text-ink-500 flex-shrink-0" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"> <path d="M8 .2a8 8 0 0 0-2.5 15.6c.4 0 .55-.17.55-.38v-1.4c-2.22.48-2.69-1.07-2.69-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.71 1.23 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.77-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.83-2.15-.08-.2-.36-1.02.08-2.13 0 0 .67-.22 2.2.82A7.6 7.6 0 0 1 8 4.04c.68 0 1.37.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.11.16 1.93.08 2.13.52.56.83 1.28.83 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.74.54 1.49v2.21c0 .21.15.46.55.38A8 8 0 0 0 8 .2Z" /> </svg>"#;
+const SVG_5: &str = r#"<svg class="h-3.5 w-3.5 text-ink-500 flex-shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"> <rect x="2.5" y="3" width="11" height="10" rx="1" /> <path d="M2.5 6.5h11M6 3v10" /> </svg>"#;
+
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r##"<div class="space-y-6">
+    let content = format!(
+        r##"<div class="space-y-6">
           <!-- Live demo -->
           <div class="border border-line rounded-lg bg-canvas p-4 max-w-[300px]">
 
@@ -12,10 +20,7 @@ pub(crate) fn render() -> String {
               <button
                 class="w-full h-7 px-2.5 rounded-md border border-line bg-surface flex items-center justify-between text-ink-900 hover:bg-surfaceMuted text-[12px]">
                 <span class="mono">v2.4.0 (latest)</span>
-                <svg class="h-3 w-3 text-ink-500" viewBox="0 0 12 12" fill="none" stroke="currentColor"
-                  stroke-width="1.5">
-                  <path d="m3 4.5 3 3 3-3" />
-                </svg>
+                {SVG_0}
               </button>
             </div>
 
@@ -44,9 +49,7 @@ pub(crate) fn render() -> String {
 
               <details open>
                 <summary class="tree-link active">
-                  <svg class="chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="m4 2 3 3-3 3" />
-                  </svg>
+                  {SVG_1}
                   <span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilacInk);">G</span>
                   <span class="mono">registry</span>
                   <span class="ml-auto mono text-[10.5px] text-ink-400">7</span>
@@ -73,9 +76,7 @@ pub(crate) fn render() -> String {
 
               <details>
                 <summary class="tree-link">
-                  <svg class="chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="m4 2 3 3-3 3" />
-                  </svg>
+                  {SVG_2}
                   <span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilacInk);">G</span>
                   <span class="mono">component</span>
                   <span class="ml-auto mono text-[10.5px] text-ink-400">5</span>
@@ -84,9 +85,7 @@ pub(crate) fn render() -> String {
 
               <details>
                 <summary class="tree-link">
-                  <svg class="chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="m4 2 3 3-3 3" />
-                  </svg>
+                  {SVG_3}
                   <span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilacInk);">G</span>
                   <span class="mono">wit</span>
                   <span class="ml-auto mono text-[10.5px] text-ink-400">4</span>
@@ -104,19 +103,11 @@ pub(crate) fn render() -> String {
               <div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-2">Project</div>
               <nav class="space-y-px">
                 <a href="#" class="tree-link">
-                  <svg class="h-3.5 w-3.5 text-ink-500 flex-shrink-0" viewBox="0 0 16 16" fill="currentColor"
-                    aria-hidden="true">
-                    <path
-                      d="M8 .2a8 8 0 0 0-2.5 15.6c.4 0 .55-.17.55-.38v-1.4c-2.22.48-2.69-1.07-2.69-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.71 1.23 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.77-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.83-2.15-.08-.2-.36-1.02.08-2.13 0 0 .67-.22 2.2.82A7.6 7.6 0 0 1 8 4.04c.68 0 1.37.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.11.16 1.93.08 2.13.52.56.83 1.28.83 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.74.54 1.49v2.21c0 .21.15.46.55.38A8 8 0 0 0 8 .2Z" />
-                  </svg>
+                  {SVG_4}
                   Repository
                 </a>
                 <a href="#" class="tree-link">
-                  <svg class="h-3.5 w-3.5 text-ink-500 flex-shrink-0" viewBox="0 0 16 16" fill="none"
-                    stroke="currentColor" stroke-width="1.4" aria-hidden="true">
-                    <rect x="2.5" y="3" width="11" height="10" rx="1" />
-                    <path d="M2.5 6.5h11M6 3v10" />
-                  </svg>
+                  {SVG_5}
                   Crates.io
                 </a>
               </nav>
@@ -185,13 +176,14 @@ pub(crate) fn render() -> String {
               </li>
             </ul>
           </div>
-        </div>"##;
+        </div>"##
+    );
     super::section(
         "c-sidebar",
         "C01",
         "Nested Sidebar",
         "Hierarchical navigation for reference docs. Top-level entries collapse with native <code class=\"mono text-[12px]\">&lt;details&gt;</code>; sigils classify each row by kind (command, group, flag, env, etc.).",
-        content,
+        &content,
     )
 }
 

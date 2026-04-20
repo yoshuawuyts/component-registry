@@ -1,8 +1,11 @@
 //! C03 — Page Header.
 
+const SVG_0: &str = r#"<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"> <rect x="4" y="4" width="9" height="9" rx="1.2" /> <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" /> </svg>"#;
+
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r#"<div class="space-y-10">
+    let content = format!(
+        r#"<div class="space-y-10">
           <!-- Install variant: kicker + title + tagline + copyable install command -->
           <div>
             <div class="text-[12px] text-ink-500 mb-3">Package · with install command</div>
@@ -35,11 +38,7 @@ pub(crate) fn render() -> String {
                     <button type="button"
                       class="inline-flex items-center justify-center w-7 h-7 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink-900"
                       aria-label="Copy install command">
-                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
-                        stroke-width="1.4" aria-hidden="true">
-                        <rect x="4" y="4" width="9" height="9" rx="1.2" />
-                        <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" />
-                      </svg>
+                      {SVG_0}
                     </button>
                   </div>
                 </div>
@@ -74,13 +73,14 @@ pub(crate) fn render() -> String {
               </li>
             </ul>
           </div>
-        </div>"#;
+        </div>"#
+    );
     super::section(
         "c-page-header",
         "C03",
         "Page Header",
         "Top-of-page identification block: a kicker, a large title, an optional tagline, and an optional metadata strip. Used to anchor reference and documentation pages.",
-        content,
+        &content,
     )
 }
 

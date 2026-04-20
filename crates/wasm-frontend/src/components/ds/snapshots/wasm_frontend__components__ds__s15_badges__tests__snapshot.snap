@@ -38,11 +38,7 @@ expression: render()
               <span class="inline-flex items-center gap-1 px-2 h-6 rounded-md border border-line text-ink-700">
                 Tellus
                 <button class="text-ink-400 hover:text-ink-900">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 6 6 18" />
-                    <path d="m6 6 12 12" />
-                  </svg>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M18 6 6 18" /> <path d="m6 6 12 12" /> </svg>
                 </button>
               </span>
               <span

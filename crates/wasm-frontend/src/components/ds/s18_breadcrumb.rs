@@ -1,21 +1,21 @@
 //! 18 — Breadcrumb & Pagination.
 
+const SVG_0: &str = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-300"> <path d="m9 18 6-6-6-6" /> </svg>"#;
+const SVG_1: &str = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-300"> <path d="m9 18 6-6-6-6" /> </svg>"#;
+const SVG_2: &str = r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="m15 18-6-6 6-6" /> </svg>"#;
+const SVG_3: &str = r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="m9 18 6-6-6-6" /> </svg>"#;
+
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r##"<div class="space-y-8">
+    let content = format!(
+        r##"<div class="space-y-8">
           <div>
             <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Breadcrumb</h3>
             <nav class="flex items-center gap-1.5 text-[13px] text-ink-500">
               <a href="#" class="hover:text-ink-900">Tellus</a>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round" class="text-ink-300">
-                <path d="m9 18 6-6-6-6" />
-              </svg>
+              {SVG_0}
               <a href="#" class="hover:text-ink-900">Pellentesque</a>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round" class="text-ink-300">
-                <path d="m9 18 6-6-6-6" />
-              </svg>
+              {SVG_1}
               <span class="text-ink-900 font-medium">Vestibulum ante</span>
             </nav>
           </div>
@@ -24,10 +24,7 @@ pub(crate) fn render() -> String {
             <div class="inline-flex items-center gap-1 text-[13px]">
               <button
                 class="h-8 w-8 grid place-items-center rounded-md border border-line bg-surface text-ink-500 hover:bg-surfaceMuted">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m15 18-6-6 6-6" />
-                </svg>
+                {SVG_2}
               </button>
               <button
                 class="h-8 w-8 grid place-items-center rounded-md border border-line bg-surface hover:bg-surfaceMuted">1</button>
@@ -39,20 +36,18 @@ pub(crate) fn render() -> String {
                 class="h-8 w-8 grid place-items-center rounded-md border border-line bg-surface hover:bg-surfaceMuted">12</button>
               <button
                 class="h-8 w-8 grid place-items-center rounded-md border border-line bg-surface text-ink-500 hover:bg-surfaceMuted">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m9 18 6-6-6-6" />
-                </svg>
+                {SVG_3}
               </button>
             </div>
           </div>
-        </div>"##;
+        </div>"##
+    );
     super::section(
         "breadcrumb",
         "19",
         "Breadcrumb &<br />Pagination",
         "Navigation context. Breadcrumb uses chevron separators and dims all but the current item. Pagination is square-buttoned for compact toolbars.",
-        content,
+        &content,
     )
 }
 

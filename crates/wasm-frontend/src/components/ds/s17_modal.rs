@@ -1,8 +1,11 @@
 //! 17 — Modal.
 
+const SVG_0: &str = r#"<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <path d="M18 6 6 18" /> <path d="m6 6 12 12" /> </svg>"#;
+
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r#"<div class="relative rounded-lg p-8 md:p-12 overflow-hidden bg-canvas">
+    let content = format!(
+        r#"<div class="relative rounded-lg p-8 md:p-12 overflow-hidden bg-canvas">
           <!-- Simulate the page beneath: a faint preview of content -->
           <div class="absolute inset-0 p-6 select-none pointer-events-none" aria-hidden="true">
             <div class="h-3 w-40 rounded mb-3" style="background: var(--c-ink-300);"></div>
@@ -19,11 +22,7 @@ pub(crate) fn render() -> String {
                 <div class="text-[12px] text-ink-500 mt-1">Lorem ipsum dolor sit amet</div>
               </div>
               <button class="text-ink-500 hover:text-ink-900">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M18 6 6 18" />
-                  <path d="m6 6 12 12" />
-                </svg>
+                {SVG_0}
               </button>
             </div>
             <div class="p-5 text-[14px] text-ink-700 leading-relaxed">
@@ -37,13 +36,14 @@ pub(crate) fn render() -> String {
                 class="h-8 px-3 rounded-lg bg-surfaceMuted text-ink-900 text-[13px] hover:bg-ink-300">Confirm</button>
             </div>
           </div>
-        </div>"#;
+        </div>"#
+    );
     super::section(
         "modal",
         "17",
         "Modal",
         "Centered dialog over a 50% ink scrim. 8px radius, 1px gray border, 24px padding. Header / body / footer rhythm.",
-        content,
+        &content,
     )
 }
 

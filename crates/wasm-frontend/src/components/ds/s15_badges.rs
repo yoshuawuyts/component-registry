@@ -1,8 +1,11 @@
 //! 15 — Badges.
 
+const SVG_0: &str = r#"<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M18 6 6 18" /> <path d="m6 6 12 12" /> </svg>"#;
+
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r#"<div class="space-y-6">
+    let content = format!(
+        r#"<div class="space-y-6">
           <div>
             <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Status</h3>
             <div class="flex flex-wrap items-center gap-2 text-[12px] font-medium">
@@ -38,24 +41,21 @@ pub(crate) fn render() -> String {
               <span class="inline-flex items-center gap-1 px-2 h-6 rounded-md border border-line text-ink-700">
                 Tellus
                 <button class="text-ink-400 hover:text-ink-900">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 6 6 18" />
-                    <path d="m6 6 12 12" />
-                  </svg>
+                  {SVG_0}
                 </button>
               </span>
               <span
                 class="inline-flex items-center gap-1 px-2 h-6 rounded-md border border-line text-ink-700">Convallis</span>
             </div>
           </div>
-        </div>"#;
+        </div>"#
+    );
     super::section(
         "badges",
         "15",
         "Badges",
         "Compact pill labels. Use categorical pairs for status; ink for counts and metadata.",
-        content,
+        &content,
     )
 }
 

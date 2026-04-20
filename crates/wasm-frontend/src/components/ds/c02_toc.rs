@@ -1,8 +1,11 @@
 //! C02 — On This Page.
 
+const SVG_0: &str = r#"<svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"> <path d="m3 7.5 3-3 3 3" /> </svg>"#;
+
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r##"<div class="space-y-6">
+    let content = format!(
+        r##"<div class="space-y-6">
           <!-- Live demo -->
           <div class="border border-line rounded-lg bg-canvas p-4 max-w-[240px]">
             <div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-2 px-2.5">On this page</div>
@@ -22,10 +25,7 @@ pub(crate) fn render() -> String {
             <div class="px-2.5 mt-4">
               <button type="button"
                 class="inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-[11px] mono text-ink-500 hover:bg-surfaceMuted hover:text-ink-900 transition-colors">
-                <svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"
-                  stroke-linecap="round">
-                  <path d="m3 7.5 3-3 3 3" />
-                </svg>
+                {SVG_0}
                 Back to top
               </button>
             </div>
@@ -83,13 +83,14 @@ pub(crate) fn render() -> String {
               </li>
             </ul>
           </div>
-        </div>"##;
+        </div>"##
+    );
     super::section(
         "c-toc",
         "C02",
         "On This Page",
         "Right-rail table of contents for long reference pages. A 1.5px left border lights up on hover and active state \u{2014} the only visual cue, no background fills.",
-        content,
+        &content,
     )
 }
 

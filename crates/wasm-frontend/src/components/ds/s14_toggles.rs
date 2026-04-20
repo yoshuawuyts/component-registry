@@ -1,17 +1,17 @@
 //! 14 — Checkbox, Radio, Switch.
 
+const SVG_0: &str = r#"<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"> <path d="M20 6 9 17l-5-5" /> </svg>"#;
+
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r#"<div class="space-y-8">
+    let content = format!(
+        r#"<div class="space-y-8">
           <div>
             <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Checkbox</h3>
             <div class="space-y-2">
               <label class="flex items-center gap-2 text-[14px]">
                 <span class="grid place-items-center h-4 w-4 rounded bg-ink-900 text-canvas">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 6 9 17l-5-5" />
-                  </svg>
+                  {SVG_0}
                 </span>
                 Aenean lectus
               </label>
@@ -57,13 +57,14 @@ pub(crate) fn render() -> String {
               </label>
             </div>
           </div>
-        </div>"#;
+        </div>"#
+    );
     super::section(
         "toggles",
         "14",
         "Checkbox · Radio · Switch",
         "All controls render in ink-900 when active. 16px hit area minimum on each control; full-row click target via wrapping label.",
-        content,
+        &content,
     )
 }
 

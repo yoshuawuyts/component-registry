@@ -1,8 +1,31 @@
 //! C06 — Navbar.
 
+const SVG_0: &str = r#"<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2h-4a1 1 0 0 1-1-1v-5a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v5a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2z" /> </svg>"#;
+const SVG_1: &str = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-300 flex-shrink-0" aria-hidden="true"> <path d="m9 18 6-6-6-6" /> </svg>"#;
+const SVG_2: &str = r#"<svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"> <circle cx="7" cy="7" r="4.5" /> <path d="m10.5 10.5 3 3" /> </svg>"#;
+const SVG_3: &str = r#"<svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"> <path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z" /> </svg>"#;
+const SVG_4: &str = r#"<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2h-4a1 1 0 0 1-1-1v-5a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v5a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2z" /> </svg>"#;
+const SVG_5: &str = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-300 flex-shrink-0" aria-hidden="true"> <path d="m9 18 6-6-6-6" /> </svg>"#;
+const SVG_6: &str = r#"<svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"> <circle cx="7" cy="7" r="4.5" /> <path d="m10.5 10.5 3 3" /> </svg>"#;
+const SVG_7: &str = r#"<svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"> <path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z" /> </svg>"#;
+const SVG_8: &str = r#"<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"> <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" /> </svg>"#;
+const SVG_9: &str = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-300 flex-shrink-0" aria-hidden="true"> <path d="m9 18 6-6-6-6" /> </svg>"#;
+const SVG_10: &str = r#"<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"> <circle cx="7" cy="7" r="4.5" /> <path d="m10.5 10.5 3 3" /> </svg>"#;
+const SVG_11: &str = r#"<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"> <path d="m3.5 3.5 9 9M12.5 3.5l-9 9" /> </svg>"#;
+const SVG_12: &str = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-300 flex-shrink-0" aria-hidden="true"> <path d="m9 18 6-6-6-6" /> </svg>"#;
+const SVG_13: &str = r#"<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"> <circle cx="7" cy="7" r="4.5" /> <path d="m10.5 10.5 3 3" /> </svg>"#;
+const SVG_14: &str = r#"<svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2h-4a1 1 0 0 1-1-1v-5a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v5a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2z" /> </svg>"#;
+const SVG_15: &str = r#"<svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /> <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /> </svg>"#;
+const SVG_16: &str = r#"<svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <polyline points="4 17 10 11 4 5" /> <line x1="12" x2="20" y1="19" y2="19" /> </svg>"#;
+const SVG_17: &str = r#"<svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <circle cx="12" cy="12" r="10" /> <polyline points="12 6 12 12 16 14" /> </svg>"#;
+const SVG_18: &str = r#"<svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /> </svg>"#;
+const SVG_19: &str = r#"<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"> <path d="m11 3.5-5 5 5 5" /> </svg>"#;
+const SVG_20: &str = r#"<svg class="h-3.5 w-3.5 text-ink-500 flex-shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"> <circle cx="7" cy="7" r="4.5" /> <path d="m10.5 10.5 3 3" /> </svg>"#;
+
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r##"<div class="space-y-12">
+    let content = format!(
+        r##"<div class="space-y-12">
 
           <!-- Desktop -->
           <div>
@@ -15,30 +38,19 @@ pub(crate) fn render() -> String {
                     <div class="flex items-center gap-2 min-w-0">
                       <a href="#" aria-label="Home"
                         class="inline-flex items-center justify-center h-6 w-6 rounded-md text-ink-700 no-underline hover:text-ink-900 hover:bg-surfaceMuted transition-colors">
-                        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                          stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                          <path
-                            d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2h-4a1 1 0 0 1-1-1v-5a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v5a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2z" />
-                        </svg>
+                        {SVG_0}
                       </a>
                       <nav aria-label="Breadcrumb"
                         class="flex items-center gap-1.5 mono text-[13px] text-ink-500 min-w-0">
                         <a href="#" class="no-underline hover:text-ink-900 truncate">wasi</a>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-300 flex-shrink-0" aria-hidden="true">
-                          <path d="m9 18 6-6-6-6" />
-                        </svg>
+                        {SVG_1}
                         <span class="text-ink-900 font-medium truncate">http</span>
                       </nav>
                     </div>
                     <!-- Center · search -->
                     <button type="button"
                       class="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-[13px] text-ink-500 flex items-center gap-2 hover:bg-surfaceMuted hover:text-ink-700 transition-colors">
-                      <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
-                        stroke-linecap="round">
-                        <circle cx="7" cy="7" r="4.5" />
-                        <path d="m10.5 10.5 3 3" />
-                      </svg>
+                      {SVG_2}
                       <span class="truncate">Search commands, flags, env vars…</span>
                       <span
                         class="ml-auto mono text-[10px] text-ink-500 border border-lineSoft rounded-sm px-1.5 py-0.5 bg-surfaceMuted">⌘K</span>
@@ -53,10 +65,7 @@ pub(crate) fn render() -> String {
                         class="inline-flex items-center h-7 px-2 rounded-md hover:bg-surfaceMuted hover:text-ink-900">Changelog</a>
                       <button type="button" aria-label="Toggle color theme"
                         class="inline-flex items-center justify-center h-7 w-7 rounded-md border border-line bg-surface text-ink-700 hover:bg-surfaceMuted hover:text-ink-900 transition-colors">
-                        <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor"
-                          stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z" />
-                        </svg>
+                        {SVG_3}
                       </button>
                     </div>
                   </div>
@@ -82,29 +91,18 @@ pub(crate) fn render() -> String {
                     <div class="flex items-center gap-2 min-w-0">
                       <a href="#" aria-label="Home"
                         class="inline-flex items-center justify-center h-6 w-6 rounded-md text-ink-700 no-underline hover:text-ink-900 hover:bg-surfaceMuted transition-colors">
-                        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                          stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                          <path
-                            d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2h-4a1 1 0 0 1-1-1v-5a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v5a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2z" />
-                        </svg>
+                        {SVG_4}
                       </a>
                       <nav aria-label="Breadcrumb"
                         class="flex items-center gap-1.5 mono text-[13px] text-ink-500 min-w-0">
                         <a href="#" class="no-underline hover:text-ink-900 truncate">wasi</a>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-300 flex-shrink-0" aria-hidden="true">
-                          <path d="m9 18 6-6-6-6" />
-                        </svg>
+                        {SVG_5}
                         <span class="text-ink-900 font-medium truncate">http</span>
                       </nav>
                     </div>
                     <button type="button"
                       class="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-[13px] text-ink-500 flex items-center gap-2 hover:bg-surfaceMuted hover:text-ink-700 transition-colors">
-                      <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor"
-                        stroke-width="1.5" stroke-linecap="round">
-                        <circle cx="7" cy="7" r="4.5" />
-                        <path d="m10.5 10.5 3 3" />
-                      </svg>
+                      {SVG_6}
                       <span class="truncate">Search…</span>
                       <span
                         class="ml-auto mono text-[10px] text-ink-500 border border-lineSoft rounded-sm px-1.5 py-0.5 bg-surfaceMuted">⌘K</span>
@@ -114,10 +112,7 @@ pub(crate) fn render() -> String {
                         class="inline-flex items-center h-7 px-2 rounded-md hover:bg-surfaceMuted hover:text-ink-900">Reference</a>
                       <button type="button" aria-label="Toggle color theme"
                         class="inline-flex items-center justify-center h-7 w-7 rounded-md border border-line bg-surface text-ink-700 hover:bg-surfaceMuted hover:text-ink-900">
-                        <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor"
-                          stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z" />
-                        </svg>
+                        {SVG_7}
                       </button>
                     </div>
                   </div>
@@ -148,27 +143,17 @@ pub(crate) fn render() -> String {
                       <div class="px-3 h-12 flex items-center gap-2">
                         <button type="button" aria-label="Open menu"
                           class="inline-flex items-center justify-center h-8 w-8 -ml-1 rounded-md text-ink-700 hover:bg-surfaceMuted hover:text-ink-900 flex-shrink-0">
-                          <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
-                            stroke-linecap="round">
-                            <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" />
-                          </svg>
+                          {SVG_8}
                         </button>
                         <nav aria-label="Breadcrumb"
                           class="flex items-center gap-1 mono text-[13px] text-ink-500 min-w-0">
                           <a href="#" class="no-underline hover:text-ink-900 truncate">wasi</a>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-300 flex-shrink-0" aria-hidden="true">
-                            <path d="m9 18 6-6-6-6" />
-                          </svg>
+                          {SVG_9}
                           <span class="text-ink-900 font-medium truncate">http</span>
                         </nav>
                         <button type="button" aria-label="Search"
                           class="ml-auto inline-flex items-center justify-center h-8 w-8 -mr-1 rounded-md text-ink-700 hover:bg-surfaceMuted hover:text-ink-900 flex-shrink-0">
-                          <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
-                            stroke-linecap="round">
-                            <circle cx="7" cy="7" r="4.5" />
-                            <path d="m10.5 10.5 3 3" />
-                          </svg>
+                          {SVG_10}
                         </button>
                       </div>
                     </div>
@@ -192,27 +177,17 @@ pub(crate) fn render() -> String {
                     <div class="px-3 h-12 flex items-center gap-2">
                       <button type="button" aria-label="Close menu"
                         class="inline-flex items-center justify-center h-8 w-8 -ml-1 rounded-md text-ink-900 bg-surfaceMuted flex-shrink-0">
-                        <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
-                          stroke-linecap="round">
-                          <path d="m3.5 3.5 9 9M12.5 3.5l-9 9" />
-                        </svg>
+                        {SVG_11}
                       </button>
                       <nav aria-label="Breadcrumb"
                         class="flex items-center gap-1 mono text-[13px] text-ink-500 min-w-0">
                         <a href="#" class="no-underline hover:text-ink-900 truncate">wasi</a>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-300 flex-shrink-0" aria-hidden="true">
-                          <path d="m9 18 6-6-6-6" />
-                        </svg>
+                        {SVG_12}
                         <span class="text-ink-900 font-medium truncate">http</span>
                       </nav>
                       <button type="button" aria-label="Search" disabled
                         class="ml-auto inline-flex items-center justify-center h-8 w-8 -mr-1 rounded-md text-ink-400 flex-shrink-0">
-                        <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
-                          stroke-linecap="round">
-                          <circle cx="7" cy="7" r="4.5" />
-                          <path d="m10.5 10.5 3 3" />
-                        </svg>
+                        {SVG_13}
                       </button>
                     </div>
                   </div>
@@ -225,47 +200,28 @@ pub(crate) fn render() -> String {
                       <nav class="p-3 space-y-0.5 text-[13px]">
                         <a href="#"
                           class="flex items-center gap-2.5 h-8 px-2 rounded-md text-ink-700 hover:bg-surfaceMuted hover:text-ink-900 no-underline">
-                          <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                            <path
-                              d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2h-4a1 1 0 0 1-1-1v-5a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v5a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2z" />
-                          </svg>
+                          {SVG_14}
                           Home
                         </a>
                         <a href="#"
                           class="flex items-center gap-2.5 h-8 px-2 rounded-md text-ink-700 hover:bg-surfaceMuted hover:text-ink-900 no-underline">
-                          <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                          </svg>
+                          {SVG_15}
                           Guides
                         </a>
                         <a href="#"
                           class="flex items-center gap-2.5 h-8 px-2 rounded-md bg-surfaceMuted text-ink-900 no-underline font-medium">
-                          <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="4 17 10 11 4 5" />
-                            <line x1="12" x2="20" y1="19" y2="19" />
-                          </svg>
+                          {SVG_16}
                           Reference
                         </a>
                         <a href="#"
                           class="flex items-center gap-2.5 h-8 px-2 rounded-md text-ink-700 hover:bg-surfaceMuted hover:text-ink-900 no-underline">
-                          <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10" />
-                            <polyline points="12 6 12 12 16 14" />
-                          </svg>
+                          {SVG_17}
                           Changelog
                         </a>
                         <div class="border-t hairline my-2"></div>
                         <button type="button"
                           class="w-full flex items-center gap-2.5 h-8 px-2 rounded-md text-ink-700 hover:bg-surfaceMuted hover:text-ink-900">
-                          <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                          </svg>
+                          {SVG_18}
                           Theme
                           <span class="ml-auto text-[11px] text-ink-500 mono">auto</span>
                         </button>
@@ -287,18 +243,11 @@ pub(crate) fn render() -> String {
                       <div class="px-3 h-12 flex items-center gap-2">
                         <button type="button" aria-label="Cancel search"
                           class="inline-flex items-center justify-center h-8 w-8 -ml-1 rounded-md text-ink-700 hover:bg-surfaceMuted hover:text-ink-900 flex-shrink-0">
-                          <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <path d="m11 3.5-5 5 5 5" />
-                          </svg>
+                          {SVG_19}
                         </button>
                         <div
                           class="flex-1 h-8 px-2.5 rounded-md border border-ink-900 bg-canvas text-[13px] text-ink-900 flex items-center gap-2 min-w-0">
-                          <svg class="h-3.5 w-3.5 text-ink-500 flex-shrink-0" viewBox="0 0 16 16" fill="none"
-                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                            <circle cx="7" cy="7" r="4.5" />
-                            <path d="m10.5 10.5 3 3" />
-                          </svg>
+                          {SVG_20}
                           <span class="mono truncate">wasi:htt<span
                               class="inline-block w-[1px] h-3.5 bg-ink-900 align-middle ml-px"></span></span>
                         </div>
@@ -397,13 +346,14 @@ pub(crate) fn render() -> String {
               </li>
             </ul>
           </div>
-        </div>"##;
+        </div>"##
+    );
     super::section(
         "c-navbar",
         "C06",
         "Navbar",
         "Sticky page chrome: brand mark, command palette trigger, primary nav, theme toggle. Sits above all content with a translucent <code class=\"mono text-[12px]\">bg-canvas/90</code> + <code class=\"mono text-[12px]\">backdrop-blur</code> so scrolling content reads through without losing legibility.",
-        content,
+        &content,
     )
 }
 

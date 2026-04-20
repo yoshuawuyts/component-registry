@@ -1,8 +1,13 @@
 //! 19 — Progress & Spinner.
 
+const SVG_0: &str = r#"<svg class="ds-spinner text-ink-900" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"> <path d="M21 12a9 9 0 1 1-6.2-8.55" /> </svg>"#;
+const SVG_1: &str = r#"<svg class="ds-spinner text-ink-500" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"> <path d="M21 12a9 9 0 1 1-6.2-8.55" /> </svg>"#;
+const SVG_2: &str = r#"<svg class="ds-spinner text-ink-300" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"> <path d="M21 12a9 9 0 1 1-6.2-8.55" /> </svg>"#;
+
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r#"<div class="space-y-8">
+    let content = format!(
+        r#"<div class="space-y-8">
           <div>
             <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Progress bar</h3>
             <div class="space-y-2 max-w-md">
@@ -25,45 +30,36 @@ pub(crate) fn render() -> String {
           <div>
             <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Spinner</h3>
             <style>
-              @keyframes ds-spin {
-                to {
+              @keyframes ds-spin {{
+                to {{
                   transform: rotate(360deg);
-                }
-              }
+                }}
+              }}
 
-              .ds-spinner {
+              .ds-spinner {{
                 animation: ds-spin 0.8s linear infinite;
-              }
+              }}
 
-              @keyframes ds-pulse {
+              @keyframes ds-pulse {{
 
                 0%,
-                100% {
+                100% {{
                   opacity: 1;
-                }
+                }}
 
-                50% {
+                50% {{
                   opacity: .5;
-                }
-              }
+                }}
+              }}
 
-              .ds-skel {
+              .ds-skel {{
                 animation: ds-pulse 1.4s ease-in-out infinite;
-              }
+              }}
             </style>
             <div class="flex items-center gap-4">
-              <svg class="ds-spinner text-ink-900" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                <path d="M21 12a9 9 0 1 1-6.2-8.55" />
-              </svg>
-              <svg class="ds-spinner text-ink-500" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <path d="M21 12a9 9 0 1 1-6.2-8.55" />
-              </svg>
-              <svg class="ds-spinner text-ink-300" width="28" height="28" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
-                <path d="M21 12a9 9 0 1 1-6.2-8.55" />
-              </svg>
+              {SVG_0}
+              {SVG_1}
+              {SVG_2}
             </div>
           </div>
           <div>
@@ -74,13 +70,14 @@ pub(crate) fn render() -> String {
               <div class="ds-skel h-3 w-5/6 rounded bg-surfaceMuted"></div>
             </div>
           </div>
-        </div>"#;
+        </div>"#
+    );
     super::section(
         "progress",
         "19",
         "Progress & Spinner",
         "Determinate progress as a 6px ink track. Indeterminate as a 16px spinner (CSS animation). Skeleton shimmer for placeholder content.",
-        content,
+        &content,
     )
 }
 

@@ -1,8 +1,14 @@
 //! 23 — Motion.
 
+const SVG_0: &str = r#"<svg class="ease-curve mt-3" viewBox="0 0 200 56" preserveAspectRatio="none"> <path class="track" d="M0,56 L200,56 M0,0 L0,56" /> <path class="curve" d="M0,56 C40,56 0,0 200,0" /> </svg>"#;
+const SVG_1: &str = r#"<svg class="ease-curve mt-3" viewBox="0 0 200 56" preserveAspectRatio="none"> <path class="track" d="M0,56 L200,56 M0,0 L0,56" /> <path class="curve" d="M0,56 C0,56 0,0 200,0" /> </svg>"#;
+const SVG_2: &str = r#"<svg class="ease-curve mt-3" viewBox="0 0 200 56" preserveAspectRatio="none"> <path class="track" d="M0,56 L200,56 M0,0 L0,56" /> <path class="curve" d="M0,56 C80,56 200,56 200,0" /> </svg>"#;
+const SVG_3: &str = r#"<svg class="ease-curve mt-3" viewBox="0 0 200 56" preserveAspectRatio="none"> <path class="track" d="M0,56 L200,56 M0,0 L0,56" /> <path class="curve" d="M0,56 C68,56 120,-18 200,0" /> </svg>"#;
+
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r#"<div class="space-y-10">
+    let content = format!(
+        r#"<div class="space-y-10">
           <!-- Curves -->
           <div>
             <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Easing curves</h3>
@@ -12,10 +18,7 @@ pub(crate) fn render() -> String {
                   <div class="text-[13px] font-medium">Standard</div>
                   <div class="text-[11px] mono text-ink-500">cubic-bezier(.2,0,0,1)</div>
                 </div>
-                <svg class="ease-curve mt-3" viewBox="0 0 200 56" preserveAspectRatio="none">
-                  <path class="track" d="M0,56 L200,56 M0,0 L0,56" />
-                  <path class="curve" d="M0,56 C40,56 0,0 200,0" />
-                </svg>
+                {SVG_0}
                 <div class="mt-2 text-[12px] text-ink-500">Default for state changes — hover, focus, expand.</div>
               </div>
               <div class="p-4 rounded-md border border-lineSoft">
@@ -23,10 +26,7 @@ pub(crate) fn render() -> String {
                   <div class="text-[13px] font-medium">Entrance</div>
                   <div class="text-[11px] mono text-ink-500">cubic-bezier(0,0,0,1)</div>
                 </div>
-                <svg class="ease-curve mt-3" viewBox="0 0 200 56" preserveAspectRatio="none">
-                  <path class="track" d="M0,56 L200,56 M0,0 L0,56" />
-                  <path class="curve" d="M0,56 C0,56 0,0 200,0" />
-                </svg>
+                {SVG_1}
                 <div class="mt-2 text-[12px] text-ink-500">Elements arriving on screen — toasts, popovers, modals.</div>
               </div>
               <div class="p-4 rounded-md border border-lineSoft">
@@ -34,10 +34,7 @@ pub(crate) fn render() -> String {
                   <div class="text-[13px] font-medium">Exit</div>
                   <div class="text-[11px] mono text-ink-500">cubic-bezier(.4,0,1,1)</div>
                 </div>
-                <svg class="ease-curve mt-3" viewBox="0 0 200 56" preserveAspectRatio="none">
-                  <path class="track" d="M0,56 L200,56 M0,0 L0,56" />
-                  <path class="curve" d="M0,56 C80,56 200,56 200,0" />
-                </svg>
+                {SVG_2}
                 <div class="mt-2 text-[12px] text-ink-500">Elements leaving — dismissed alerts, closed sheets.</div>
               </div>
               <div class="p-4 rounded-md border border-lineSoft">
@@ -45,10 +42,7 @@ pub(crate) fn render() -> String {
                   <div class="text-[13px] font-medium">Spring</div>
                   <div class="text-[11px] mono text-ink-500">cubic-bezier(.34,1.56,.64,1)</div>
                 </div>
-                <svg class="ease-curve mt-3" viewBox="0 0 200 56" preserveAspectRatio="none">
-                  <path class="track" d="M0,56 L200,56 M0,0 L0,56" />
-                  <path class="curve" d="M0,56 C68,56 120,-18 200,0" />
-                </svg>
+                {SVG_3}
                 <div class="mt-2 text-[12px] text-ink-500">Reserved for direct manipulation feedback — toggles,
                   drag-snap.</div>
               </div>
@@ -154,13 +148,14 @@ pub(crate) fn render() -> String {
               </li>
             </ul>
           </div>
-        </div>"#;
+        </div>"#
+    );
     super::section(
         "motion",
         "23",
         "Motion",
         "Motion is functional: it explains state changes, never decorates them. Most transitions sit between 120\u{2013}260ms on the <code class=\"px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]\">standard</code> curve. Anything longer needs a reason.",
-        content,
+        &content,
     )
 }
 

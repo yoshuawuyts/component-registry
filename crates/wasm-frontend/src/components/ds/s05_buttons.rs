@@ -1,25 +1,24 @@
 //! 05 — Buttons.
 
+const SVG_0: &str = r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <rect width="18" height="18" x="3" y="4" rx="2" /> <path d="M16 2v4" /> <path d="M8 2v4" /> <path d="M3 10h18" /> </svg>"#;
+const SVG_1: &str = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="m6 9 6 6 6-6" /> </svg>"#;
+const SVG_2: &str = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="m6 9 6 6 6-6" /> </svg>"#;
+const SVG_3: &str = r#"<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <path d="M3 6h18" /> <path d="M7 12h10" /> <path d="M10 18h4" /> </svg>"#;
+const SVG_4: &str = r#"<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" /> <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" /> <path d="M7 3v4a1 1 0 0 0 1 1h7" /> </svg>"#;
+const SVG_5: &str = r#"<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <path d="M12 3v12" /> <path d="m17 8-5-5-5 5" /> <path d="M21 21H3" /> </svg>"#;
+
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r#"<div class="space-y-8">
+    let content = format!(
+        r#"<div class="space-y-8">
           <div>
             <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Filled</h3>
             <div class="flex flex-wrap items-center gap-3">
               <button
                 class="h-8 px-3 inline-flex items-center gap-2 rounded-lg bg-surfaceMuted text-ink-900 text-[13px] hover:bg-ink-300">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <rect width="18" height="18" x="3" y="4" rx="2" />
-                  <path d="M16 2v4" />
-                  <path d="M8 2v4" />
-                  <path d="M3 10h18" />
-                </svg>
+                {SVG_0}
                 Lorem – Ipsum
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
+                {SVG_1}
               </button>
               <button
                 class="h-9 px-3 inline-flex items-center gap-2 rounded-lg bg-surfaceMuted text-ink-900 text-[13px] hover:bg-ink-300">Sodales</button>
@@ -31,10 +30,7 @@ pub(crate) fn render() -> String {
               <button
                 class="h-8 px-3 inline-flex items-center gap-2 rounded-lg border-[1.5px] border-ink-900 bg-surface text-ink-900 text-[13px] hover:bg-surfaceMuted">
                 Omnis Vehicula
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
+                {SVG_2}
               </button>
               <button
                 class="h-9 px-3 rounded-lg border-[1.5px] border-ink-900 bg-surface text-ink-900 text-[13px] hover:bg-surfaceMuted">Dismiss</button>
@@ -44,39 +40,24 @@ pub(crate) fn render() -> String {
             <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Icon</h3>
             <div class="flex items-center gap-1">
               <button class="h-8 w-8 grid place-items-center rounded-md hover:bg-surfaceMuted text-ink-700">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 6h18" />
-                  <path d="M7 12h10" />
-                  <path d="M10 18h4" />
-                </svg>
+                {SVG_3}
               </button>
               <button class="h-8 w-8 grid place-items-center rounded-md hover:bg-surfaceMuted text-ink-700">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path
-                    d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
-                  <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
-                  <path d="M7 3v4a1 1 0 0 0 1 1h7" />
-                </svg>
+                {SVG_4}
               </button>
               <button class="h-8 w-8 grid place-items-center rounded-md hover:bg-surfaceMuted text-ink-700">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 3v12" />
-                  <path d="m17 8-5-5-5 5" />
-                  <path d="M21 21H3" />
-                </svg>
+                {SVG_5}
               </button>
             </div>
           </div>
-        </div>"#;
+        </div>"#
+    );
     super::section(
         "buttons",
         "05",
         "Buttons",
         "Two variants: a soft gray fill or a 1.5px ink outline. The system reserves solid ink for typography only \u{2014} buttons are never pure black. Two heights: 32px (compact toolbars) and 36px (mobile / primary CTAs).",
-        content,
+        &content,
     )
 }
 

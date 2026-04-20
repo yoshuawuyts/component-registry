@@ -1,8 +1,25 @@
 //! 13 — Form Fields.
 
+const SVG_0: &str = r#"<svg class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <circle cx="11" cy="11" r="8" /> <path d="m21 21-4.3-4.3" /> </svg>"#;
+const SVG_1: &str = r#"<svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <circle cx="11" cy="11" r="8" /> <path d="m21 21-4.3-4.3" /> </svg>"#;
+const SVG_2: &str = r#"<svg class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="m6 9 6 6 6-6" /> </svg>"#;
+const SVG_3: &str = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="m6 9 6 6 6-6" /> </svg>"#;
+const SVG_4: &str = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="m6 9 6 6 6-6" /> </svg>"#;
+const SVG_5: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"> <rect x="4" y="4" width="9" height="9" rx="1.2" /> <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" /> </svg>"#;
+const SVG_6: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="m3 8 3.5 3.5L13 5" /> </svg>"#;
+const SVG_7: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"> <rect x="4" y="4" width="9" height="9" rx="1.2" /> <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" /> </svg>"#;
+const SVG_8: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="M4 4l8 8M12 4l-8 8" /> </svg>"#;
+const SVG_9: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"> <rect x="4" y="4" width="9" height="9" rx="1.2" /> <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" /> </svg>"#;
+const SVG_10: &str = r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M5 12h14" /> </svg>"#;
+const SVG_11: &str = r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M5 12h14" /> <path d="M12 5v14" /> </svg>"#;
+const SVG_12: &str = r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 17.99 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" /> </svg>"#;
+const SVG_13: &str = r#"<svg class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <rect width="18" height="18" x="3" y="4" rx="2" /> <path d="M16 2v4" /> <path d="M8 2v4" /> <path d="M3 10h18" /> </svg>"#;
+const SVG_14: &str = r#"<svg class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <circle cx="12" cy="12" r="10" /> <polyline points="12 6 12 12 16 14" /> </svg>"#;
+
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = r##"<div class="space-y-8 max-w-md">
+    let content = format!(
+        r##"<div class="space-y-8 max-w-md">
           <!-- Sizes -->
           <div>
             <div class="text-[12px] text-ink-500 mb-2">Sizes</div>
@@ -96,12 +113,7 @@ pub(crate) fn render() -> String {
           <label class="block">
             <span class="text-[12px] text-ink-500">Search</span>
             <div class="mt-1 relative">
-              <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" width="14" height="14"
-                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
+              {SVG_0}
               <input type="search" placeholder="Search…"
                 class="block w-full h-9 pl-9 pr-3 rounded-md border border-line bg-surface text-[14px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900" />
             </div>
@@ -110,12 +122,7 @@ pub(crate) fn render() -> String {
           <label class="block">
             <span class="text-[12px] text-ink-500">Search · prominent with shortcut hint</span>
             <div class="mt-1 relative">
-              <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" width="16" height="16"
-                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
+              {SVG_1}
               <input type="search" placeholder="Search 12 480 packages…"
                 class="block w-full h-10 pl-10 pr-24 rounded-lg border border-line bg-canvas text-[14px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900" />
               <kbd
@@ -147,11 +154,7 @@ pub(crate) fn render() -> String {
                 <option>Pellentesque</option>
                 <option>Vestibulum</option>
               </select>
-              <svg class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" width="12"
-                height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="m6 9 6 6 6-6" />
-              </svg>
+              {SVG_2}
             </div>
           </label>
           <!-- Textarea -->
@@ -197,10 +200,7 @@ pub(crate) fn render() -> String {
               <button type="button"
                 class="inline-flex items-center gap-2 px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-ink-700 text-[13px] hover:bg-ink-300 hover:text-ink-900">
                 Tellus
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
+                {SVG_3}
               </button>
               <input type="text" placeholder="Lorem ipsum…"
                 class="block w-full h-9 px-3 rounded-r-md border border-line bg-surface text-[14px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900" />
@@ -220,10 +220,7 @@ pub(crate) fn render() -> String {
               </button>
               <button type="button" aria-label="More"
                 class="inline-flex items-center px-2 h-9 rounded-r-md border border-line bg-surfaceMuted text-ink-700 hover:bg-ink-300 hover:text-ink-900">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
+                {SVG_4}
               </button>
             </div>
           </label>
@@ -239,11 +236,7 @@ pub(crate) fn render() -> String {
               <button type="button"
                 class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink-900"
                 aria-label="Copy command">
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"
-                  aria-hidden="true">
-                  <rect x="4" y="4" width="9" height="9" rx="1.2" />
-                  <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" />
-                </svg>
+                {SVG_5}
               </button>
             </div>
             <span class="mt-1 block text-[11px] text-ink-500">Use for install snippets and shareable shell commands.
@@ -262,10 +255,7 @@ pub(crate) fn render() -> String {
               <button type="button"
                 class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-positive"
                 aria-label="Copied">
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
-                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="m3 8 3.5 3.5L13 5" />
-                </svg>
+                {SVG_6}
               </button>
             </div>
             <span class="mt-1 block text-[11px] text-ink-500">Icon swaps to a check in
@@ -282,11 +272,7 @@ pub(crate) fn render() -> String {
               <button type="button"
                 class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted"
                 aria-label="Copy command">
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"
-                  aria-hidden="true">
-                  <rect x="4" y="4" width="9" height="9" rx="1.2" />
-                  <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" />
-                </svg>
+                {SVG_7}
               </button>
             </div>
             <span class="mt-1 block text-[11px] text-ink-500">Field scrolls horizontally; the prefix and copy button
@@ -303,10 +289,7 @@ pub(crate) fn render() -> String {
               <button type="button"
                 class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-negative"
                 aria-label="Copy failed">
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
-                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M4 4l8 8M12 4l-8 8" />
-                </svg>
+                {SVG_8}
               </button>
             </div>
             <span class="mt-1 block text-[11px] text-ink-500">Clipboard API blocked (insecure context, permission
@@ -324,11 +307,7 @@ pub(crate) fn render() -> String {
               <button type="button" disabled
                 class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-dashed border-line bg-surfaceMuted text-ink-400 cursor-not-allowed"
                 aria-label="Copy command">
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"
-                  aria-hidden="true">
-                  <rect x="4" y="4" width="9" height="9" rx="1.2" />
-                  <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" />
-                </svg>
+                {SVG_9}
               </button>
             </div>
             <span class="mt-1 block text-[11px] text-ink-500">Use during pending/async states — e.g. while a registry
@@ -340,20 +319,13 @@ pub(crate) fn render() -> String {
             <div class="mt-1 inline-flex">
               <button type="button" aria-label="Decrement"
                 class="h-9 w-9 grid place-items-center rounded-l-md border-[1.5px] border-r-0 border-ink-900 bg-surface text-ink-900 hover:bg-surfaceMuted">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M5 12h14" />
-                </svg>
+                {SVG_10}
               </button>
               <input type="text" value="12"
                 class="block w-16 h-9 px-2 border-y-[1.5px] border-ink-900 bg-surface text-[14px] tabular-nums text-center focus:outline-none" />
               <button type="button" aria-label="Increment"
                 class="h-9 w-9 grid place-items-center rounded-r-md border-[1.5px] border-l-0 border-ink-900 bg-surface text-ink-900 hover:bg-surfaceMuted">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M5 12h14" />
-                  <path d="M12 5v14" />
-                </svg>
+                {SVG_11}
               </button>
             </div>
           </label>
@@ -363,11 +335,7 @@ pub(crate) fn render() -> String {
             <div class="mt-1 flex">
               <button type="button"
                 class="inline-flex items-center gap-2 px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-ink-700 text-[13px] hover:bg-ink-300 hover:text-ink-900 whitespace-nowrap">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path
-                    d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 17.99 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                </svg>
+                {SVG_12}
                 Choose file
               </button>
               <span
@@ -400,14 +368,7 @@ pub(crate) fn render() -> String {
               <div class="mt-1 relative">
                 <input type="text" value="2026-04-18"
                   class="block w-full h-9 pl-3 pr-9 rounded-md border border-line bg-surface text-[14px] mono focus:outline-none focus:border-ink-900" />
-                <svg class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" width="14"
-                  height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <rect width="18" height="18" x="3" y="4" rx="2" />
-                  <path d="M16 2v4" />
-                  <path d="M8 2v4" />
-                  <path d="M3 10h18" />
-                </svg>
+                {SVG_13}
               </div>
             </label>
             <label class="block">
@@ -415,12 +376,7 @@ pub(crate) fn render() -> String {
               <div class="mt-1 relative">
                 <input type="text" value="14:30"
                   class="block w-full h-9 pl-3 pr-9 rounded-md border border-line bg-surface text-[14px] mono focus:outline-none focus:border-ink-900" />
-                <svg class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" width="14"
-                  height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
+                {SVG_14}
               </div>
             </label>
           </div>
@@ -441,13 +397,14 @@ pub(crate) fn render() -> String {
               </div>
             </div>
           </label>
-        </div>"##;
+        </div>"##
+    );
     super::section(
         "fields",
         "13",
         "Form Fields",
         "Inputs sit on a surface with a 1px line border. Focus darkens the border to ink \u{2014} no thickening, no glow. Two sizes: <strong>md</strong> (default) for primary forms, <strong>sm</strong> for dense contexts like sidebars, metadata strips, and toolbars.",
-        content,
+        &content,
     )
 }
 

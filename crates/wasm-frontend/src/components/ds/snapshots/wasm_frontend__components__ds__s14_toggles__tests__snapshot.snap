@@ -8,10 +8,7 @@ expression: render()
             <div class="space-y-2">
               <label class="flex items-center gap-2 text-[14px]">
                 <span class="grid place-items-center h-4 w-4 rounded bg-ink-900 text-canvas">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 6 9 17l-5-5" />
-                  </svg>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"> <path d="M20 6 9 17l-5-5" /> </svg>
                 </span>
                 Aenean lectus
               </label>
