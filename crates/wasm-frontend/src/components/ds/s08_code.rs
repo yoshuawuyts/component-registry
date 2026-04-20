@@ -101,7 +101,7 @@ const TAB_DESC: &str = r#"Tab strip uses <code class="mono text-[12px]">.id-lang
 const TOKEN_DESC: &str = r#"Each token references the same <code class="mono text-[12px]">--color-wit-*</code> variables we use for WIT diagrams — module pink, world purple, interface sky, function green, struct indigo, resource amber. Both light and dark themes carry calibrated hex pairs so the panel never feels over-saturated on paper or muddy on graphite."#;
 
 /// Render this section.
-pub(crate) fn render() -> String {
+pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     // Token legend grid
     let mut token_grid = Division::builder();
     token_grid.class("grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2.5 text-[12px]");
@@ -186,13 +186,7 @@ pub(crate) fn render() -> String {
         .build()
         .to_string();
 
-    super::section(
-        "code",
-        "08",
-        "Code Samples",
-        "One panel \u{2014} <code class=\"mono text-[12px]\">pre.id-code</code> \u{2014} sitting on <code class=\"mono text-[12px]\">--c-surface</code>, with token colours pulled from the theme-aware <code class=\"mono text-[12px]\">--color-wit-*</code> palette so chroma stays balanced on both light and dark pages. Three forms: a plain block, a tabbed multi-language block, and a paired request / response grid.",
-        &content,
-    )
+    super::section(section_id, num, title, desc, &content)
 }
 
 #[cfg(test)]
@@ -201,6 +195,11 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render(
+            "code",
+            "08",
+            "Code Samples",
+            "One panel \u{2014} <code class=\"mono text-[12px]\">pre.id-code</code> \u{2014} sitting on <code class=\"mono text-[12px]\">--c-surface</code>, with token colours pulled from the theme-aware <code class=\"mono text-[12px]\">--color-wit-*</code> palette so chroma stays balanced on both light and dark pages. Three forms: a plain block, a tabbed multi-language block, and a paired request / response grid.",
+        )));
     }
 }

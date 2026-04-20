@@ -37,7 +37,7 @@ fn nav_list(items: &[(&str, bool)]) -> UnorderedList {
 }
 
 /// Render the navigation section.
-pub(crate) fn render() -> String {
+pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let content = Division::builder()
         .class("max-w-[260px]")
         .push(nav_list(GROUP_1))
@@ -46,13 +46,7 @@ pub(crate) fn render() -> String {
         .build()
         .to_string();
 
-    super::section(
-        "nav",
-        "07",
-        "Navigation",
-        "Sidebar list. Active item uses a muted surface fill with full ink weight. Groups separated by a soft rule.",
-        &content,
-    )
+    super::section(section_id, num, title, desc, &content)
 }
 
 #[cfg(test)]
@@ -61,6 +55,11 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render(
+            "nav",
+            "07",
+            "Navigation",
+            "Sidebar list. Active item uses a muted surface fill with full ink weight. Groups separated by a soft rule.",
+        )));
     }
 }

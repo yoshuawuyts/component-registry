@@ -75,7 +75,7 @@ const ANATOMY_ITEMS: &[&str] = &[
 ];
 
 /// Render this section.
-pub(crate) fn render() -> String {
+pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let cmd_sigil = sigil(SIGIL_CMD, SIGIL_CMD_INK, "c");
     let grp_sigil = sigil(SIGIL_GRP, SIGIL_GRP_INK, "G");
     let root_sigil = sigil("var(--c-cat-slate)", "var(--c-cat-slateInk)", "\u{00b7}");
@@ -183,13 +183,7 @@ pub(crate) fn render() -> String {
         .build()
         .to_string();
 
-    super::section(
-        "c-sidebar",
-        "C01",
-        "Nested Sidebar",
-        r#"Hierarchical navigation for reference docs. Top-level entries collapse with native <code class="mono text-[12px]">&lt;details&gt;</code>; sigils classify each row by kind (command, group, flag, env, etc.)."#,
-        &content,
-    )
+    super::section(section_id, num, title, desc, &content)
 }
 
 #[cfg(test)]
@@ -198,6 +192,11 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render(
+            "c-sidebar",
+            "C01",
+            "Nested Sidebar",
+            r#"Hierarchical navigation for reference docs. Top-level entries collapse with native <code class="mono text-[12px]">&lt;details&gt;</code>; sigils classify each row by kind (command, group, flag, env, etc.)."#,
+        )));
     }
 }

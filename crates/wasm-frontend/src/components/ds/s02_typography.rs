@@ -70,7 +70,7 @@ fn type_row(label: &str, text_class: &str, sample: &str, spec: &str) -> Division
 }
 
 /// Render this section.
-pub(crate) fn render() -> String {
+pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let mut rows = Division::builder();
     rows.class("divide-y divide-lineSoft");
     for (label, cls, sample, spec) in SAMPLES {
@@ -195,13 +195,7 @@ pub(crate) fn render() -> String {
 
     let content = rows.build().to_string();
 
-    super::section(
-        "typography",
-        "02",
-        "Typography",
-        "System UI stack for native rendering across platforms. Tight tracking on display sizes; relaxed for body.",
-        &content,
-    )
+    super::section(section_id, num, title, desc, &content)
 }
 
 #[cfg(test)]
@@ -210,6 +204,11 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render(
+            "typography",
+            "02",
+            "Typography",
+            "System UI stack for native rendering across platforms. Tight tracking on display sizes; relaxed for body.",
+        )));
     }
 }

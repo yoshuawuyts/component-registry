@@ -24,7 +24,7 @@ const SVG_DELETE: &str = concat!(
 );
 
 /// Render this section.
-pub(crate) fn render() -> String {
+pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let content = Division::builder()
         .class("p-12 bg-canvas border border-line rounded-lg flex items-start justify-center")
         .division(|menu| {
@@ -60,13 +60,7 @@ pub(crate) fn render() -> String {
         .build()
         .to_string();
 
-    super::section(
-        "dropdown",
-        "16",
-        "Dropdown",
-        "Floating menu on white. 1px gray border + tooltip-grade shadow. Section dividers separate logical groups.",
-        &content,
-    )
+    super::section(section_id, num, title, desc, &content)
 }
 
 #[cfg(test)]
@@ -75,6 +69,11 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render(
+            "dropdown",
+            "16",
+            "Dropdown",
+            "Floating menu on white. 1px gray border + tooltip-grade shadow. Section dividers separate logical groups.",
+        )));
     }
 }

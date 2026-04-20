@@ -9,7 +9,7 @@ const SVG_CLOSE: &str = concat!(
 );
 
 /// Render this section.
-pub(crate) fn render() -> String {
+pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let content = Division::builder()
         .class("relative rounded-lg p-8 md:p-12 overflow-hidden bg-canvas")
         // Page skeleton beneath scrim
@@ -53,13 +53,7 @@ pub(crate) fn render() -> String {
         .build()
         .to_string();
 
-    super::section(
-        "modal",
-        "17",
-        "Modal",
-        "Centered dialog over a 50% ink scrim. 8px radius, 1px gray border, 24px padding. Header / body / footer rhythm.",
-        &content,
-    )
+    super::section(section_id, num, title, desc, &content)
 }
 
 #[cfg(test)]
@@ -68,6 +62,11 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render(
+            "modal",
+            "17",
+            "Modal",
+            "Centered dialog over a 50% ink scrim. 8px radius, 1px gray border, 24px padding. Header / body / footer rhythm.",
+        )));
     }
 }

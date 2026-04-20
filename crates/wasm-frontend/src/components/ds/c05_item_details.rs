@@ -167,7 +167,7 @@ fn build_pills() -> Division {
 }
 
 /// Render this section.
-pub(crate) fn render() -> String {
+pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let content = Division::builder()
         .class("space-y-8")
         .push(build_demo())
@@ -176,13 +176,7 @@ pub(crate) fn render() -> String {
         .build()
         .to_string();
 
-    super::section(
-        "c-item-details",
-        "C05",
-        "Item Details",
-        r##"Reference page for a single endpoint, RPC, schema, or command. A method/kind pill anchors the symbol below the title; a one-sentence tagline explains it; an optional structured request-body table, a responses list, and paired example panels stack below in fixed order. Used as the destination from <a href="#c-item-list" class="text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">Item List</a> rows."##,
-        &content,
-    )
+    super::section(section_id, num, title, desc, &content)
 }
 
 #[cfg(test)]
@@ -191,6 +185,11 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render(
+            "c-item-details",
+            "C05",
+            "Item Details",
+            r##"Reference page for a single endpoint, RPC, schema, or command. A method/kind pill anchors the symbol below the title; a one-sentence tagline explains it; an optional structured request-body table, a responses list, and paired example panels stack below in fixed order. Used as the destination from <a href="#c-item-list" class="text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">Item List</a> rows."##,
+        )));
     }
 }

@@ -17,7 +17,7 @@ const BARS: &[(&str, &str, &str)] = &[
 ];
 
 /// Render the labels section.
-pub(crate) fn render() -> String {
+pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let mut col = Division::builder();
     col.class("flex flex-col items-start gap-2");
     for (bg, ink, text) in BARS {
@@ -25,13 +25,7 @@ pub(crate) fn render() -> String {
     }
     let content = col.build().to_string();
 
-    super::section(
-        "bars",
-        "09",
-        "Labels",
-        "28px tall, 6px radius, label inset 12px. Pastel fill with paired ink for text \u{2014} 4.5:1 contrast minimum.",
-        &content,
-    )
+    super::section(section_id, num, title, desc, &content)
 }
 
 #[cfg(test)]
@@ -40,6 +34,11 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render(
+            "bars",
+            "09",
+            "Labels",
+            "28px tall, 6px radius, label inset 12px. Pastel fill with paired ink for text \u{2014} 4.5:1 contrast minimum.",
+        )));
     }
 }

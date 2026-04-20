@@ -213,7 +213,7 @@ const DEF_DESC: &str = r#"Used for request body fields, CLI flags, environment v
 const TAB_DESC: &str = r#"Used when columns warrant labels — error / response code reference, telemetry, anything with multiple typed columns. Headers are quiet: <code class="mono text-[12px]">text-ink-400 font-normal</code> at the body type size, same case as the data — they label columns without shouting. The first body row's <code class="mono text-[12px]">border-t-[1.5px] border-lineSoft</code> is the only rule between header and body, identical to the row separators below it. Numeric columns get <code class="mono text-[12px]">tabular-nums text-right</code>; zeros and N/A drop to <code class="mono text-[12px]">ink-400</code>; negatives or out-of-band values use <code class="mono text-[12px]">text-negative</code>; totals use <code class="mono text-[12px]">font-medium</code>. Categorical leading columns use the <code class="mono text-[12px]">.id-http-status</code> pill family in a fixed-width column so the next column aligns down the page."#;
 
 /// Render this section.
-pub(crate) fn render() -> String {
+pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let content = Division::builder()
         .class("space-y-12")
         .division(|d| {
@@ -241,13 +241,7 @@ pub(crate) fn render() -> String {
         .build()
         .to_string();
 
-    super::section(
-        "table",
-        "11",
-        "Table",
-        r##"Two patterns cover everything: a <strong>definition</strong> table (no <code class="mono text-[12px]">&lt;thead&gt;</code>, identifier on the left, meaning on the right) and a <strong>tabular</strong> table (labeled columns, <code class="mono text-[12px]">tabular-nums</code> for figures). 13px body, 1.5px soft row separators (<code class="mono text-[12px]">border-lineSoft</code>), <code class="mono text-[12px]">py-3</code> rows. When the leading column is a category, use the <a href="#c-item-details" class="text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">.id-http-status</a> pill family."##,
-        &content,
-    )
+    super::section(section_id, num, title, desc, &content)
 }
 
 #[cfg(test)]
@@ -256,6 +250,11 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render(
+            "table",
+            "11",
+            "Table",
+            r##"Two patterns cover everything: a <strong>definition</strong> table (no <code class="mono text-[12px]">&lt;thead&gt;</code>, identifier on the left, meaning on the right) and a <strong>tabular</strong> table (labeled columns, <code class="mono text-[12px]">tabular-nums</code> for figures). 13px body, 1.5px soft row separators (<code class="mono text-[12px]">border-lineSoft</code>), <code class="mono text-[12px]">py-3</code> rows. When the leading column is a category, use the <a href="#c-item-details" class="text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">.id-http-status</a> pill family."##,
+        )));
     }
 }

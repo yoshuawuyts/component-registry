@@ -138,7 +138,7 @@ fn sub(text: &'static str) -> html::content::Heading3 {
 }
 
 /// Render this section.
-pub(crate) fn render() -> String {
+pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let content = Division::builder()
         .class("grid grid-cols-1 md:grid-cols-3 gap-8")
         // Stacked
@@ -227,13 +227,7 @@ pub(crate) fn render() -> String {
 
     let full_content = format!("{content}{combined}");
 
-    super::section(
-        "details",
-        "24",
-        "Details",
-        "Compact key/value lists for sidebars and inspector panels. Three variants: stacked for spacious layouts, inline for narrow rails, and sectioned when groups need separation.",
-        &full_content,
-    )
+    super::section(section_id, num, title, desc, &full_content)
 }
 
 #[cfg(test)]
@@ -242,6 +236,11 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render(
+            "details",
+            "24",
+            "Details",
+            "Compact key/value lists for sidebars and inspector panels. Three variants: stacked for spacious layouts, inline for narrow rails, and sectioned when groups need separation.",
+        )));
     }
 }

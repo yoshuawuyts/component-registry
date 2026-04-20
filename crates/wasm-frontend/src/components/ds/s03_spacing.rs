@@ -30,7 +30,7 @@ fn spacing_row(value: &str, label: &str, width: &str) -> Division {
 }
 
 /// Render this section.
-pub(crate) fn render() -> String {
+pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let mut scale = Division::builder();
     scale.class("space-y-2");
     for (value, label, _) in SPACING {
@@ -84,13 +84,7 @@ pub(crate) fn render() -> String {
         .build()
         .to_string();
 
-    super::section(
-        "spacing",
-        "03",
-        "Spacing & Radius",
-        "4px base scale. Radii stay small for a precise, instrumental feel; pills used for selection chips only.",
-        &content,
-    )
+    super::section(section_id, num, title, desc, &content)
 }
 
 #[cfg(test)]
@@ -99,6 +93,11 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render(
+            "spacing",
+            "03",
+            "Spacing & Radius",
+            "4px base scale. Radii stay small for a precise, instrumental feel; pills used for selection chips only.",
+        )));
     }
 }

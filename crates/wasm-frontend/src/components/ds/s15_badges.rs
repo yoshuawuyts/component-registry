@@ -25,7 +25,7 @@ const STATUSES: &[(&str, &str, &str)] = &[
 ];
 
 /// Render this section.
-pub(crate) fn render() -> String {
+pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let mut status_row = Division::builder();
     status_row.class("flex flex-wrap items-center gap-2 text-[12px] font-medium");
     for (badge_cls, dot_cls, label) in STATUSES {
@@ -81,13 +81,7 @@ pub(crate) fn render() -> String {
         .build()
         .to_string();
 
-    super::section(
-        "badges",
-        "15",
-        "Badges",
-        "Compact pill labels. Use categorical pairs for status; ink for counts and metadata.",
-        &content,
-    )
+    super::section(section_id, num, title, desc, &content)
 }
 
 #[cfg(test)]
@@ -96,6 +90,11 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render(
+            "badges",
+            "15",
+            "Badges",
+            "Compact pill labels. Use categorical pairs for status; ink for counts and metadata.",
+        )));
     }
 }

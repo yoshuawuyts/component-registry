@@ -3,7 +3,7 @@
 use html::text_content::Division;
 
 /// Render the tooltip section.
-pub(crate) fn render() -> String {
+pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let content = Division::builder()
         .class("p-12 bg-canvas border border-line rounded-lg flex items-center justify-center")
         .division(|tip| {
@@ -27,13 +27,7 @@ pub(crate) fn render() -> String {
         .build()
         .to_string();
 
-    super::section(
-        "tooltip",
-        "10",
-        "Tooltip",
-        "Inverted surface with backdrop blur. Caption label above, key/value rows with right-aligned medium values.",
-        &content,
-    )
+    super::section(section_id, num, title, desc, &content)
 }
 
 #[cfg(test)]
@@ -42,6 +36,11 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render(
+            "tooltip",
+            "10",
+            "Tooltip",
+            "Inverted surface with backdrop blur. Caption label above, key/value rows with right-aligned medium values.",
+        )));
     }
 }

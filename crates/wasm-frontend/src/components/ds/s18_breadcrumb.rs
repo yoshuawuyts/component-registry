@@ -23,7 +23,7 @@ const PAGE_BTN: &str = "h-8 w-8 grid place-items-center rounded-md border border
 const PAGE_BTN_NAV: &str = "h-8 w-8 grid place-items-center rounded-md border border-line bg-surface text-ink-500 hover:bg-surfaceMuted";
 
 /// Render this section.
-pub(crate) fn render() -> String {
+pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let breadcrumb = Navigation::builder()
         .class("flex items-center gap-1.5 text-[13px] text-ink-500")
         .anchor(|a| {
@@ -63,13 +63,7 @@ pub(crate) fn render() -> String {
         .build()
         .to_string();
 
-    super::section(
-        "breadcrumb",
-        "19",
-        "Breadcrumb &<br />Pagination",
-        "Navigation context. Breadcrumb uses chevron separators and dims all but the current item. Pagination is square-buttoned for compact toolbars.",
-        &content,
-    )
+    super::section(section_id, num, title, desc, &content)
 }
 
 #[cfg(test)]
@@ -78,6 +72,11 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render(
+            "breadcrumb",
+            "19",
+            "Breadcrumb &<br />Pagination",
+            "Navigation context. Breadcrumb uses chevron separators and dims all but the current item. Pagination is square-buttoned for compact toolbars.",
+        )));
     }
 }

@@ -3,7 +3,7 @@
 use html::text_content::Division;
 
 /// Render the elevation section.
-pub(crate) fn render() -> String {
+pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let content = Division::builder()
         .class("grid grid-cols-1 md:grid-cols-3 gap-6")
         .division(|d| {
@@ -34,13 +34,7 @@ pub(crate) fn render() -> String {
         .build()
         .to_string();
 
-    super::section(
-        "elevation",
-        "04",
-        "Elevation",
-        "Soft rules do most of the work. Shadow is reserved for floating overlays.",
-        &content,
-    )
+    super::section(section_id, num, title, desc, &content)
 }
 
 #[cfg(test)]
@@ -49,6 +43,11 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render(
+            "elevation",
+            "04",
+            "Elevation",
+            "Soft rules do most of the work. Shadow is reserved for floating overlays.",
+        )));
     }
 }

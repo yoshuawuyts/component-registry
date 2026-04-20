@@ -3,7 +3,7 @@
 use html::text_content::Division;
 
 /// Render the tabs & pills section.
-pub(crate) fn render() -> String {
+pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let content = Division::builder()
         .class("space-y-8")
         .division(|seg_group| {
@@ -46,13 +46,7 @@ pub(crate) fn render() -> String {
         .build()
         .to_string();
 
-    super::section(
-        "tabs",
-        "06",
-        "Tabs & Pills",
-        "Segmented controls for binary scoping; underline tabs for sub-views; pills for filterable chips.",
-        &content,
-    )
+    super::section(section_id, num, title, desc, &content)
 }
 
 #[cfg(test)]
@@ -61,6 +55,11 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render(
+            "tabs",
+            "06",
+            "Tabs & Pills",
+            "Segmented controls for binary scoping; underline tabs for sub-views; pills for filterable chips.",
+        )));
     }
 }

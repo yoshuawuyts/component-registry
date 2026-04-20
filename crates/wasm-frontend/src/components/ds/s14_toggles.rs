@@ -9,7 +9,7 @@ const SVG_CHECK: &str = concat!(
 );
 
 /// Render this section.
-pub(crate) fn render() -> String {
+pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let content = Division::builder()
         .class("space-y-8")
         // Checkbox
@@ -80,13 +80,7 @@ pub(crate) fn render() -> String {
         .build()
         .to_string();
 
-    super::section(
-        "toggles",
-        "14",
-        "Checkbox \u{00b7} Radio \u{00b7} Switch",
-        "All controls render in ink-900 when active. 16px hit area minimum on each control; full-row click target via wrapping label.",
-        &content,
-    )
+    super::section(section_id, num, title, desc, &content)
 }
 
 #[cfg(test)]
@@ -95,6 +89,11 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render(
+            "toggles",
+            "14",
+            "Checkbox \u{00b7} Radio \u{00b7} Switch",
+            "All controls render in ink-900 when active. 16px hit area minimum on each control; full-row click target via wrapping label.",
+        )));
     }
 }
