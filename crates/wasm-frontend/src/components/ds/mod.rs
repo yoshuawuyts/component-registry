@@ -87,3 +87,87 @@ pub(crate) mod s22_regions;
 pub(crate) mod s23_motion;
 pub(crate) mod s24_details;
 pub(crate) mod toc;
+
+/// Crude HTML pretty-printer for snapshot tests.
+///
+/// Inserts newlines before opening/closing tags and indents by nesting depth.
+/// Not spec-compliant — just enough to make snapshot diffs readable.
+#[cfg(test)]
+pub(super) fn pretty_html(html: &str) -> String {
+    let mut out = String::with_capacity(html.len() * 2);
+    let mut depth: usize = 0;
+    let mut i = 0;
+    let bytes = html.as_bytes();
+
+    while i < bytes.len() {
+        if bytes[i] == b'<' {
+            // Find the end of this tag.
+            let tag_end = match memchr(b'>', bytes, i) {
+                Some(pos) => pos,
+                None => break,
+            };
+            let tag = &html[i..=tag_end];
+
+            let is_close = tag.starts_with("</");
+            let is_void = tag.ends_with("/>") || is_void_element(tag);
+
+            if is_close {
+                depth = depth.saturating_sub(1);
+            }
+
+            // Newline + indent before the tag.
+            if !out.is_empty() {
+                out.push('\n');
+            }
+            indent(&mut out, depth);
+            out.push_str(tag);
+
+            if !is_close && !is_void {
+                depth += 1;
+            }
+
+            i = tag_end + 1;
+        } else {
+            // Text node — collect until next '<'.
+            let text_end = memchr(b'<', bytes, i).unwrap_or(bytes.len());
+            let text = &html[i..text_end];
+            let trimmed = text.trim();
+            if !trimmed.is_empty() {
+                out.push('\n');
+                indent(&mut out, depth);
+                out.push_str(trimmed);
+            }
+            i = text_end;
+        }
+    }
+    out
+}
+
+#[cfg(test)]
+fn memchr(needle: u8, haystack: &[u8], start: usize) -> Option<usize> {
+    haystack[start..]
+        .iter()
+        .position(|&b| b == needle)
+        .map(|p| p + start)
+}
+
+#[cfg(test)]
+fn indent(out: &mut String, depth: usize) {
+    for _ in 0..depth {
+        out.push_str("  ");
+    }
+}
+
+#[cfg(test)]
+fn is_void_element(tag: &str) -> bool {
+    // Extract just the tag name.
+    let name = tag
+        .trim_start_matches('<')
+        .split(|c: char| c.is_whitespace() || c == '/' || c == '>')
+        .next()
+        .unwrap_or("");
+    matches!(
+        name,
+        "br" | "hr" | "img" | "input" | "meta" | "link" | "source" | "area" | "base" | "col"
+    )
+}

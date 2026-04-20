@@ -1,404 +1,882 @@
 //! 13 — Form Fields.
 
-const SVG_0: &str = r#"<svg class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <circle cx="11" cy="11" r="8" /> <path d="m21 21-4.3-4.3" /> </svg>"#;
-const SVG_1: &str = r#"<svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <circle cx="11" cy="11" r="8" /> <path d="m21 21-4.3-4.3" /> </svg>"#;
-const SVG_2: &str = r#"<svg class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="m6 9 6 6 6-6" /> </svg>"#;
-const SVG_3: &str = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="m6 9 6 6 6-6" /> </svg>"#;
-const SVG_4: &str = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="m6 9 6 6 6-6" /> </svg>"#;
-const SVG_5: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"> <rect x="4" y="4" width="9" height="9" rx="1.2" /> <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" /> </svg>"#;
-const SVG_6: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="m3 8 3.5 3.5L13 5" /> </svg>"#;
-const SVG_7: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"> <rect x="4" y="4" width="9" height="9" rx="1.2" /> <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" /> </svg>"#;
-const SVG_8: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="M4 4l8 8M12 4l-8 8" /> </svg>"#;
-const SVG_9: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"> <rect x="4" y="4" width="9" height="9" rx="1.2" /> <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" /> </svg>"#;
-const SVG_10: &str = r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M5 12h14" /> </svg>"#;
-const SVG_11: &str = r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M5 12h14" /> <path d="M12 5v14" /> </svg>"#;
-const SVG_12: &str = r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 17.99 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" /> </svg>"#;
-const SVG_13: &str = r#"<svg class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <rect width="18" height="18" x="3" y="4" rx="2" /> <path d="M16 2v4" /> <path d="M8 2v4" /> <path d="M3 10h18" /> </svg>"#;
-const SVG_14: &str = r#"<svg class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <circle cx="12" cy="12" r="10" /> <polyline points="12 6 12 12 16 14" /> </svg>"#;
+use html::text_content::Division;
+
+const SVG_SEARCH_SM: &str = r#"<svg class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <circle cx="11" cy="11" r="8" /> <path d="m21 21-4.3-4.3" /> </svg>"#;
+const SVG_SEARCH_LG: &str = r#"<svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <circle cx="11" cy="11" r="8" /> <path d="m21 21-4.3-4.3" /> </svg>"#;
+const SVG_CHEV_SELECT: &str = r#"<svg class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="m6 9 6 6 6-6" /> </svg>"#;
+const SVG_CHEV_DROPDOWN: &str = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="m6 9 6 6 6-6" /> </svg>"#;
+const SVG_CHEV_SPLIT: &str = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="m6 9 6 6 6-6" /> </svg>"#;
+const SVG_COPY: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"> <rect x="4" y="4" width="9" height="9" rx="1.2" /> <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" /> </svg>"#;
+const SVG_CHECK: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="m3 8 3.5 3.5L13 5" /> </svg>"#;
+const SVG_COPY_LONG: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"> <rect x="4" y="4" width="9" height="9" rx="1.2" /> <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" /> </svg>"#;
+const SVG_FAIL: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="M4 4l8 8M12 4l-8 8" /> </svg>"#;
+const SVG_COPY_DISABLED: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"> <rect x="4" y="4" width="9" height="9" rx="1.2" /> <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" /> </svg>"#;
+const SVG_MINUS: &str = r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M5 12h14" /> </svg>"#;
+const SVG_PLUS: &str = r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M5 12h14" /> <path d="M12 5v14" /> </svg>"#;
+const SVG_ATTACH: &str = r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 17.99 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" /> </svg>"#;
+const SVG_CALENDAR: &str = r#"<svg class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <rect width="18" height="18" x="3" y="4" rx="2" /> <path d="M16 2v4" /> <path d="M8 2v4" /> <path d="M3 10h18" /> </svg>"#;
+const SVG_CLOCK: &str = r#"<svg class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <circle cx="12" cy="12" r="10" /> <polyline points="12 6 12 12 16 14" /> </svg>"#;
+
+/// Input size variant.
+#[derive(Clone, Copy)]
+enum Size {
+    Md,
+    Sm,
+}
+
+/// Build an `<input>` element with standard field classes.
+fn field_input(
+    type_: &str,
+    size: Size,
+    class_extra: &str,
+    placeholder: Option<&str>,
+    value: Option<&str>,
+    disabled: bool,
+    readonly: bool,
+) -> String {
+    let (h, px, text) = match size {
+        Size::Md => ("h-9", "px-3", "text-[14px]"),
+        Size::Sm => ("h-7", "px-2.5", "text-[12px]"),
+    };
+    let base = format!(
+        "block w-full {h} {px} rounded-md border border-line bg-surface {text} placeholder:text-ink-400 focus:outline-none focus:border-ink-900 {class_extra}"
+    );
+    let base = base.trim().to_owned();
+    let type_ = type_.to_owned();
+    let mut input = html::forms::Input::builder();
+    input.type_(type_);
+    input.class(base);
+    if let Some(p) = placeholder {
+        input.placeholder(p.to_owned());
+    }
+    if let Some(v) = value {
+        input.value(v.to_owned());
+    }
+    if disabled {
+        input.disabled("");
+    }
+    if readonly {
+        input.readonly("");
+    }
+    input.build().to_string()
+}
+
+/// Build a labeled field (label + span + input).
+fn labeled_field(label_text: &str, label_class: &str, inner: &str) -> String {
+    let label_text = label_text.to_owned();
+    let label_class = label_class.to_owned();
+    let inner = inner.to_owned();
+    html::forms::Label::builder()
+        .class("block")
+        .span(|s| s.class(label_class).text(label_text))
+        .text(inner)
+        .build()
+        .to_string()
+}
+
+/// Build the Sizes subsection.
+fn sizes() -> String {
+    let md_input = field_input(
+        "text",
+        Size::Md,
+        "mt-1",
+        Some("Lorem ipsum"),
+        None,
+        false,
+        false,
+    );
+    let sm_input = field_input(
+        "text",
+        Size::Sm,
+        "mt-1",
+        Some("Lorem ipsum"),
+        None,
+        false,
+        false,
+    );
+
+    Division::builder()
+        .division(|d| d.class("text-[12px] text-ink-500 mb-2").text("Sizes"))
+        .division(|d| {
+            d.class("space-y-3")
+                .division(|d| {
+                    d.span(|s| s.class("text-[11px] text-ink-500 mono uppercase tracking-wider").text("md \u{00b7} default"))
+                        .division(|d| {
+                            d.class("mt-1 text-[11px] text-ink-500")
+                                .code(|c| c.class("mono text-[10.5px]").text("h-9 \u{00b7} px-3 \u{00b7} text-[14px]"))
+                                .text(" \u{2014} primary forms, settings pages, modal dialogs.")
+                        })
+                        .text(md_input)
+                })
+                .division(|d| {
+                    d.span(|s| s.class("text-[11px] text-ink-500 mono uppercase tracking-wider").text("sm \u{00b7} compact"))
+                        .division(|d| {
+                            d.class("mt-1 text-[11px] text-ink-500")
+                                .code(|c| c.class("mono text-[10.5px]").text("h-7 \u{00b7} px-2.5 \u{00b7} text-[12px]"))
+                                .text(" \u{2014} sidebars, metadata strips, toolbars, inline filters. Mono content uses ")
+                                .code(|c| c.class("mono text-[10.5px]").text("text-[12.5px]"))
+                                .text(" to match optical weight.")
+                        })
+                        .text(sm_input)
+                })
+        })
+        .paragraph(|p| {
+            p.class("mt-3 text-[11px] text-ink-500")
+                .text("Pick by context, not preference. ")
+                .strong(|s| s.text("Don't mix sizes within one form."))
+                .text(" Addons (prefix, suffix, button) match the field's size \u{2014} never combine an md input with an sm button.")
+        })
+        .build()
+        .to_string()
+}
+
+/// A state demo entry.
+struct StateEntry {
+    label: &'static str,
+    label_class: &'static str,
+    input_class: &'static str,
+    placeholder: Option<&'static str>,
+    value: Option<&'static str>,
+    disabled: bool,
+    readonly: bool,
+}
+
+const STATES: &[StateEntry] = &[
+    StateEntry {
+        label: "Default",
+        label_class: "text-[11px] text-ink-500 mono uppercase tracking-wider",
+        input_class: "mt-1 block w-full h-9 px-3 rounded-md border border-line bg-surface text-[14px] placeholder:text-ink-400",
+        placeholder: Some("Lorem ipsum"),
+        value: None,
+        disabled: false,
+        readonly: false,
+    },
+    StateEntry {
+        label: "Hover",
+        label_class: "text-[11px] text-ink-500 mono uppercase tracking-wider",
+        input_class: "mt-1 block w-full h-9 px-3 rounded-md border border-ink-400 bg-surface text-[14px] placeholder:text-ink-400",
+        placeholder: Some("Lorem ipsum"),
+        value: None,
+        disabled: false,
+        readonly: true,
+    },
+    StateEntry {
+        label: "Focus",
+        label_class: "text-[11px] text-ink-500 mono uppercase tracking-wider",
+        input_class: "mt-1 block w-full h-9 px-3 rounded-md border border-ink-900 bg-surface text-[14px] focus:outline-none",
+        placeholder: None,
+        value: Some("Aenean lectus"),
+        disabled: false,
+        readonly: true,
+    },
+    StateEntry {
+        label: "Filled",
+        label_class: "text-[11px] text-ink-500 mono uppercase tracking-wider",
+        input_class: "mt-1 block w-full h-9 px-3 rounded-md border border-line bg-surface text-[14px]",
+        placeholder: None,
+        value: Some("Vestibulum ante ipsum"),
+        disabled: false,
+        readonly: false,
+    },
+    StateEntry {
+        label: "Error",
+        label_class: "text-[11px] text-negative mono uppercase tracking-wider",
+        input_class: "mt-1 block w-full h-9 px-3 rounded-md border border-negative bg-surface text-[14px]",
+        placeholder: None,
+        value: Some("Invalid value"),
+        disabled: false,
+        readonly: false,
+    },
+    StateEntry {
+        label: "Disabled",
+        label_class: "text-[11px] text-ink-400 mono uppercase tracking-wider",
+        input_class: "mt-1 block w-full h-9 px-3 rounded-md border border-dashed border-line bg-surfaceMuted text-[14px] text-ink-400 cursor-not-allowed opacity-70",
+        placeholder: None,
+        value: Some("Read only"),
+        disabled: true,
+        readonly: false,
+    },
+];
+
+/// Build the States subsection.
+fn states() -> String {
+    let mut states_div = Division::builder();
+    states_div.class("space-y-3");
+    for entry in STATES {
+        let label = entry.label.to_owned();
+        let label_class = entry.label_class.to_owned();
+        let input_class = entry.input_class.to_owned();
+        let placeholder = entry.placeholder.map(ToOwned::to_owned);
+        let value = entry.value.map(ToOwned::to_owned);
+        let disabled = entry.disabled;
+        let readonly = entry.readonly;
+        states_div.division(|d| {
+            d.span(|s| s.class(label_class).text(label));
+            let mut input = html::forms::Input::builder();
+            input.type_("text");
+            input.class(input_class);
+            if let Some(ref p) = placeholder {
+                input.placeholder(p.clone());
+            }
+            if let Some(ref v) = value {
+                input.value(v.clone());
+            }
+            if disabled {
+                input.disabled("");
+            }
+            if readonly {
+                input.readonly("");
+            }
+            d.text(input.build().to_string())
+        });
+    }
+
+    Division::builder()
+        .division(|d| d.class("text-[12px] text-ink-500 mb-2").text("States"))
+        .text(states_div.build().to_string())
+        .paragraph(|p| {
+            p.class("mt-3 text-[11px] text-ink-500")
+                .text("Focus darkens the border to ink \u{2014} no thicker, no glow.")
+        })
+        .build()
+        .to_string()
+}
+
+/// Build the basic Input subsection.
+fn input_basic() -> String {
+    html::forms::Label::builder()
+        .class("block")
+        .span(|s| s.class("text-[12px] text-ink-500").text("Label"))
+        .input(|i| {
+            i.type_("text")
+                .placeholder("Lorem ipsum")
+                .class("mt-1 block w-full h-9 px-3 rounded-md border border-line bg-surface text-[14px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900")
+        })
+        .build()
+        .to_string()
+}
+
+/// Build the Input with help text subsection.
+fn input_help() -> String {
+    html::forms::Label::builder()
+        .class("block")
+        .span(|s| s.class("text-[12px] text-ink-500").text("With helper text"))
+        .input(|i| {
+            i.type_("text")
+                .value("Aenean lectus")
+                .class("mt-1 block w-full h-9 px-3 rounded-md border border-line bg-surface text-[14px] focus:outline-none focus:border-ink-900")
+        })
+        .span(|s| s.class("mt-1 block text-[11px] text-ink-500").text("Vestibulum ante ipsum primis."))
+        .build()
+        .to_string()
+}
+
+/// Build the Error state subsection.
+fn input_error() -> String {
+    html::forms::Label::builder()
+        .class("block")
+        .span(|s| s.class("text-[12px] text-negative").text("Error state"))
+        .input(|i| {
+            i.type_("text")
+                .value("Invalid value")
+                .class("mt-1 block w-full h-9 px-3 rounded-md border border-negative bg-surface text-[14px] focus:outline-none")
+        })
+        .span(|s| s.class("mt-1 block text-[11px] text-negative").text("Pellentesque habitant morbi."))
+        .build()
+        .to_string()
+}
+
+/// Build the Disabled subsection.
+fn input_disabled() -> String {
+    html::forms::Label::builder()
+        .class("block")
+        .span(|s| s.class("text-[12px] text-ink-400").text("Disabled"))
+        .input(|i| {
+            i.type_("text")
+                .value("Read only")
+                .disabled("")
+                .class("mt-1 block w-full h-9 px-3 rounded-md border border-dashed border-line bg-surfaceMuted text-[14px] text-ink-400 cursor-not-allowed opacity-70")
+        })
+        .build()
+        .to_string()
+}
+
+/// Build the Search subsection.
+fn search() -> String {
+    let input = html::forms::Input::builder()
+        .type_("search")
+        .placeholder("Search\u{2026}")
+        .class("block w-full h-9 pl-9 pr-3 rounded-md border border-line bg-surface text-[14px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900")
+        .build()
+        .to_string();
+
+    html::forms::Label::builder()
+        .class("block")
+        .span(|s| s.class("text-[12px] text-ink-500").text("Search"))
+        .text(
+            Division::builder()
+                .class("mt-1 relative")
+                .text(SVG_SEARCH_SM)
+                .text(input)
+                .build()
+                .to_string(),
+        )
+        .build()
+        .to_string()
+}
+
+/// Build the prominent Search subsection.
+fn search_prominent() -> String {
+    let input = html::forms::Input::builder()
+        .type_("search")
+        .placeholder("Search 12\u{00a0}480 packages\u{2026}")
+        .class("block w-full h-10 pl-10 pr-24 rounded-lg border border-line bg-canvas text-[14px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900")
+        .build()
+        .to_string();
+
+    let kbd = r#"<kbd class="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 h-6 px-2 rounded border border-lineSoft bg-surfaceMuted text-[11px] mono text-ink-500"><span>&#x2318;</span><span>K</span></kbd>"#;
+
+    let help_text = Division::builder()
+        .class("mt-1 relative")
+        .text(SVG_SEARCH_LG)
+        .text(input)
+        .text(kbd)
+        .build()
+        .to_string();
+
+    html::forms::Label::builder()
+        .class("block")
+        .span(|s| s.class("text-[12px] text-ink-500").text("Search \u{00b7} prominent with shortcut hint"))
+        .text(help_text)
+        .span(|s| {
+            s.class("mt-1 block text-[11px] text-ink-500")
+                .text("For browse / index landing surfaces where search is the primary action. Departures from the ")
+                .code(|c| c.class("mono text-[10.5px]").text("md"))
+                .text(" default: ")
+                .code(|c| c.class("mono text-[10.5px]").text("h-10"))
+                .text(" (one step taller, anchors the section without competing with the heading); ")
+                .code(|c| c.class("mono text-[10.5px]").text("rounded-lg"))
+                .text(" (softer than the ")
+                .code(|c| c.class("mono text-[10.5px]").text("rounded-md"))
+                .text(" form default \u{2014} search is a noun, not a transactional control); ")
+                .code(|c| c.class("mono text-[10.5px]").text("bg-canvas"))
+                .text(" instead of ")
+                .code(|c| c.class("mono text-[10.5px]").text("bg-surface"))
+                .text(" when the section sits on ")
+                .code(|c| c.class("mono text-[10.5px]").text("surface"))
+                .text("; 16px icon at ")
+                .code(|c| c.class("mono text-[10.5px]").text("pl-10"))
+                .text("; trailing ")
+                .code(|c| c.class("mono text-[10.5px]").text("&lt;kbd&gt;"))
+                .text(" hint (")
+                .code(|c| c.class("mono text-[10.5px]").text("h-6 \u{00b7} 11px mono \u{00b7} border-lineSoft \u{00b7} bg-surfaceMuted"))
+                .text(") with ")
+                .code(|c| c.class("mono text-[10.5px]").text("pr-24"))
+                .text(" on the input to clear it.")
+        })
+        .build()
+        .to_string()
+}
+
+/// Build the Select subsection.
+fn select() -> String {
+    let select_el = html::forms::Select::builder()
+        .class("appearance-none block w-full h-9 pl-3 pr-8 rounded-md border border-line bg-surface text-[14px] focus:outline-none focus:border-ink-900")
+        .option(|o| o.text("Tellus"))
+        .option(|o| o.text("Pellentesque"))
+        .option(|o| o.text("Vestibulum"))
+        .build()
+        .to_string();
+
+    let wrapper = Division::builder()
+        .class("mt-1 relative")
+        .text(select_el)
+        .text(SVG_CHEV_SELECT)
+        .build()
+        .to_string();
+
+    html::forms::Label::builder()
+        .class("block")
+        .span(|s| s.class("text-[12px] text-ink-500").text("Select"))
+        .text(wrapper)
+        .build()
+        .to_string()
+}
+
+/// Build the Textarea subsection.
+fn textarea() -> String {
+    html::forms::Label::builder()
+        .class("block")
+        .span(|s| s.class("text-[12px] text-ink-500").text("Textarea"))
+        .text_area(|ta| {
+            ta.rows(3)
+                .placeholder("Lorem ipsum dolor sit amet\u{2026}")
+                .class("mt-1 block w-full px-3 py-2 rounded-md border border-line bg-surface text-[14px] placeholder:text-ink-400 resize-y focus:outline-none focus:border-ink-900")
+        })
+        .build()
+        .to_string()
+}
+
+/// Build the prefix addon subsection.
+fn input_prefix() -> String {
+    let inner = Division::builder()
+        .class("mt-1 flex")
+        .span(|s| {
+            s.class("inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[13px] text-ink-500 mono")
+                .text("https://")
+        })
+        .text(html::forms::Input::builder()
+            .type_("text")
+            .value("lorem.ipsum")
+            .class("block w-full h-9 px-3 rounded-r-md border border-line bg-surface text-[14px] focus:outline-none focus:border-ink-900")
+            .build()
+            .to_string())
+        .build()
+        .to_string();
+
+    labeled_field(
+        "Input group \u{00b7} prefix",
+        "text-[12px] text-ink-500",
+        &inner,
+    )
+}
+
+/// Build the suffix addon subsection.
+fn input_suffix() -> String {
+    let inner = Division::builder()
+        .class("mt-1 flex")
+        .text(html::forms::Input::builder()
+            .type_("text")
+            .value("42")
+            .class("block w-full h-9 px-3 rounded-l-md border border-r-0 border-line bg-surface text-[14px] tabular-nums focus:outline-none focus:border-ink-900")
+            .build()
+            .to_string())
+        .span(|s| {
+            s.class("inline-flex items-center px-3 h-9 rounded-r-md border border-line bg-surfaceMuted text-[13px] text-ink-500 mono")
+                .text("kg")
+        })
+        .build()
+        .to_string();
+
+    labeled_field(
+        "Input group \u{00b7} suffix",
+        "text-[12px] text-ink-500",
+        &inner,
+    )
+}
+
+/// Build the button group subsection.
+fn input_button() -> String {
+    let inner = Division::builder()
+        .class("mt-1 flex")
+        .text(html::forms::Input::builder()
+            .type_("text")
+            .placeholder("Search registry\u{2026}")
+            .class("block w-full h-9 px-3 rounded-l-md border border-r-0 border-line bg-surface text-[14px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900")
+            .build()
+            .to_string())
+        .button(|b| {
+            b.type_("button")
+                .class("inline-flex items-center px-3 h-9 rounded-r-md border-[1.5px] border-ink-900 bg-surface text-ink-900 text-[13px] hover:bg-surfaceMuted")
+                .text("Search")
+        })
+        .build()
+        .to_string();
+
+    labeled_field(
+        "Input group \u{00b7} button",
+        "text-[12px] text-ink-500",
+        &inner,
+    )
+}
+
+/// Build the button with dropdown group subsection.
+fn input_btn_dropdown() -> String {
+    let inner = Division::builder()
+        .class("mt-1 flex relative")
+        .button(|b| {
+            b.type_("button")
+                .class("inline-flex items-center gap-2 px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-ink-700 text-[13px] hover:bg-ink-300 hover:text-ink-900")
+                .text("Tellus")
+                .text(SVG_CHEV_DROPDOWN)
+        })
+        .text(html::forms::Input::builder()
+            .type_("text")
+            .placeholder("Lorem ipsum\u{2026}")
+            .class("block w-full h-9 px-3 rounded-r-md border border-line bg-surface text-[14px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900")
+            .build()
+            .to_string())
+        .build()
+        .to_string();
+
+    let inner_with_help = format!(
+        "{inner}{}",
+        html::inline_text::Span::builder()
+            .class("mt-1 block text-[11px] text-ink-500")
+            .text("Quiet dropdown addon paired with the field \u{2014} same border and addon vocabulary as the prefix/suffix variants.")
+            .build()
+    );
+
+    labeled_field(
+        "Input group \u{00b7} button with dropdown",
+        "text-[12px] text-ink-500",
+        &inner_with_help,
+    )
+}
+
+/// Build the split dropdown group subsection.
+fn input_split_dropdown() -> String {
+    let inner = Division::builder()
+        .class("mt-1 flex")
+        .text(html::forms::Input::builder()
+            .type_("text")
+            .value("https://lorem.ipsum/dolor")
+            .class("block w-full h-9 px-3 rounded-l-md border border-r-0 border-line bg-surface text-[14px] focus:outline-none focus:border-ink-900")
+            .build()
+            .to_string())
+        .button(|b| {
+            b.type_("button")
+                .class("inline-flex items-center gap-2 px-3 h-9 border border-r-0 border-line bg-surfaceMuted text-ink-700 text-[13px] hover:bg-ink-300 hover:text-ink-900")
+                .text("Copy")
+        })
+        .button(|b| {
+            b.type_("button")
+                .aria_label("More")
+                .class("inline-flex items-center px-2 h-9 rounded-r-md border border-line bg-surfaceMuted text-ink-700 hover:bg-ink-300 hover:text-ink-900")
+                .text(SVG_CHEV_SPLIT)
+        })
+        .build()
+        .to_string();
+
+    labeled_field(
+        "Input group \u{00b7} split dropdown",
+        "text-[12px] text-ink-500",
+        &inner,
+    )
+}
+
+/// Command demo entry.
+struct CommandEntry {
+    label: &'static str,
+    cmd_text: &'static str,
+    btn_class: &'static str,
+    btn_label: &'static str,
+    btn_svg: &'static str,
+    help: &'static str,
+    wrapper_class: &'static str,
+    dollar_class: &'static str,
+    code_class: &'static str,
+    disabled: bool,
+}
+
+const COMMANDS: &[CommandEntry] = &[
+    CommandEntry {
+        label: "Command \u{00b7} default",
+        cmd_text: "wasm install wasi:http-handler",
+        btn_class: "inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink-900",
+        btn_label: "Copy command",
+        btn_svg: SVG_COPY,
+        help: r#"Use for install snippets and shareable shell commands. Renders as <code class="mono text-[10.5px]">&lt;code&gt;</code> — keyboard select-all + copy works natively. Don't use for inline code in prose; use a <code class="mono text-[10.5px]">&lt;code&gt;</code> chip instead."#,
+        wrapper_class: "mt-1 flex group",
+        dollar_class: "inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[13px] text-ink-500 mono select-none",
+        code_class: "block w-full h-9 px-3 inline-flex items-center border border-line bg-surface mono text-[13px] text-ink-900 overflow-x-auto whitespace-nowrap",
+        disabled: false,
+    },
+    CommandEntry {
+        label: "Command \u{00b7} copied (1.6s after click)",
+        cmd_text: "wasm install wasi:http-handler",
+        btn_class: "inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-positive",
+        btn_label: "Copied",
+        btn_svg: SVG_CHECK,
+        help: r#"Icon swaps to a check in <code class="mono text-[10.5px]">text-positive</code>; reverts after 1.6s."#,
+        wrapper_class: "mt-1 flex",
+        dollar_class: "inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[13px] text-ink-500 mono select-none",
+        code_class: "block w-full h-9 px-3 inline-flex items-center border border-line bg-surface mono text-[13px] text-ink-900 overflow-x-auto whitespace-nowrap",
+        disabled: false,
+    },
+    CommandEntry {
+        label: "Command \u{00b7} long (horizontal overflow)",
+        cmd_text: "wasm install wasi:http-handler@0.4.2 --registry https://registry.example.com --keychain",
+        btn_class: "inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted",
+        btn_label: "Copy command",
+        btn_svg: SVG_COPY_LONG,
+        help: "Field scrolls horizontally; the prefix and copy button stay anchored.",
+        wrapper_class: "mt-1 flex",
+        dollar_class: "inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[13px] text-ink-500 mono select-none",
+        code_class: "block w-full h-9 px-3 inline-flex items-center border border-line bg-surface mono text-[13px] text-ink-900 overflow-x-auto whitespace-nowrap",
+        disabled: false,
+    },
+    CommandEntry {
+        label: "Command \u{00b7} copy failed",
+        cmd_text: "wasm install wasi:http-handler",
+        btn_class: "inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-negative",
+        btn_label: "Copy failed",
+        btn_svg: SVG_FAIL,
+        help: r#"Clipboard API blocked (insecure context, permission denied). Border + icon shift to <code class="mono text-[10.5px]">negative</code>; helper toast (not shown) explains &quot;select and copy manually.&quot;"#,
+        wrapper_class: "mt-1 flex",
+        dollar_class: "inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[13px] text-ink-500 mono select-none",
+        code_class: "block w-full h-9 px-3 inline-flex items-center border border-line bg-surface mono text-[13px] text-ink-900 overflow-x-auto whitespace-nowrap",
+        disabled: false,
+    },
+    CommandEntry {
+        label: "Command \u{00b7} disabled",
+        cmd_text: "wasm install wasi:http-handler",
+        btn_class: "inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-dashed border-line bg-surfaceMuted text-ink-400 cursor-not-allowed",
+        btn_label: "Copy command",
+        btn_svg: SVG_COPY_DISABLED,
+        help: "Use during pending/async states \u{2014} e.g. while a registry version is being resolved. Shares the dashed-border / opacity-70 vocabulary with disabled inputs.",
+        wrapper_class: "mt-1 flex opacity-70",
+        dollar_class: "inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-dashed border-line bg-surfaceMuted text-[13px] text-ink-400 mono select-none",
+        code_class: "block w-full h-9 px-3 inline-flex items-center border border-dashed border-line bg-surfaceMuted mono text-[13px] text-ink-400 overflow-x-auto whitespace-nowrap cursor-not-allowed",
+        disabled: true,
+    },
+];
+
+/// Build a command demo.
+fn command(entry: &CommandEntry) -> String {
+    let label = entry.label.to_owned();
+    let wrapper_class = entry.wrapper_class.to_owned();
+    let dollar_class = entry.dollar_class.to_owned();
+    let code_class = entry.code_class.to_owned();
+    let cmd_text = entry.cmd_text.to_owned();
+    let btn_class = entry.btn_class.to_owned();
+    let btn_label = entry.btn_label.to_owned();
+    let btn_svg = entry.btn_svg.to_owned();
+    let help = entry.help.to_owned();
+    let disabled = entry.disabled;
+
+    let mut btn = html::forms::Button::builder();
+    btn.type_("button");
+    btn.class(btn_class);
+    btn.aria_label(btn_label);
+    btn.text(btn_svg);
+    if disabled {
+        btn.disabled(true);
+    }
+
+    Division::builder()
+        .span(|s| s.class("text-[12px] text-ink-500").text(label))
+        .division(|d| {
+            d.class(wrapper_class)
+                .span(|s| {
+                    let mut s = s.class(dollar_class);
+                    s = s.aria_hidden(true);
+                    s.text("$")
+                })
+                .code(|c| c.class(code_class).text(cmd_text))
+                .text(btn.build().to_string())
+        })
+        .span(|s| s.class("mt-1 block text-[11px] text-ink-500").text(help))
+        .build()
+        .to_string()
+}
+
+/// Build the number stepper subsection.
+fn stepper() -> String {
+    let input = html::forms::Input::builder()
+        .type_("text")
+        .value("12")
+        .class("block w-16 h-9 px-2 border-y-[1.5px] border-ink-900 bg-surface text-[14px] tabular-nums text-center focus:outline-none")
+        .build()
+        .to_string();
+
+    let inner = Division::builder()
+        .class("mt-1 inline-flex")
+        .button(|b| {
+            b.type_("button")
+                .aria_label("Decrement")
+                .class("h-9 w-9 grid place-items-center rounded-l-md border-[1.5px] border-r-0 border-ink-900 bg-surface text-ink-900 hover:bg-surfaceMuted")
+                .text(SVG_MINUS)
+        })
+        .text(input)
+        .button(|b| {
+            b.type_("button")
+                .aria_label("Increment")
+                .class("h-9 w-9 grid place-items-center rounded-r-md border-[1.5px] border-l-0 border-ink-900 bg-surface text-ink-900 hover:bg-surfaceMuted")
+                .text(SVG_PLUS)
+        })
+        .build()
+        .to_string();
+
+    labeled_field("Number stepper", "text-[12px] text-ink-500", &inner)
+}
+
+/// Build the file input subsection.
+fn file_input() -> String {
+    let inner = Division::builder()
+        .class("mt-1 flex")
+        .button(|b| {
+            b.type_("button")
+                .class("inline-flex items-center gap-2 px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-ink-700 text-[13px] hover:bg-ink-300 hover:text-ink-900 whitespace-nowrap")
+                .text(SVG_ATTACH)
+                .text("Choose file")
+        })
+        .span(|s| {
+            s.class("block w-full h-9 px-3 inline-flex items-center rounded-r-md border border-line bg-surface text-[13px] text-ink-500")
+                .text("No file selected")
+        })
+        .build()
+        .to_string();
+
+    labeled_field("File input", "text-[12px] text-ink-500", &inner)
+}
+
+/// Build the range slider subsection.
+fn range_slider() -> String {
+    html::forms::Label::builder()
+        .class("block")
+        .span(|s| {
+            s.class("text-[12px] text-ink-500 flex items-center justify-between")
+                .text("Range ")
+                .span(|inner| inner.class("mono text-ink-700").text("64"))
+        })
+        .input(|i| {
+            i.type_("range")
+                .min("0")
+                .max("100")
+                .value("64")
+                .class("mt-2 block w-full accent-ink-900")
+        })
+        .build()
+        .to_string()
+}
+
+/// Build the color input subsection.
+fn color_input() -> String {
+    let inner = Division::builder()
+        .class("mt-1 flex")
+        .span(|s| {
+            s.class("inline-flex items-center justify-center h-9 w-9 rounded-l-md border border-r-0 border-line bg-surface")
+                // Raw HTML: color swatch uses inline style= for the background.
+                // Span::style() creates a <style> child, not an inline style attribute.
+                .text(r#"<span class="block h-5 w-5 rounded border border-line" style="background:#9B4F5E"></span>"#)
+        })
+        .text(html::forms::Input::builder()
+            .type_("text")
+            .value("#9B4F5E")
+            .class("block w-full h-9 px-3 rounded-r-md border border-line bg-surface text-[14px] mono uppercase focus:outline-none focus:border-ink-900")
+            .build()
+            .to_string())
+        .build()
+        .to_string();
+
+    labeled_field("Color", "text-[12px] text-ink-500", &inner)
+}
+
+/// Build the date/time subsection.
+fn date_time() -> String {
+    let date_label = html::forms::Label::builder()
+        .class("block")
+        .span(|s| s.class("text-[12px] text-ink-500").text("Date"))
+        .text(Division::builder()
+            .class("mt-1 relative")
+            .text(html::forms::Input::builder()
+                .type_("text")
+                .value("2026-04-18")
+                .class("block w-full h-9 pl-3 pr-9 rounded-md border border-line bg-surface text-[14px] mono focus:outline-none focus:border-ink-900")
+                .build()
+                .to_string())
+            .text(SVG_CALENDAR)
+            .build()
+            .to_string())
+        .build()
+        .to_string();
+
+    let time_label = html::forms::Label::builder()
+        .class("block")
+        .span(|s| s.class("text-[12px] text-ink-500").text("Time"))
+        .text(Division::builder()
+            .class("mt-1 relative")
+            .text(html::forms::Input::builder()
+                .type_("text")
+                .value("14:30")
+                .class("block w-full h-9 pl-3 pr-9 rounded-md border border-line bg-surface text-[14px] mono focus:outline-none focus:border-ink-900")
+                .build()
+                .to_string())
+            .text(SVG_CLOCK)
+            .build()
+            .to_string())
+        .build()
+        .to_string();
+
+    Division::builder()
+        .class("grid grid-cols-2 gap-3")
+        .text(date_label)
+        .text(time_label)
+        .build()
+        .to_string()
+}
+
+/// Build the combobox subsection.
+fn combobox() -> String {
+    let dropdown = Division::builder()
+        .class("absolute left-0 right-0 mt-1 rounded-md border border-line bg-surface shadow-tooltip overflow-hidden text-[14px] z-10")
+        .division(|d| {
+            d.class("px-3 h-9 flex items-center bg-surfaceMuted text-ink-900")
+                .span(|s| s.class("font-medium").text("Pellen"))
+                .span(|s| s.class("text-ink-500").text("tesque habitant"))
+        })
+        .division(|d| {
+            d.class("px-3 h-9 flex items-center text-ink-700")
+                .span(|s| s.class("font-medium").text("Pellen"))
+                .span(|s| s.class("text-ink-500").text("tesque morbi"))
+        })
+        .division(|d| {
+            d.class("px-3 h-9 flex items-center text-ink-700")
+                .span(|s| s.class("font-medium").text("Pellen"))
+                .span(|s| s.class("text-ink-500").text("tesque vivamus"))
+        })
+        .build()
+        .to_string();
+
+    let inner = Division::builder()
+        .class("mt-1 relative")
+        .text(html::forms::Input::builder()
+            .type_("text")
+            .value("Pellen")
+            .class("block w-full h-9 px-3 rounded-md border border-line bg-surface text-[14px] focus:outline-none focus:border-ink-900")
+            .build()
+            .to_string())
+        .text(dropdown)
+        .build()
+        .to_string();
+
+    labeled_field("Combobox", "text-[12px] text-ink-500", &inner)
+}
 
 /// Render this section.
 pub(crate) fn render() -> String {
-    let content = format!(
-        r##"<div class="space-y-8 max-w-md">
-          <!-- Sizes -->
-          <div>
-            <div class="text-[12px] text-ink-500 mb-2">Sizes</div>
-            <div class="space-y-3">
-              <div>
-                <span class="text-[11px] text-ink-500 mono uppercase tracking-wider">md · default</span>
-                <div class="mt-1 text-[11px] text-ink-500"><code
-                    class="mono text-[10.5px]">h-9 · px-3 · text-[14px]</code> — primary forms, settings pages, modal
-                  dialogs.</div>
-                <input type="text" placeholder="Lorem ipsum"
-                  class="mt-1 block w-full h-9 px-3 rounded-md border border-line bg-surface text-[14px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900" />
-              </div>
-              <div>
-                <span class="text-[11px] text-ink-500 mono uppercase tracking-wider">sm · compact</span>
-                <div class="mt-1 text-[11px] text-ink-500"><code
-                    class="mono text-[10.5px]">h-7 · px-2.5 · text-[12px]</code> — sidebars, metadata strips, toolbars,
-                  inline filters. Mono content uses <code class="mono text-[10.5px]">text-[12.5px]</code> to match
-                  optical weight.</div>
-                <input type="text" placeholder="Lorem ipsum"
-                  class="mt-1 block w-full h-7 px-2.5 rounded-md border border-line bg-surface text-[12px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900" />
-              </div>
-            </div>
-            <p class="mt-3 text-[11px] text-ink-500">Pick by context, not preference. <strong>Don't mix sizes within one
-                form.</strong> Addons (prefix, suffix, button) match the field's size — never combine an md input with
-              an sm button.</p>
-          </div>
-          <!-- States -->
-          <div>
-            <div class="text-[12px] text-ink-500 mb-2">States</div>
-            <div class="space-y-3">
-              <div>
-                <span class="text-[11px] text-ink-500 mono uppercase tracking-wider">Default</span>
-                <input type="text" placeholder="Lorem ipsum"
-                  class="mt-1 block w-full h-9 px-3 rounded-md border border-line bg-surface text-[14px] placeholder:text-ink-400" />
-              </div>
-              <div>
-                <span class="text-[11px] text-ink-500 mono uppercase tracking-wider">Hover</span>
-                <input type="text" placeholder="Lorem ipsum" readonly
-                  class="mt-1 block w-full h-9 px-3 rounded-md border border-ink-400 bg-surface text-[14px] placeholder:text-ink-400" />
-              </div>
-              <div>
-                <span class="text-[11px] text-ink-500 mono uppercase tracking-wider">Focus</span>
-                <input type="text" value="Aenean lectus" readonly
-                  class="mt-1 block w-full h-9 px-3 rounded-md border border-ink-900 bg-surface text-[14px] focus:outline-none" />
-              </div>
-              <div>
-                <span class="text-[11px] text-ink-500 mono uppercase tracking-wider">Filled</span>
-                <input type="text" value="Vestibulum ante ipsum"
-                  class="mt-1 block w-full h-9 px-3 rounded-md border border-line bg-surface text-[14px]" />
-              </div>
-              <div>
-                <span class="text-[11px] text-negative mono uppercase tracking-wider">Error</span>
-                <input type="text" value="Invalid value"
-                  class="mt-1 block w-full h-9 px-3 rounded-md border border-negative bg-surface text-[14px]" />
-              </div>
-              <div>
-                <span class="text-[11px] text-ink-400 mono uppercase tracking-wider">Disabled</span>
-                <input type="text" value="Read only" disabled
-                  class="mt-1 block w-full h-9 px-3 rounded-md border border-dashed border-line bg-surfaceMuted text-[14px] text-ink-400 cursor-not-allowed opacity-70" />
-              </div>
-            </div>
-            <p class="mt-3 text-[11px] text-ink-500">Focus darkens the border to ink — no thicker, no glow.</p>
-          </div>
-          <!-- Input -->
-          <label class="block">
-            <span class="text-[12px] text-ink-500">Label</span>
-            <input type="text" placeholder="Lorem ipsum"
-              class="mt-1 block w-full h-9 px-3 rounded-md border border-line bg-surface text-[14px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900" />
-          </label>
-          <!-- Input with help -->
-          <label class="block">
-            <span class="text-[12px] text-ink-500">With helper text</span>
-            <input type="text" value="Aenean lectus"
-              class="mt-1 block w-full h-9 px-3 rounded-md border border-line bg-surface text-[14px] focus:outline-none focus:border-ink-900" />
-            <span class="mt-1 block text-[11px] text-ink-500">Vestibulum ante ipsum primis.</span>
-          </label>
-          <!-- Error state -->
-          <label class="block">
-            <span class="text-[12px] text-negative">Error state</span>
-            <input type="text" value="Invalid value"
-              class="mt-1 block w-full h-9 px-3 rounded-md border border-negative bg-surface text-[14px] focus:outline-none" />
-            <span class="mt-1 block text-[11px] text-negative">Pellentesque habitant morbi.</span>
-          </label>
-          <!-- Disabled -->
-          <label class="block">
-            <span class="text-[12px] text-ink-400">Disabled</span>
-            <input type="text" value="Read only" disabled
-              class="mt-1 block w-full h-9 px-3 rounded-md border border-dashed border-line bg-surfaceMuted text-[14px] text-ink-400 cursor-not-allowed opacity-70" />
-          </label>
-          <!-- Search -->
-          <label class="block">
-            <span class="text-[12px] text-ink-500">Search</span>
-            <div class="mt-1 relative">
-              {SVG_0}
-              <input type="search" placeholder="Search…"
-                class="block w-full h-9 pl-9 pr-3 rounded-md border border-line bg-surface text-[14px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900" />
-            </div>
-          </label>
-          <!-- Search · prominent with shortcut hint -->
-          <label class="block">
-            <span class="text-[12px] text-ink-500">Search · prominent with shortcut hint</span>
-            <div class="mt-1 relative">
-              {SVG_1}
-              <input type="search" placeholder="Search 12 480 packages…"
-                class="block w-full h-10 pl-10 pr-24 rounded-lg border border-line bg-canvas text-[14px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900" />
-              <kbd
-                class="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 h-6 px-2 rounded border border-lineSoft bg-surfaceMuted text-[11px] mono text-ink-500">
-                <span>⌘</span><span>K</span>
-              </kbd>
-            </div>
-            <span class="mt-1 block text-[11px] text-ink-500">For browse / index landing surfaces where
-              search is the primary action. Departures from the
-              <code class="mono text-[10.5px]">md</code> default: <code class="mono text-[10.5px]">h-10</code>
-              (one step taller, anchors the section without competing with the heading);
-              <code class="mono text-[10.5px]">rounded-lg</code> (softer than the
-              <code class="mono text-[10.5px]">rounded-md</code> form default — search is a noun,
-              not a transactional control); <code class="mono text-[10.5px]">bg-canvas</code> instead
-              of <code class="mono text-[10.5px]">bg-surface</code> when the section sits on
-              <code class="mono text-[10.5px]">surface</code>; 16px icon at
-              <code class="mono text-[10.5px]">pl-10</code>; trailing
-              <code class="mono text-[10.5px]">&lt;kbd&gt;</code> hint
-              (<code class="mono text-[10.5px]">h-6 · 11px mono · border-lineSoft · bg-surfaceMuted</code>)
-              with <code class="mono text-[10.5px]">pr-24</code> on the input to clear it.</span>
-          </label>
-          <!-- Select -->
-          <label class="block">
-            <span class="text-[12px] text-ink-500">Select</span>
-            <div class="mt-1 relative">
-              <select
-                class="appearance-none block w-full h-9 pl-3 pr-8 rounded-md border border-line bg-surface text-[14px] focus:outline-none focus:border-ink-900">
-                <option>Tellus</option>
-                <option>Pellentesque</option>
-                <option>Vestibulum</option>
-              </select>
-              {SVG_2}
-            </div>
-          </label>
-          <!-- Textarea -->
-          <label class="block">
-            <span class="text-[12px] text-ink-500">Textarea</span>
-            <textarea rows="3" placeholder="Lorem ipsum dolor sit amet…"
-              class="mt-1 block w-full px-3 py-2 rounded-md border border-line bg-surface text-[14px] placeholder:text-ink-400 resize-y focus:outline-none focus:border-ink-900"></textarea>
-          </label>
-          <!-- Input group: prefix addon -->
-          <label class="block">
-            <span class="text-[12px] text-ink-500">Input group · prefix</span>
-            <div class="mt-1 flex">
-              <span
-                class="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[13px] text-ink-500 mono">https://</span>
-              <input type="text" value="lorem.ipsum"
-                class="block w-full h-9 px-3 rounded-r-md border border-line bg-surface text-[14px] focus:outline-none focus:border-ink-900" />
-            </div>
-          </label>
-          <!-- Input group: suffix addon -->
-          <label class="block">
-            <span class="text-[12px] text-ink-500">Input group · suffix</span>
-            <div class="mt-1 flex">
-              <input type="text" value="42"
-                class="block w-full h-9 px-3 rounded-l-md border border-r-0 border-line bg-surface text-[14px] tabular-nums focus:outline-none focus:border-ink-900" />
-              <span
-                class="inline-flex items-center px-3 h-9 rounded-r-md border border-line bg-surfaceMuted text-[13px] text-ink-500 mono">kg</span>
-            </div>
-          </label>
-          <!-- Input group: button -->
-          <label class="block">
-            <span class="text-[12px] text-ink-500">Input group · button</span>
-            <div class="mt-1 flex">
-              <input type="text" placeholder="Search registry…"
-                class="block w-full h-9 px-3 rounded-l-md border border-r-0 border-line bg-surface text-[14px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900" />
-              <button type="button"
-                class="inline-flex items-center px-3 h-9 rounded-r-md border-[1.5px] border-ink-900 bg-surface text-ink-900 text-[13px] hover:bg-surfaceMuted">Search</button>
-            </div>
-          </label>
-          <!-- Input group: button with dropdown -->
-          <label class="block">
-            <span class="text-[12px] text-ink-500">Input group · button with dropdown</span>
-            <div class="mt-1 flex relative">
-              <button type="button"
-                class="inline-flex items-center gap-2 px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-ink-700 text-[13px] hover:bg-ink-300 hover:text-ink-900">
-                Tellus
-                {SVG_3}
-              </button>
-              <input type="text" placeholder="Lorem ipsum…"
-                class="block w-full h-9 px-3 rounded-r-md border border-line bg-surface text-[14px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900" />
-            </div>
-            <span class="mt-1 block text-[11px] text-ink-500">Quiet dropdown addon paired with the field — same border
-              and addon vocabulary as the prefix/suffix variants.</span>
-          </label>
-          <!-- Input group: split button (trailing dropdown) -->
-          <label class="block">
-            <span class="text-[12px] text-ink-500">Input group · split dropdown</span>
-            <div class="mt-1 flex">
-              <input type="text" value="https://lorem.ipsum/dolor"
-                class="block w-full h-9 px-3 rounded-l-md border border-r-0 border-line bg-surface text-[14px] focus:outline-none focus:border-ink-900" />
-              <button type="button"
-                class="inline-flex items-center gap-2 px-3 h-9 border border-r-0 border-line bg-surfaceMuted text-ink-700 text-[13px] hover:bg-ink-300 hover:text-ink-900">
-                Copy
-              </button>
-              <button type="button" aria-label="More"
-                class="inline-flex items-center px-2 h-9 rounded-r-md border border-line bg-surfaceMuted text-ink-700 hover:bg-ink-300 hover:text-ink-900">
-                {SVG_4}
-              </button>
-            </div>
-          </label>
-          <!-- Input group: command (readonly + copy) -->
-          <div>
-            <span class="text-[12px] text-ink-500">Command · default</span>
-            <div class="mt-1 flex group">
-              <span
-                class="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[13px] text-ink-500 mono select-none"
-                aria-hidden="true">$</span>
-              <code
-                class="block w-full h-9 px-3 inline-flex items-center border border-line bg-surface mono text-[13px] text-ink-900 overflow-x-auto whitespace-nowrap">wasm install wasi:http-handler</code>
-              <button type="button"
-                class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink-900"
-                aria-label="Copy command">
-                {SVG_5}
-              </button>
-            </div>
-            <span class="mt-1 block text-[11px] text-ink-500">Use for install snippets and shareable shell commands.
-              Renders as <code class="mono text-[10.5px]">&lt;code&gt;</code> — keyboard select-all + copy works
-              natively. Don't use for inline code in prose; use a <code class="mono text-[10.5px]">&lt;code&gt;</code>
-              chip instead.</span>
-          </div>
-          <!-- Command · copied (success feedback) -->
-          <div>
-            <span class="text-[12px] text-ink-500">Command · copied (1.6s after click)</span>
-            <div class="mt-1 flex">
-              <span
-                class="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[13px] text-ink-500 mono select-none">$</span>
-              <code
-                class="block w-full h-9 px-3 inline-flex items-center border border-line bg-surface mono text-[13px] text-ink-900 overflow-x-auto whitespace-nowrap">wasm install wasi:http-handler</code>
-              <button type="button"
-                class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-positive"
-                aria-label="Copied">
-                {SVG_6}
-              </button>
-            </div>
-            <span class="mt-1 block text-[11px] text-ink-500">Icon swaps to a check in
-              <code class="mono text-[10.5px]">text-positive</code>; reverts after 1.6s.</span>
-          </div>
-          <!-- Command · long content (overflow) -->
-          <div>
-            <span class="text-[12px] text-ink-500">Command · long (horizontal overflow)</span>
-            <div class="mt-1 flex">
-              <span
-                class="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[13px] text-ink-500 mono select-none">$</span>
-              <code
-                class="block w-full h-9 px-3 inline-flex items-center border border-line bg-surface mono text-[13px] text-ink-900 overflow-x-auto whitespace-nowrap">wasm install wasi:http-handler@0.4.2 --registry https://registry.example.com --keychain</code>
-              <button type="button"
-                class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted"
-                aria-label="Copy command">
-                {SVG_7}
-              </button>
-            </div>
-            <span class="mt-1 block text-[11px] text-ink-500">Field scrolls horizontally; the prefix and copy button
-              stay anchored.</span>
-          </div>
-          <!-- Command · failed (clipboard blocked) -->
-          <div>
-            <span class="text-[12px] text-ink-500">Command · copy failed</span>
-            <div class="mt-1 flex">
-              <span
-                class="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[13px] text-ink-500 mono select-none">$</span>
-              <code
-                class="block w-full h-9 px-3 inline-flex items-center border border-line bg-surface mono text-[13px] text-ink-900 overflow-x-auto whitespace-nowrap">wasm install wasi:http-handler</code>
-              <button type="button"
-                class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-negative"
-                aria-label="Copy failed">
-                {SVG_8}
-              </button>
-            </div>
-            <span class="mt-1 block text-[11px] text-ink-500">Clipboard API blocked (insecure context, permission
-              denied). Border + icon shift to <code class="mono text-[10.5px]">negative</code>; helper toast (not
-              shown) explains "select and copy manually."</span>
-          </div>
-          <!-- Command · disabled -->
-          <div>
-            <span class="text-[12px] text-ink-500">Command · disabled</span>
-            <div class="mt-1 flex opacity-70">
-              <span
-                class="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-dashed border-line bg-surfaceMuted text-[13px] text-ink-400 mono select-none">$</span>
-              <code
-                class="block w-full h-9 px-3 inline-flex items-center border border-dashed border-line bg-surfaceMuted mono text-[13px] text-ink-400 overflow-x-auto whitespace-nowrap cursor-not-allowed">wasm install wasi:http-handler</code>
-              <button type="button" disabled
-                class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-dashed border-line bg-surfaceMuted text-ink-400 cursor-not-allowed"
-                aria-label="Copy command">
-                {SVG_9}
-              </button>
-            </div>
-            <span class="mt-1 block text-[11px] text-ink-500">Use during pending/async states — e.g. while a registry
-              version is being resolved. Shares the dashed-border / opacity-70 vocabulary with disabled inputs.</span>
-          </div>
-          <!-- Number stepper -->
-          <label class="block">
-            <span class="text-[12px] text-ink-500">Number stepper</span>
-            <div class="mt-1 inline-flex">
-              <button type="button" aria-label="Decrement"
-                class="h-9 w-9 grid place-items-center rounded-l-md border-[1.5px] border-r-0 border-ink-900 bg-surface text-ink-900 hover:bg-surfaceMuted">
-                {SVG_10}
-              </button>
-              <input type="text" value="12"
-                class="block w-16 h-9 px-2 border-y-[1.5px] border-ink-900 bg-surface text-[14px] tabular-nums text-center focus:outline-none" />
-              <button type="button" aria-label="Increment"
-                class="h-9 w-9 grid place-items-center rounded-r-md border-[1.5px] border-l-0 border-ink-900 bg-surface text-ink-900 hover:bg-surfaceMuted">
-                {SVG_11}
-              </button>
-            </div>
-          </label>
-          <!-- File input -->
-          <label class="block">
-            <span class="text-[12px] text-ink-500">File input</span>
-            <div class="mt-1 flex">
-              <button type="button"
-                class="inline-flex items-center gap-2 px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-ink-700 text-[13px] hover:bg-ink-300 hover:text-ink-900 whitespace-nowrap">
-                {SVG_12}
-                Choose file
-              </button>
-              <span
-                class="block w-full h-9 px-3 inline-flex items-center rounded-r-md border border-line bg-surface text-[13px] text-ink-500">No
-                file selected</span>
-            </div>
-          </label>
-          <!-- Range slider -->
-          <label class="block">
-            <span class="text-[12px] text-ink-500 flex items-center justify-between">Range <span
-                class="mono text-ink-700">64</span></span>
-            <input type="range" min="0" max="100" value="64" class="mt-2 block w-full accent-ink-900" />
-          </label>
-          <!-- Color input -->
-          <label class="block">
-            <span class="text-[12px] text-ink-500">Color</span>
-            <div class="mt-1 flex">
-              <span
-                class="inline-flex items-center justify-center h-9 w-9 rounded-l-md border border-r-0 border-line bg-surface">
-                <span class="block h-5 w-5 rounded border border-line" style="background:#9B4F5E"></span>
-              </span>
-              <input type="text" value="#9B4F5E"
-                class="block w-full h-9 px-3 rounded-r-md border border-line bg-surface text-[14px] mono uppercase focus:outline-none focus:border-ink-900" />
-            </div>
-          </label>
-          <!-- Date / time -->
-          <div class="grid grid-cols-2 gap-3">
-            <label class="block">
-              <span class="text-[12px] text-ink-500">Date</span>
-              <div class="mt-1 relative">
-                <input type="text" value="2026-04-18"
-                  class="block w-full h-9 pl-3 pr-9 rounded-md border border-line bg-surface text-[14px] mono focus:outline-none focus:border-ink-900" />
-                {SVG_13}
-              </div>
-            </label>
-            <label class="block">
-              <span class="text-[12px] text-ink-500">Time</span>
-              <div class="mt-1 relative">
-                <input type="text" value="14:30"
-                  class="block w-full h-9 pl-3 pr-9 rounded-md border border-line bg-surface text-[14px] mono focus:outline-none focus:border-ink-900" />
-                {SVG_14}
-              </div>
-            </label>
-          </div>
-          <!-- Combobox / autocomplete -->
-          <label class="block">
-            <span class="text-[12px] text-ink-500">Combobox</span>
-            <div class="mt-1 relative">
-              <input type="text" value="Pellen"
-                class="block w-full h-9 px-3 rounded-md border border-line bg-surface text-[14px] focus:outline-none focus:border-ink-900" />
-              <div
-                class="absolute left-0 right-0 mt-1 rounded-md border border-line bg-surface shadow-tooltip overflow-hidden text-[14px] z-10">
-                <div class="px-3 h-9 flex items-center bg-surfaceMuted text-ink-900"><span
-                    class="font-medium">Pellen</span><span class="text-ink-500">tesque habitant</span></div>
-                <div class="px-3 h-9 flex items-center text-ink-700"><span class="font-medium">Pellen</span><span
-                    class="text-ink-500">tesque morbi</span></div>
-                <div class="px-3 h-9 flex items-center text-ink-700"><span class="font-medium">Pellen</span><span
-                    class="text-ink-500">tesque vivamus</span></div>
-              </div>
-            </div>
-          </label>
-        </div>"##
-    );
+    let mut content = Division::builder();
+    content.class("space-y-8 max-w-md");
+
+    content.text(sizes());
+    content.text(states());
+    content.text(input_basic());
+    content.text(input_help());
+    content.text(input_error());
+    content.text(input_disabled());
+    content.text(search());
+    content.text(search_prominent());
+    content.text(select());
+    content.text(textarea());
+    content.text(input_prefix());
+    content.text(input_suffix());
+    content.text(input_button());
+    content.text(input_btn_dropdown());
+    content.text(input_split_dropdown());
+    for entry in COMMANDS {
+        content.text(command(entry));
+    }
+    content.text(stepper());
+    content.text(file_input());
+    content.text(range_slider());
+    content.text(color_input());
+    content.text(date_time());
+    content.text(combobox());
+
+    let content = content.build().to_string();
+
     super::section(
         "fields",
         "13",
@@ -414,6 +892,6 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(render());
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
     }
 }

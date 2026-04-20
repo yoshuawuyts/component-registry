@@ -87,6 +87,7 @@ pub(crate) fn render() -> String {
                         })
                         .division(|s| {
                             s.division(|l| l.class("text-[11px] mono uppercase tracking-wider text-ink-500 mb-2").text("Hover"))
+                                // Raw HTML: Anchor::style() creates a <style> child, not an inline style attribute.
                                 .text(r##"<a href="#c-toc" class="toc-link" style="color:var(--c-ink-900);border-left-color:var(--c-line);">Section title</a>"##)
                         })
                         .division(|s| {
@@ -118,6 +119,6 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(render());
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
     }
 }

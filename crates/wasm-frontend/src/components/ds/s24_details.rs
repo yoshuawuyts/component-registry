@@ -242,6 +242,6 @@ mod tests {
 
     #[test]
     fn snapshot() {
-        insta::assert_snapshot!(render());
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render()));
     }
 }
