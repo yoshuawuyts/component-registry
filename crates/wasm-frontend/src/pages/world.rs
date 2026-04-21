@@ -75,9 +75,10 @@ pub(crate) fn render(
         &header,
         &body_html,
         &[crate::components::ds::breadcrumb::Crumb {
-            label: format!("world/{}", world.name),
+            label: world.name.clone(),
             href: None,
         }],
+        None,
     )
 }
 

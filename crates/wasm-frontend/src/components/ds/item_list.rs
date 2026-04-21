@@ -23,6 +23,8 @@ pub(crate) struct DynItemRow {
     pub(crate) desc: String,
     pub(crate) meta: String,
     pub(crate) deprecated: bool,
+    /// Optional HTML id for anchor targeting.
+    pub(crate) id: Option<String>,
 }
 
 #[allow(dead_code)]
@@ -73,10 +75,12 @@ pub(crate) fn render_dyn_item_row(item: &DynItemRow) -> Anchor {
         r#"<span class="sigil" style="background:{};color:{};">{}</span>"#,
         item.sigil_bg, item.sigil_color, sigil_text
     );
-    Anchor::builder()
-        .href(href)
-        .class(row_class)
-        .text(sigil_html)
+    let mut a = Anchor::builder();
+    a.href(href).class(row_class);
+    if let Some(id) = &item.id {
+        a.id(id.clone());
+    }
+    a.text(sigil_html)
         .division(|d| {
             d.span(|s| s.class("name").text(name))
                 .division(|dd| dd.class("desc").text(desc))

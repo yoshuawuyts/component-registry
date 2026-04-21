@@ -93,24 +93,55 @@ pub(crate) enum SidebarItem {
     Group(SidebarGroup),
 }
 
-/// Build a nested sidebar matching the DS C01 pattern.
+/// Render the version selector as a native `<select>` dropdown.
 ///
-/// Renders a bordered card with an optional version button, optional section
-/// label, a nav tree of flat entries and collapsible `<details>` groups with
-/// colored sigils, and an optional footer section.
-pub(crate) fn render_nested_sidebar(
+/// `base_url` should end with `/` (e.g. `"/wasi/http/"`). Each option
+/// navigates to `{base_url}{version}` on change.
+///
+/// Returns `None` if `versions` is empty.
+pub(crate) fn render_version_selector(
     current_version: &str,
     versions: &[&str],
-    section_label: Option<&str>,
-    items: &[SidebarItem],
-    footer_html: Option<&str>,
-) -> String {
-    let version_label = if versions.first() == Some(&current_version) {
-        format!("v{current_version} (latest)")
-    } else {
-        format!("v{current_version}")
-    };
+    base_url: &str,
+) -> Option<String> {
+    use std::fmt::Write;
 
+    if versions.is_empty() {
+        return None;
+    }
+    let mut options = String::new();
+    for (i, v) in versions.iter().enumerate() {
+        let selected = if *v == current_version {
+            " selected"
+        } else {
+            ""
+        };
+        let label = if i == 0 {
+            format!("v{v} (latest)")
+        } else {
+            format!("v{v}")
+        };
+        let _ = write!(
+            options,
+            r#"<option value="{base_url}{v}"{selected}>{label}</option>"#
+        );
+    }
+    let html = Division::builder()
+        .class("pb-4 border-b-[1.5px] border-rule")
+        .division(|l| {
+            l.class("mono uppercase tracking-wider text-[10px] text-ink-500 mb-1")
+                .text("Version")
+        })
+        .text(format!(
+            r#"<select class="w-full h-7 px-2.5 rounded-md border border-line bg-surface text-ink-900 hover:bg-surfaceMuted text-[12px] mono cursor-pointer" onchange="window.location.href=this.value">{options}</select>"#
+        ))
+        .build()
+        .to_string();
+    Some(html)
+}
+
+/// Render the items navigation tree with an optional section label.
+pub(crate) fn render_items_nav(section_label: Option<&str>, items: &[SidebarItem]) -> String {
     let mut nav = Navigation::builder();
     nav.class("space-y-0.5 text-[13px]");
 
@@ -125,34 +156,39 @@ pub(crate) fn render_nested_sidebar(
         }
     }
 
-    let mut card = Division::builder();
-    card.class("max-w-[300px]");
+    let mut wrapper = Division::builder();
 
-    // Version button
-    if !versions.is_empty() {
-        card.division(|v| {
-            v.class("pb-4 border-b-[1.5px] border-rule")
-                .division(|l| {
-                    l.class("mono uppercase tracking-wider text-[10px] text-ink-500 mb-1")
-                        .text("Version")
-                })
-                .button(|b| {
-                    b.class("w-full h-7 px-2.5 rounded-md border border-line bg-surface flex items-center justify-between text-ink-900 hover:bg-surfaceMuted text-[12px]")
-                        .span(|s| s.class("mono").text(version_label.clone()))
-                        .text(SVG_CHEV_DOWN)
-                })
-        });
-    }
-
-    // Section label
     if let Some(label) = section_label {
-        card.division(|l| {
-            l.class("mono uppercase tracking-wider text-[10px] text-ink-500 mb-2 mt-4")
+        wrapper.division(|l| {
+            l.class("mono uppercase tracking-wider text-[10px] text-ink-500 mb-2")
                 .text(label.to_owned())
         });
     }
 
-    card.push(nav.build());
+    wrapper.push(nav.build());
+    wrapper.build().to_string()
+}
+
+/// Build a nested sidebar matching the DS C01 pattern.
+///
+/// Renders a card with an optional version button, optional section
+/// label, a nav tree of flat entries and collapsible `<details>` groups with
+/// colored sigils, and an optional footer section.
+pub(crate) fn render_nested_sidebar(
+    current_version: &str,
+    versions: &[&str],
+    section_label: Option<&str>,
+    items: &[SidebarItem],
+    footer_html: Option<&str>,
+) -> String {
+    let mut card = Division::builder();
+    card.class("max-w-[300px]");
+
+    if let Some(version) = render_version_selector(current_version, versions, "#") {
+        card.text(version);
+    }
+
+    card.text(render_items_nav(section_label, items));
 
     // Footer section
     if let Some(footer) = footer_html {

@@ -32,6 +32,8 @@ pub(crate) fn render(
     // Grouped type and function sections
     let mut content = Division::builder();
     content.class("space-y-6 max-w-3xl");
+    let mut toc: Vec<(String, String)> = Vec::new();
+
     let resources: Vec<&TypeDoc> = iface
         .types
         .iter()
@@ -64,28 +66,74 @@ pub(crate) fn render(
         .collect();
 
     if !resources.is_empty() {
-        content.push(render_type_section("Resources", &resources));
+        toc.push(("#resources".to_owned(), "Resources".to_owned()));
+        content.division(|d| {
+            d.id("resources".to_owned())
+                .push(render_type_section("Resources", &resources))
+        });
     }
     if !records.is_empty() {
-        content.push(render_type_section("Records", &records));
+        toc.push(("#records".to_owned(), "Records".to_owned()));
+        content.division(|d| {
+            d.id("records".to_owned())
+                .push(render_type_section("Records", &records))
+        });
     }
     if !variants.is_empty() {
-        content.push(render_type_section("Variants", &variants));
+        toc.push(("#variants".to_owned(), "Variants".to_owned()));
+        content.division(|d| {
+            d.id("variants".to_owned())
+                .push(render_type_section("Variants", &variants))
+        });
     }
     if !enums.is_empty() {
-        content.push(render_type_section("Enums", &enums));
+        toc.push(("#enums".to_owned(), "Enums".to_owned()));
+        content.division(|d| {
+            d.id("enums".to_owned())
+                .push(render_type_section("Enums", &enums))
+        });
     }
     if !flags.is_empty() {
-        content.push(render_type_section("Flags", &flags));
+        toc.push(("#flags".to_owned(), "Flags".to_owned()));
+        content.division(|d| {
+            d.id("flags".to_owned())
+                .push(render_type_section("Flags", &flags))
+        });
     }
     if !aliases.is_empty() {
-        content.push(render_type_section("Type Aliases", &aliases));
+        toc.push(("#type-aliases".to_owned(), "Type Aliases".to_owned()));
+        content.division(|d| {
+            d.id("type-aliases".to_owned())
+                .push(render_type_section("Type Aliases", &aliases))
+        });
     }
     if !iface.functions.is_empty() {
-        content.push(render_function_section(&iface.functions));
+        toc.push(("#functions".to_owned(), "Functions".to_owned()));
+        content.division(|d| {
+            d.id("functions".to_owned())
+                .push(render_function_section(&iface.functions))
+        });
     }
 
     let body_html = content.build().to_string();
+
+    // Build "On this page" ToC
+    let toc_html = if toc.is_empty() {
+        None
+    } else {
+        use crate::components::ds::on_this_page::TocEntry;
+        let links: Vec<TocEntry<'_>> = toc
+            .iter()
+            .map(|(href, label)| TocEntry {
+                href: href.as_str(),
+                label: label.as_str(),
+                indent: false,
+            })
+            .collect();
+        Some(crate::components::ds::on_this_page::on_this_page_nav(
+            &links,
+        ))
+    };
 
     // Build nav card with interface items for the sidebar
     let nav = super::sidebar::render_sidebar(&super::sidebar::SidebarContext {
@@ -105,7 +153,14 @@ pub(crate) fn render(
         exporters: &[],
         nav_html: Some(nav.to_string()),
     };
-    package_shell::render_page_with_crumbs(&ctx, &title, &header_row, &body_html, &[])
+    package_shell::render_page_with_crumbs(
+        &ctx,
+        &title,
+        &header_row,
+        &body_html,
+        &[],
+        toc_html.as_deref(),
+    )
 }
 
 /// Render a section of types grouped by kind.

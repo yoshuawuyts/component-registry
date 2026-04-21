@@ -34,21 +34,57 @@ pub(crate) const ANATOMY_ITEMS: &[&str] = &[
 ];
 
 #[allow(dead_code)]
-/// Render a "On this page" sidebar ToC from a list of links.
-pub(crate) fn on_this_page_nav(links: &[(&str, &str)]) -> String {
+/// A single entry in the "On this page" table of contents.
+pub(crate) struct TocEntry<'a> {
+    /// Anchor href (e.g. `"#worlds"`).
+    pub href: &'a str,
+    /// Display label.
+    pub label: &'a str,
+    /// Whether this entry is indented (child item).
+    pub indent: bool,
+}
+
+/// Render a "On this page" sidebar ToC from a list of entries.
+///
+/// Uses the same markup as the DS showcase: `toc-link` anchors with
+/// `space-y-px`, a "Back to top" button, and an inline scrollspy script
+/// that highlights the link whose section is currently in view.
+pub(crate) fn on_this_page_nav(links: &[TocEntry<'_>]) -> String {
     let mut nav = Navigation::builder();
-    nav.class("space-y-1 text-[13px]");
-    nav.division(|d| {
-        d.class("text-[11px] mono uppercase tracking-wider text-ink-500 mb-2")
+    nav.class("space-y-px");
+
+    for entry in links {
+        let href = entry.href.to_owned();
+        let label = entry.label.to_owned();
+        let cls = if entry.indent {
+            "toc-link indent"
+        } else {
+            "toc-link"
+        };
+        nav.anchor(|a| a.href(href).class(cls).text(label));
+    }
+
+    let mut wrapper = Division::builder();
+    wrapper.division(|lbl| {
+        lbl.class("mono uppercase tracking-wider text-[10px] text-ink-500 mb-2 px-2.5")
             .text("On this page")
     });
-    for (href, label) in links {
-        let href = (*href).to_owned();
-        let label = (*label).to_owned();
-        nav.anchor(|a| a.href(href).class("toc-link").text(label));
-    }
-    nav.build().to_string()
+    wrapper.push(nav.build());
+    wrapper.text(
+        r#"<div class="px-2.5 mt-4"><button type="button" class="inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-[11px] mono text-ink-500 hover:bg-surfaceMuted hover:text-ink-900 transition-colors" onclick="window.scrollTo({top:0,behavior:'smooth'})">"#,
+    );
+    wrapper.text(format!("{SVG_UP} Back to top"));
+    wrapper.text("</button></div>");
+
+    // Scrollspy script: highlights the toc-link whose target section is
+    // nearest the top of the viewport.
+    wrapper.text(SCROLLSPY_SCRIPT);
+
+    wrapper.build().to_string()
 }
+
+/// Inline scrollspy script for the "On this page" ToC.
+const SCROLLSPY_SCRIPT: &str = r##"<script>(function(){var links=document.querySelectorAll('.toc-link[href^="#"]');if(!links.length)return;var observer=new IntersectionObserver(function(entries){entries.forEach(function(e){var id=e.target.id;if(!id)return;var link=document.querySelector('.toc-link[href="#'+id+'"]');if(!link)return;if(e.isIntersecting){link.classList.add('active')}else{link.classList.remove('active')}})},{rootMargin:'-80px 0px -70% 0px',threshold:0});links.forEach(function(link){var href=link.getAttribute('href');if(!href)return;var target=document.querySelector(href);if(target)observer.observe(target)})})()</script>"##;
 
 /// Render this section.
 pub(crate) fn render(

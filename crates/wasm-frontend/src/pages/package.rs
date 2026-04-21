@@ -53,13 +53,17 @@ pub(crate) fn render(
         "</svg>"
     );
     let check_svg = concat!(
-        r#"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">"#,
+        r#"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-positive">"#,
         include_str!("../../../../vendor/lucide/check.svg"),
         "</svg>"
     );
 
+    // Collapse newlines in SVGs so they work inside JS string literals
+    let copy_svg_js: String = copy_svg.chars().filter(|c| *c != '\n').collect();
+    let check_svg_js: String = check_svg.chars().filter(|c| *c != '\n').collect();
+
     let copy_script = format!(
-        r"<script>(function(){{var btn=document.getElementById('copy-install-btn');var ci='{copy_svg}';var ch='{check_svg}';btn.addEventListener('click',function(){{navigator.clipboard.writeText('{command}').then(function(){{btn.innerHTML=ch;setTimeout(function(){{btn.innerHTML=ci}},2000)}})}})}})()</script>",
+        r"<script>(function(){{var btn=document.getElementById('copy-install-btn');var ci='{copy_svg_js}';var ch='{check_svg_js}';btn.addEventListener('click',function(){{navigator.clipboard.writeText('{command}').then(function(){{btn.innerHTML=ch;setTimeout(function(){{btn.innerHTML=ci}},2000)}})}})}})()</script>",
     );
 
     let install_meta = Division::builder()
@@ -106,9 +110,14 @@ pub(crate) fn render(
     let toc_html = if toc_entries.is_empty() {
         None
     } else {
-        let links: Vec<(&str, &str)> = toc_entries
+        use crate::components::ds::on_this_page::TocEntry;
+        let links: Vec<TocEntry<'_>> = toc_entries
             .iter()
-            .map(|(id, label)| (id.as_str(), label.as_str()))
+            .map(|(href, label, indent)| TocEntry {
+                href: href.as_str(),
+                label: label.as_str(),
+                indent: *indent,
+            })
             .collect();
         Some(crate::components::ds::on_this_page::on_this_page_nav(
             &links,
@@ -151,25 +160,33 @@ pub(crate) fn render(
 /// When a pre-parsed `WitDocument` is available, show interfaces and worlds
 /// as navigable cards.  Otherwise fall back to the world summaries that the
 /// registry extracted at index time plus the raw WIT text block.
-/// Returns `(html_string, toc_entries)` where each ToC entry is `(href, label)`.
+/// Returns `(html_string, toc_entries)` where each ToC entry is `(href, label, indent)`.
 fn render_wit_content_with_doc(
     detail: &PackageVersion,
     _url_base: &str,
     doc: Option<&WitDocument>,
     pkg: &KnownPackage,
     version: &str,
-) -> (String, Vec<(String, String)>) {
+) -> (String, Vec<(String, String, bool)>) {
     let mut section = Section::builder();
     section.class("space-y-10");
-    let mut toc: Vec<(String, String)> = Vec::new();
+    let mut toc: Vec<(String, String, bool)> = Vec::new();
 
     if let Some(doc) = doc {
         if !doc.worlds.is_empty() {
-            toc.push(("#worlds".to_owned(), "Worlds".to_owned()));
+            toc.push(("#worlds".to_owned(), "Worlds".to_owned(), false));
+            for world in &doc.worlds {
+                let id = format!("world-{}", world.name);
+                toc.push((format!("#{id}"), world.name.clone(), true));
+            }
             section.division(|d| d.id("worlds".to_owned()).push(render_world_overview(doc)));
         }
         if !doc.interfaces.is_empty() {
-            toc.push(("#interfaces".to_owned(), "Interfaces".to_owned()));
+            toc.push(("#interfaces".to_owned(), "Interfaces".to_owned(), false));
+            for iface in &doc.interfaces {
+                let id = format!("iface-{}", iface.name);
+                toc.push((format!("#{id}"), iface.name.clone(), true));
+            }
             section.division(|d| {
                 d.id("interfaces".to_owned())
                     .push(render_interface_overview(doc))
@@ -186,14 +203,14 @@ fn render_wit_content_with_doc(
         if has_component_imports {
             for comp in &detail.components {
                 if !comp.imports.is_empty() {
-                    toc.push(("#imports".to_owned(), "Imports".to_owned()));
+                    toc.push(("#imports".to_owned(), "Imports".to_owned(), false));
                     section.division(|d| {
                         d.id("imports".to_owned())
                             .push(render_iface_ref_list("Imports", &comp.imports))
                     });
                 }
                 if !comp.exports.is_empty() {
-                    toc.push(("#exports".to_owned(), "Exports".to_owned()));
+                    toc.push(("#exports".to_owned(), "Exports".to_owned(), false));
                     section.division(|d| {
                         d.id("exports".to_owned())
                             .push(render_iface_ref_list("Exports", &comp.exports))
@@ -201,7 +218,7 @@ fn render_wit_content_with_doc(
                 }
             }
         } else if !detail.worlds.is_empty() {
-            toc.push(("#worlds".to_owned(), "Worlds".to_owned()));
+            toc.push(("#worlds".to_owned(), "Worlds".to_owned(), false));
             section.division(|d| {
                 d.id("worlds".to_owned())
                     .push(render_world_summaries(detail))
@@ -214,7 +231,7 @@ fn render_wit_content_with_doc(
         if let Some(wit_text) = &detail.wit_text
             && !is_lossy_wit(wit_text)
         {
-            toc.push(("#wit".to_owned(), "WIT Definition".to_owned()));
+            toc.push(("#wit".to_owned(), "WIT Definition".to_owned(), false));
             section.division(|d| d.id("wit".to_owned()).push(render_raw_wit(wit_text)));
         }
     }
@@ -230,7 +247,7 @@ fn render_wit_content_with_doc(
             .filter(|ch| ch.kind.as_deref() == Some("module"))
             .collect();
         if !modules.is_empty() {
-            toc.push(("#modules".to_owned(), "Modules".to_owned()));
+            toc.push(("#modules".to_owned(), "Modules".to_owned(), false));
             section.division(|d| {
                 d.id("modules".to_owned()).push(render_children_overview(
                     "Modules", &modules, &url_base, "module",
@@ -245,7 +262,7 @@ fn render_wit_content_with_doc(
             .filter(|ch| ch.kind.as_deref() == Some("component"))
             .collect();
         if !components.is_empty() {
-            toc.push(("#components".to_owned(), "Components".to_owned()));
+            toc.push(("#components".to_owned(), "Components".to_owned(), false));
             section.division(|d| {
                 d.id("components".to_owned()).push(render_children_overview(
                     "Components",
@@ -258,7 +275,7 @@ fn render_wit_content_with_doc(
 
         // Root toolchain
         if !comp.producers.is_empty() {
-            toc.push(("#toolchain".to_owned(), "Toolchain".to_owned()));
+            toc.push(("#toolchain".to_owned(), "Toolchain".to_owned(), false));
             section.division(|d| {
                 d.id("toolchain".to_owned())
                     .push(render_producers(&comp.producers))
@@ -346,6 +363,7 @@ fn render_interface_overview(doc: &WitDocument) -> Division {
                 .unwrap_or_default(),
             meta: String::new(),
             deprecated: false,
+            id: Some(format!("iface-{}", iface.name)),
         })
         .collect();
     item_list::render_dyn_item_list("Interfaces", &items)
@@ -369,6 +387,7 @@ fn render_world_overview(doc: &WitDocument) -> Division {
                 .unwrap_or_default(),
             meta: String::new(),
             deprecated: false,
+            id: Some(format!("world-{}", world.name)),
         })
         .collect();
     item_list::render_dyn_item_list("Worlds", &items)

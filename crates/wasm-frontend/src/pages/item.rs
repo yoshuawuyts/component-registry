@@ -103,7 +103,7 @@ pub(crate) fn render_type(
         label: iface_name.to_owned(),
         href: Some(iface_url),
     }];
-    package_shell::render_page_with_crumbs(&ctx, &title, &header, &content, &extra)
+    package_shell::render_page_with_crumbs(&ctx, &title, &header, &content, &extra, None)
 }
 
 /// Render the item detail page for a freestanding function.
@@ -159,7 +159,7 @@ pub(crate) fn render_function(
         label: iface_name.to_owned(),
         href: Some(iface_url),
     }];
-    package_shell::render_page_with_crumbs(&ctx, &title, &header, &content, &extra)
+    package_shell::render_page_with_crumbs(&ctx, &title, &header, &content, &extra, None)
 }
 
 /// Get the display label for a type kind.

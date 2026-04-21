@@ -538,7 +538,7 @@ fn document_inner(
     /* Sigil */
     .sigil {{ display: inline-grid; place-items: center; height: 18px; width: 18px; border-radius: 3px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; font-weight: 600; line-height: 1; flex-shrink: 0; }}
     /* Tree-link */
-    .tree-link {{ display: flex; align-items: center; gap: 8px; padding: 3px 8px; border-radius: 4px; font-size: 13px; color: var(--c-ink-700); text-decoration: none; line-height: 1.4; }}
+    .tree-link {{ display: flex; align-items: center; gap: 8px; padding: 3px 8px 3px 0; border-radius: 4px; font-size: 13px; color: var(--c-ink-700); text-decoration: none; line-height: 1.4; }}
     .tree-link .mono {{ font-size: 12.5px; }}
     .tree-link:hover {{ background: var(--c-surface-muted); color: var(--c-ink-900); }}
     .tree-link.active {{ background: var(--c-surface-muted); color: var(--c-ink-900); font-weight: 500; }}

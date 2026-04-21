@@ -49,8 +49,17 @@ pub(crate) fn render_page_with_crumbs(
     header: &str,
     body_content: &str,
     extra_crumbs: &[crate::components::ds::breadcrumb::Crumb],
+    toc_html: Option<&str>,
 ) -> String {
-    render_page_inner(ctx, title, header, body_content, extra_crumbs, false, None)
+    render_page_inner(
+        ctx,
+        title,
+        header,
+        body_content,
+        extra_crumbs,
+        false,
+        toc_html,
+    )
 }
 
 /// Inner page shell renderer.

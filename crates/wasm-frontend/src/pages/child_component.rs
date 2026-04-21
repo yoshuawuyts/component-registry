@@ -101,7 +101,7 @@ pub(crate) fn render(
         exporters: &[],
         nav_html: None,
     };
-    package_shell::render_page_with_crumbs(&ctx, &title, &header, &body, &[])
+    package_shell::render_page_with_crumbs(&ctx, &title, &header, &body, &[], None)
 }
 
 /// Render producers as a list, excluding language entries (shown in subtitle).
