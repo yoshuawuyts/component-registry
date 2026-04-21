@@ -26,7 +26,18 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
 /// Render a complete HTML document with nav bar, title, and body content.
 #[must_use]
 pub(crate) fn document_with_nav(title: &str, body_content: &str) -> String {
-    let nav = crate::nav::render(&[]);
+    use crate::components::ds::navbar::{self, NavLink};
+    const LINKS: &[NavLink] = &[
+        NavLink {
+            label: "Docs",
+            href: "/docs",
+        },
+        NavLink {
+            label: "Downloads",
+            href: "/downloads",
+        },
+    ];
+    let nav = navbar::render_bar(&[], LINKS);
     document_inner(title, body_content, &nav, MAIN_CLASS_CENTERED, true)
 }
 

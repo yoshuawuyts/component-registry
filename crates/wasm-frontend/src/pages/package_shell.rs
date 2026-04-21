@@ -40,7 +40,7 @@ pub(crate) fn render_page_with_crumbs(
     ctx: &SidebarContext<'_>,
     title: &str,
     body_content: &str,
-    extra_crumbs: &[crate::nav::Crumb],
+    extra_crumbs: &[crate::components::ds::breadcrumb::Crumb],
 ) -> String {
     render_page_inner(ctx, title, body_content, extra_crumbs, false)
 }
@@ -54,7 +54,7 @@ fn render_page_inner(
     ctx: &SidebarContext<'_>,
     title: &str,
     body_content: &str,
-    extra_crumbs: &[crate::nav::Crumb],
+    extra_crumbs: &[crate::components::ds::breadcrumb::Crumb],
     is_root: bool,
 ) -> String {
     let pkg = ctx.pkg;
@@ -168,7 +168,7 @@ fn render_page_inner(
 }
 
 /// Render breadcrumb segments as inline HTML.
-fn render_breadcrumb_path(crumbs: &[crate::nav::Crumb]) -> String {
+fn render_breadcrumb_path(crumbs: &[crate::components::ds::breadcrumb::Crumb]) -> String {
     use std::fmt::Write;
     let mut html = String::new();
     for crumb in crumbs {

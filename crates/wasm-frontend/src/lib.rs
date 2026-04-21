@@ -15,7 +15,6 @@ mod components;
 mod footer;
 mod layout;
 mod markdown;
-mod nav;
 mod pages;
 mod reserved;
 mod wit_doc;

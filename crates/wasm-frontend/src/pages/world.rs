@@ -80,7 +80,7 @@ pub(crate) fn render(
         &ctx,
         &title,
         &body_html,
-        &[crate::nav::Crumb {
+        &[crate::components::ds::breadcrumb::Crumb {
             label: format!("world/{}", world.name),
             href: None,
         }],

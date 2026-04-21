@@ -1,4 +1,8 @@
 //! C06 — Navbar.
+//!
+//! The production navbar is [`render_bar`]: a sticky translucent header
+//! with home link, breadcrumbs, search trigger, nav links, and theme toggle.
+//! The [`render`] function produces the design-system showcase page section.
 
 use html::text_content::Division;
 
@@ -79,6 +83,102 @@ pub(crate) struct DrawerLink {
     pub(crate) label: &'static str,
     pub(crate) active: bool,
 }
+
+// ---------------------------------------------------------------------------
+// Production navbar
+// ---------------------------------------------------------------------------
+
+use super::breadcrumb::Crumb;
+
+/// A top-level nav link shown in the right side of the bar.
+pub(crate) struct NavLink {
+    pub label: &'static str,
+    pub href: &'static str,
+}
+
+const SUN_ICON: &str = r#"<svg class="theme-icon-sun h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>"#;
+const MOON_THEME_ICON: &str = concat!(
+    r#"<svg class="theme-icon-moon h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/moon.svg"),
+    "</svg>"
+);
+
+/// Render the production navbar.
+///
+/// Produces a sticky translucent `<header>` with:
+/// - Home icon + breadcrumb path (left, using the s18 breadcrumb component)
+/// - Search trigger (center)
+/// - Nav links + theme toggle (right)
+pub(crate) fn render_bar(crumbs: &[Crumb], links: &[NavLink]) -> String {
+    // Left: home icon + breadcrumb (delegates to s18_breadcrumb)
+    let home_crumb = Crumb {
+        label: "wasm".to_owned(),
+        href: Some("/".to_owned()),
+    };
+    let mut all_crumbs = vec![home_crumb];
+    for c in crumbs {
+        all_crumbs.push(Crumb {
+            label: c.label.clone(),
+            href: c.href.clone(),
+        });
+    }
+    let breadcrumb_html = super::breadcrumb::render_breadcrumb(&all_crumbs);
+
+    let left = Division::builder()
+        .class("flex items-center gap-2 min-w-0")
+        .anchor(|a| {
+            a.href("/")
+                .aria_label("Home")
+                .class("inline-flex items-center justify-center h-6 w-6 rounded-md text-ink-700 no-underline hover:text-ink-900 hover:bg-surfaceMuted transition-colors")
+                .text(SVG_HOME)
+        })
+        .text(breadcrumb_html)
+        .build()
+        .to_string();
+
+    // Center: search trigger
+    let search = search_button(SVG_SEARCH_SM, "Search\u{2026}", true);
+
+    // Right: nav links + theme toggle
+    let mut right = Division::builder();
+    right.class("flex items-center gap-1 text-[12px] text-ink-500");
+    for link in links {
+        let href = link.href.to_owned();
+        let label = link.label.to_owned();
+        right.anchor(|a| {
+            a.href(href)
+                .class("inline-flex items-center h-7 px-2 rounded-md hover:bg-surfaceMuted hover:text-ink-900 hidden sm:inline-flex")
+                .text(label)
+        });
+    }
+    right.button(|b| {
+        b.id("theme-toggle".to_owned())
+            .type_("button")
+            .aria_label("Toggle color theme")
+            .title("Toggle color theme".to_owned())
+            .class("inline-flex items-center justify-center h-7 w-7 rounded-md border border-line bg-surface text-ink-700 hover:bg-surfaceMuted hover:text-ink-900 transition-colors")
+            .text(SUN_ICON)
+            .text(MOON_THEME_ICON)
+    });
+    let right = right.build().to_string();
+
+    let bar = html::content::Header::builder()
+        .class("sticky top-0 z-20 bg-canvas/90 backdrop-blur border-b hairline")
+        .division(|inner| {
+            inner
+                .class("px-4 md:px-6 h-12 max-w-6xl mx-auto grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] items-center gap-4")
+                .text(left)
+                .division(|center| center.class("hidden sm:block").text(search))
+                .text(right)
+        })
+        .build();
+
+    bar.to_string()
+}
+
+// ---------------------------------------------------------------------------
+// Design-system showcase (below)
+// ---------------------------------------------------------------------------
 
 pub(crate) const DRAWER_LINKS: &[DrawerLink] = &[
     DrawerLink {

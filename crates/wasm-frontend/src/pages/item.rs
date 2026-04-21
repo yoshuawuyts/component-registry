@@ -106,7 +106,7 @@ pub(crate) fn render_type(
         "/{}/{version}/interface/{iface_name}",
         display_name.replace(':', "/")
     );
-    let extra = vec![crate::nav::Crumb {
+    let extra = vec![crate::components::ds::breadcrumb::Crumb {
         label: iface_name.to_owned(),
         href: Some(iface_url),
     }];
@@ -169,7 +169,7 @@ pub(crate) fn render_function(
         "/{}/{version}/interface/{iface_name}",
         display_name.replace(':', "/")
     );
-    let extra = vec![crate::nav::Crumb {
+    let extra = vec![crate::components::ds::breadcrumb::Crumb {
         label: iface_name.to_owned(),
         href: Some(iface_url),
     }];

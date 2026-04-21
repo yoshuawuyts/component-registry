@@ -22,6 +22,41 @@ const SVG_CHEV_RIGHT_LG: &str = concat!(
 const PAGE_BTN: &str = "h-8 w-8 grid place-items-center rounded-md border border-line bg-surface hover:bg-surfaceMuted";
 const PAGE_BTN_NAV: &str = "h-8 w-8 grid place-items-center rounded-md border border-line bg-surface text-ink-500 hover:bg-surfaceMuted";
 
+/// A breadcrumb segment.
+pub(crate) struct Crumb {
+    /// Display text.
+    pub label: String,
+    /// Link target, or `None` for the current (last) segment.
+    pub href: Option<String>,
+}
+
+/// Render a breadcrumb `<nav>` from a list of segments.
+///
+/// Each segment is a link except the last, which renders as a bold span.
+pub(crate) fn render_breadcrumb(crumbs: &[Crumb]) -> String {
+    let mut nav = Navigation::builder();
+    nav.aria_label("Breadcrumb");
+    nav.class("flex items-center gap-1.5 text-[13px] text-ink-500 min-w-0");
+    for (i, crumb) in crumbs.iter().enumerate() {
+        if i > 0 {
+            nav.text(SVG_CHEV_RIGHT);
+        }
+        if let Some(href) = &crumb.href {
+            let href = href.clone();
+            let label = crumb.label.clone();
+            nav.anchor(|a| {
+                a.href(href)
+                    .class("no-underline hover:text-ink-900 truncate")
+                    .text(label)
+            });
+        } else {
+            let label = crumb.label.clone();
+            nav.span(|s| s.class("text-ink-900 font-medium truncate").text(label));
+        }
+    }
+    nav.build().to_string()
+}
+
 /// Render this section.
 pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let breadcrumb = Navigation::builder()
