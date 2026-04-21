@@ -5,10 +5,11 @@
 
 /// Class string for the display-sized page heading used on item detail pages.
 #[allow(dead_code)]
-pub(crate) const DISPLAY_CLASS: &str = "text-[28px] sm:text-[36px] font-semibold tracking-tight";
+pub(crate) const DISPLAY_CLASS: &str =
+    "text-[36px] md:text-[44px] leading-[1.05] font-semibold tracking-tight";
 
 /// Class string for the primary page heading (h1).
-pub(crate) const H1_CLASS: &str = "text-[28px] font-semibold tracking-tight";
+pub(crate) const H1_CLASS: &str = "text-[28px] leading-[1.15] font-semibold tracking-tight";
 
 /// Class string for a page sub-heading (h2).
 pub(crate) const H2_CLASS: &str = "text-[22px] font-semibold tracking-tight mt-10 mb-4";

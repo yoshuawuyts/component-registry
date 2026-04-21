@@ -3,7 +3,16 @@
 //! Renders an h2 heading with a copy button that appears on hover.
 //! Includes the embedded JavaScript for clipboard interaction.
 
-use crate::components::icon::{self, Icon, IconSize};
+const COPY_ICON: &str = concat!(
+    r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../vendor/lucide/copy.svg"),
+    "</svg>"
+);
+const CHECK_ICON: &str = concat!(
+    r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../vendor/lucide/check.svg"),
+    "</svg>"
+);
 
 /// Render a page heading with a copy-to-clipboard button.
 ///
@@ -35,8 +44,8 @@ pub(crate) fn heading_with_copy_and_version(
     docs_html: &str,
     version: Option<&str>,
 ) -> String {
-    let copy_icon = icon::svg(Icon::Copy, &IconSize::Md);
-    let check_icon = icon::svg(Icon::Check, &IconSize::Md);
+    let copy_icon = COPY_ICON;
+    let check_icon = CHECK_ICON;
 
     let version_badge = version.map_or_else(String::new, |v| {
         format!(

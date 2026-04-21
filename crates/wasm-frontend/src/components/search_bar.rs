@@ -41,7 +41,7 @@ pub(crate) fn compact(input_id: &str) -> Division {
                         .placeholder("Search\u{2026}")
                         .aria_label("Search")
                         .id(input_id.to_owned())
-                        .class("w-full sm:w-48 h-9 px-3 pr-10 rounded-md border border-line bg-surface text-[14px] text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent")
+                        .class("w-full sm:w-48 h-9 px-3 pr-10 rounded-md border border-line bg-surface text-[14px] text-ink-900 placeholder:text-ink-400 focus:outline-none focus:border-ink-900")
                 })
                 .span(|kbd| {
                     kbd.class("search-kbd")
@@ -69,7 +69,7 @@ pub(crate) fn hero(cfg: &SearchBar) -> Division {
                             .id(cfg.input_id.to_owned())
                             .aria_label("Search components and interfaces")
                             .autofocus(true)
-                            .class("w-full h-10 px-4 pr-8 rounded-l-md border border-line bg-surface text-[14px] text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent");
+                            .class("w-full h-10 pl-10 pr-8 rounded-l-lg border border-line bg-canvas text-[14px] text-ink-900 placeholder:text-ink-400 focus:outline-none focus:border-ink-900");
                         if !cfg.query.is_empty() {
                             i = i.value(cfg.query.clone());
                         }
@@ -115,7 +115,7 @@ pub(crate) fn inline(query: &str) -> Division {
                         .name("q")
                         .value(query.to_owned())
                         .placeholder("Search\u{2026}")
-                        .class("flex-1 h-9 px-3 rounded-md border border-line bg-surface text-[14px] text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent")
+                        .class("flex-1 h-9 px-3 rounded-md border border-line bg-surface text-[14px] text-ink-900 placeholder:text-ink-400 focus:outline-none focus:border-ink-900")
                 })
                 .button(|btn| {
                     btn.type_("submit")

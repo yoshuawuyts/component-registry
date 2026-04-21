@@ -2,6 +2,12 @@
 
 use crate::components::search_bar;
 
+const CHEVRON_SEP: &str = concat!(
+    r#" <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block text-ink-300 mx-1 align-[-1px]">"#,
+    include_str!("../../../vendor/lucide/chevron-right.svg"),
+    "</svg> "
+);
+
 /// A breadcrumb segment: (label, optional href).
 pub(crate) struct Crumb {
     /// Display text.
@@ -18,7 +24,7 @@ pub(crate) fn render(crumbs: &[Crumb]) -> String {
         if i == 0 {
             breadcrumb_html.push(' ');
         } else {
-            breadcrumb_html.push_str(r#" <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block text-ink-300 mx-1 align-[-1px]"><path d="m9 18 6-6-6-6"/></svg> "#);
+            breadcrumb_html.push_str(CHEVRON_SEP);
         }
         if let Some(href) = &crumb.href {
             use std::fmt::Write;

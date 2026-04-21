@@ -35,7 +35,7 @@ pub(crate) fn row(label: &str, value: Value) -> Division {
         Value::Link { text, href } => {
             d.anchor(|a| {
                 a.href(href)
-                    .class("text-accent hover:underline text-[13px] text-right truncate")
+                    .class("text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900 text-[13px] text-right truncate")
                     .text(text)
             });
         }
