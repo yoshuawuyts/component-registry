@@ -17,7 +17,7 @@ RUN cargo build --package wasm-meta-registry --release
 FROM debian:bookworm-slim AS runtime
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /build/target/release/wasm-meta-registry /usr/local/bin/wasm-meta-registry
