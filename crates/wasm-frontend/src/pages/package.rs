@@ -2,8 +2,8 @@
 
 // r[impl frontend.pages.package-detail]
 
-use crate::components::ds::sigil as s;
-use crate::components::ds::{item_list, page_header, section_group};
+use crate::components::ds::wit_item::{self, WitItem, WitItemKind};
+use crate::components::ds::{page_header, section_group};
 use crate::wit_doc::WitDocument;
 use html::content::Section;
 use html::text_content::Division;
@@ -119,14 +119,15 @@ pub(crate) fn render(
         ))
     };
 
-    // Build nav card showing interfaces/worlds (same as sub-pages)
-    let nav_html = wit_doc.as_ref().map(|doc| {
-        // No specific item is active on the root package page
+    // Build nav card showing interfaces/worlds (or modules/components when no WIT)
+    let nav_html = {
         let nav_ctx = super::sidebar::SidebarContext {
             display_name: &display_name,
             version,
             versions: &pkg.tags,
-            doc,
+            doc: wit_doc.as_ref(),
+            components: version_detail.map_or(&[][..], |d| &d.components),
+            url_base: &url_base,
             active: super::sidebar::SidebarActive::Interface(""),
             annotations: version_detail.and_then(|d| d.annotations.as_ref()),
             kind_label: package_shell::kind_label_for(pkg),
@@ -135,8 +136,8 @@ pub(crate) fn render(
             repository: &pkg.repository,
             digest: version_detail.map(|d| d.digest.as_str()),
         };
-        super::sidebar::render_sidebar(&nav_ctx).to_string()
-    });
+        Some(super::sidebar::render_sidebar(&nav_ctx).to_string())
+    };
 
     let shell_ctx = package_shell::SidebarContext {
         pkg,
@@ -293,33 +294,34 @@ fn render_children_overview(
     url_base: &str,
     kind: &str,
 ) -> Division {
-    let mut div = Division::builder();
-    div.push(section_group::header(heading, children.len()));
-
-    for (i, child) in children.iter().enumerate() {
-        let fallback = format!("{kind}[{i}]");
-        let name = child.name.as_deref().unwrap_or(&fallback);
-        let href = if kind == "module" {
-            format!("{url_base}/module/{name}")
-        } else {
-            format!("{url_base}/component/{i}")
-        };
-
-        let color = if kind == "component" {
-            section_group::ItemColor::World
-        } else {
-            section_group::ItemColor::Module
-        };
-
-        div.push(section_group::item_row(
-            name,
-            &href,
-            &color,
-            &section_group::Stability::Unknown,
-            "",
-        ));
-    }
-    div.build()
+    let items: Vec<WitItem> = children
+        .iter()
+        .enumerate()
+        .map(|(i, child)| {
+            let fallback = format!("{kind}[{i}]");
+            let name = child.name.as_deref().unwrap_or(&fallback).to_owned();
+            let href = if kind == "module" {
+                format!("{url_base}/module/{name}")
+            } else {
+                format!("{url_base}/component/{i}")
+            };
+            let item_kind = if kind == "component" {
+                WitItemKind::Component
+            } else {
+                WitItemKind::Module
+            };
+            WitItem {
+                kind: item_kind,
+                name,
+                href,
+                docs: None,
+                meta: String::new(),
+                deprecated: false,
+                id: None,
+            }
+        })
+        .collect();
+    wit_item::render_item_section(heading, &items)
 }
 
 /// Try parsing the WIT text into a rich document model.
@@ -347,50 +349,38 @@ fn build_dep_urls(
 
 /// Render the interfaces overview section.
 fn render_interface_overview(doc: &WitDocument) -> Division {
-    let items: Vec<item_list::DynItemRow> = doc
+    let items: Vec<WitItem> = doc
         .interfaces
         .iter()
-        .map(|iface| item_list::DynItemRow {
-            sigil_bg: s::IFACE.bg.to_owned(),
-            sigil_color: s::IFACE.color.to_owned(),
-            sigil_text: s::IFACE.text.to_owned(),
+        .map(|iface| WitItem {
+            kind: WitItemKind::Interface,
             name: iface.name.clone(),
             href: iface.url.clone(),
-            desc: iface
-                .docs
-                .as_deref()
-                .map(first_sentence)
-                .unwrap_or_default(),
+            docs: iface.docs.as_deref().map(first_sentence),
             meta: String::new(),
             deprecated: false,
             id: Some(format!("iface-{}", iface.name)),
         })
         .collect();
-    item_list::render_dyn_item_list("Interfaces", &items)
+    wit_item::render_item_section("Interfaces", &items)
 }
 
 /// Render the worlds overview section.
 fn render_world_overview(doc: &WitDocument) -> Division {
-    let items: Vec<item_list::DynItemRow> = doc
+    let items: Vec<WitItem> = doc
         .worlds
         .iter()
-        .map(|world| item_list::DynItemRow {
-            sigil_bg: s::WORLD.bg.to_owned(),
-            sigil_color: s::WORLD.color.to_owned(),
-            sigil_text: s::WORLD.text.to_owned(),
+        .map(|world| WitItem {
+            kind: WitItemKind::World,
             name: world.name.clone(),
             href: world.url.clone(),
-            desc: world
-                .docs
-                .as_deref()
-                .map(first_sentence)
-                .unwrap_or_default(),
+            docs: world.docs.as_deref().map(first_sentence),
             meta: String::new(),
             deprecated: false,
             id: Some(format!("world-{}", world.name)),
         })
         .collect();
-    item_list::render_dyn_item_list("Worlds", &items)
+    wit_item::render_item_section("Worlds", &items)
 }
 
 /// Render raw WIT text in a pre-formatted code block (fallback).
@@ -445,21 +435,13 @@ fn render_world_summaries(detail: &PackageVersion) -> Division {
 }
 
 /// Render a list of WIT interface references (fallback), styled like world
-/// imports/exports with clickable links. Includes version to disambiguate
-/// duplicates.
+/// imports/exports with clickable links.
 fn render_iface_ref_list(
     label: &str,
     interfaces: &[wasm_meta_registry_client::WitInterfaceRef],
 ) -> Division {
-    let items: Vec<package_shell::ImportExportEntry> = interfaces
-        .iter()
-        .map(package_shell::iface_ref_to_entry)
-        .collect();
-
-    let mut div = Division::builder();
-    div.class("mb-4");
-    div.push(package_shell::render_import_export_section(label, &items));
-    div.build()
+    let items: Vec<WitItem> = interfaces.iter().map(wit_item::iface_ref_to_item).collect();
+    wit_item::render_item_section(label, &items)
 }
 
 /// Format a byte size into a human-readable string.

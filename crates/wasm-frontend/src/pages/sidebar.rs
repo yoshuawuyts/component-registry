@@ -7,7 +7,7 @@ use crate::components::ds::sidebar::{self, SidebarEntry, SidebarGroup, SidebarIt
 use crate::components::ds::sigil as s;
 use crate::wit_doc::WitDocument;
 use html::content::Aside;
-use wasm_meta_registry_client::OciAnnotations;
+use wasm_meta_registry_client::{ComponentSummary, OciAnnotations};
 
 /// GitHub logo SVG icon (14px, ink-500).
 const SVG_GITHUB: &str = r#"<svg class="h-3.5 w-3.5 text-ink-500 flex-shrink-0" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 .2a8 8 0 0 0-2.5 15.6c.4 0 .55-.17.55-.38v-1.4c-2.22.48-2.69-1.07-2.69-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.71 1.23 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.77-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.83-2.15-.08-.2-.36-1.02.08-2.13 0 0 .67-.22 2.2.82A7.6 7.6 0 0 1 8 4.04c.68 0 1.37.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.11.16 1.93.08 2.13.52.56.83 1.28.83 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.74.54 1.49v2.21c0 .21.15.46.55.38A8 8 0 0 0 8 .2Z" /></svg>"#;
@@ -55,8 +55,15 @@ pub(crate) struct SidebarContext<'a> {
     pub version: &'a str,
     /// All available version tags (newest first).
     pub versions: &'a [String],
-    /// The parsed WIT document for navigation links.
-    pub doc: &'a WitDocument,
+    /// The parsed WIT document for navigation links. `None` for component
+    /// packages without WIT.
+    pub doc: Option<&'a WitDocument>,
+    /// Top-level components in the package version. Used to build a
+    /// Modules/Components nav when no `doc` is available (and as a child
+    /// list under the package on detail pages).
+    pub components: &'a [ComponentSummary],
+    /// Base URL for child-component links (e.g. `/wasi/http/0.2.11`).
+    pub url_base: &'a str,
     /// Which sidebar item is currently active.
     pub active: SidebarActive<'a>,
     /// OCI annotations for the current version (optional).
@@ -81,101 +88,22 @@ pub(crate) enum SidebarActive<'a> {
     Item(&'a str, #[allow(dead_code)] &'a str),
     /// A world page (name of the world).
     World(&'a str),
+    /// A child module/component page (display name).
+    #[allow(dead_code)]
+    Child(&'a str),
 }
 
 /// Render the sidebar for a detail page using the DS nested sidebar.
 pub(crate) fn render_sidebar(ctx: &SidebarContext<'_>) -> Aside {
     let mut items: Vec<SidebarItem> = Vec::new();
 
-    // Worlds — each world is a group with its imports/exports as children
-    for world in &ctx.doc.worlds {
-        let is_active = matches!(ctx.active, SidebarActive::World(name) if name == world.name);
-        let mut children = Vec::new();
-        for item in world.imports.iter().chain(world.exports.iter()) {
-            if let crate::wit_doc::WorldItemDoc::Interface {
-                name,
-                url: Some(url),
-                ..
-            } = item
-            {
-                children.push(SidebarEntry {
-                    sigil_bg: s::IFACE.bg,
-                    sigil_color: s::IFACE.color,
-                    sigil_text: s::IFACE.text,
-                    name: short_interface_name(name),
-                    href: url.clone(),
-                    meta: String::new(),
-                    active: false,
-                });
-            }
-        }
-        items.push(SidebarItem::Group(SidebarGroup {
-            label: world.name.clone(),
-            href: Some(world.url.clone()),
-            sigil_bg: Some(s::WORLD.bg),
-            sigil_color: Some(s::WORLD.color),
-            sigil_text: Some(s::WORLD.text),
-            open: is_active,
-            count: None,
-            children,
-        }));
+    if let Some(doc) = ctx.doc {
+        push_wit_nav(&mut items, ctx, doc);
     }
 
-    // Interfaces — each interface is a group with its types and functions as children
-    for iface in &ctx.doc.interfaces {
-        let is_active = matches!(
-            ctx.active,
-            SidebarActive::Interface(name) if name == iface.name
-        ) || matches!(
-            ctx.active,
-            SidebarActive::Item(iface_name, _) if iface_name == iface.name
-        );
-        let mut children = Vec::new();
-        for ty in &iface.types {
-            let (bg, color, text) = if matches!(ty.kind, crate::wit_doc::TypeKind::Resource { .. })
-            {
-                (s::RESOURCE.bg, s::RESOURCE.color, s::RESOURCE.text)
-            } else {
-                (s::TYPE.bg, s::TYPE.color, s::TYPE.text)
-            };
-            children.push(SidebarEntry {
-                sigil_bg: bg,
-                sigil_color: color,
-                sigil_text: text,
-                name: ty.name.clone(),
-                href: ty.url.clone(),
-                meta: String::new(),
-                active: matches!(
-                    ctx.active,
-                    SidebarActive::Item(iface_name, item_name) if iface_name == iface.name && item_name == ty.name
-                ),
-            });
-        }
-        for func in &iface.functions {
-            children.push(SidebarEntry {
-                sigil_bg: s::FUNC.bg,
-                sigil_color: s::FUNC.color,
-                sigil_text: s::FUNC.text,
-                name: func.name.clone(),
-                href: func.url.clone(),
-                meta: String::new(),
-                active: matches!(
-                    ctx.active,
-                    SidebarActive::Item(iface_name, item_name) if iface_name == iface.name && item_name == func.name
-                ),
-            });
-        }
-        items.push(SidebarItem::Group(SidebarGroup {
-            label: iface.name.clone(),
-            href: Some(iface.url.clone()),
-            sigil_bg: Some(s::IFACE.bg),
-            sigil_color: Some(s::IFACE.color),
-            sigil_text: Some(s::IFACE.text),
-            open: is_active,
-            count: None,
-            children,
-        }));
-    }
+    // Modules / Components — for component packages without WIT, expose the
+    // child modules and components as direct nav entries.
+    push_component_children_nav(&mut items, ctx);
 
     let version_strs: Vec<&str> = ctx.versions.iter().map(String::as_str).collect();
     let base_url = format!("/{}/", ctx.display_name.replace(':', "/"));
@@ -471,4 +399,165 @@ fn format_date(iso: &str) -> String {
     } else {
         date_part.to_owned()
     }
+}
+
+/// Push WIT worlds and interfaces nav groups into `items`.
+fn push_wit_nav(items: &mut Vec<SidebarItem>, ctx: &SidebarContext<'_>, doc: &WitDocument) {
+    // Worlds — each world is a group with its imports/exports as children.
+    for world in &doc.worlds {
+        let is_active = matches!(ctx.active, SidebarActive::World(name) if name == world.name);
+        let mut children = Vec::new();
+        for item in world.imports.iter().chain(world.exports.iter()) {
+            if let crate::wit_doc::WorldItemDoc::Interface {
+                name,
+                url: Some(url),
+                ..
+            } = item
+            {
+                children.push(SidebarEntry {
+                    sigil_bg: s::IFACE.bg,
+                    sigil_color: s::IFACE.color,
+                    sigil_text: s::IFACE.text,
+                    name: short_interface_name(name),
+                    href: url.clone(),
+                    meta: String::new(),
+                    active: false,
+                });
+            }
+        }
+        items.push(SidebarItem::Group(SidebarGroup {
+            label: world.name.clone(),
+            href: Some(world.url.clone()),
+            sigil_bg: Some(s::WORLD.bg),
+            sigil_color: Some(s::WORLD.color),
+            sigil_text: Some(s::WORLD.text),
+            open: is_active,
+            count: None,
+            children,
+        }));
+    }
+
+    // Interfaces — each interface is a group with its types and functions as children.
+    for iface in &doc.interfaces {
+        let is_active = matches!(
+            ctx.active,
+            SidebarActive::Interface(name) if name == iface.name
+        ) || matches!(
+            ctx.active,
+            SidebarActive::Item(iface_name, _) if iface_name == iface.name
+        );
+        let mut children = Vec::new();
+        for ty in &iface.types {
+            let (bg, color, text) = if matches!(ty.kind, crate::wit_doc::TypeKind::Resource { .. })
+            {
+                (s::RESOURCE.bg, s::RESOURCE.color, s::RESOURCE.text)
+            } else {
+                (s::TYPE.bg, s::TYPE.color, s::TYPE.text)
+            };
+            children.push(SidebarEntry {
+                sigil_bg: bg,
+                sigil_color: color,
+                sigil_text: text,
+                name: ty.name.clone(),
+                href: ty.url.clone(),
+                meta: String::new(),
+                active: matches!(
+                    ctx.active,
+                    SidebarActive::Item(iface_name, item_name) if iface_name == iface.name && item_name == ty.name
+                ),
+            });
+        }
+        for func in &iface.functions {
+            children.push(SidebarEntry {
+                sigil_bg: s::FUNC.bg,
+                sigil_color: s::FUNC.color,
+                sigil_text: s::FUNC.text,
+                name: func.name.clone(),
+                href: func.url.clone(),
+                meta: String::new(),
+                active: matches!(
+                    ctx.active,
+                    SidebarActive::Item(iface_name, item_name) if iface_name == iface.name && item_name == func.name
+                ),
+            });
+        }
+        items.push(SidebarItem::Group(SidebarGroup {
+            label: iface.name.clone(),
+            href: Some(iface.url.clone()),
+            sigil_bg: Some(s::IFACE.bg),
+            sigil_color: Some(s::IFACE.color),
+            sigil_text: Some(s::IFACE.text),
+            open: is_active,
+            count: None,
+            children,
+        }));
+    }
+}
+
+/// Push Modules / Components nav groups built from `ctx.components` children
+/// into `items`. Used for component packages without a parsed WIT document.
+fn push_component_children_nav(items: &mut Vec<SidebarItem>, ctx: &SidebarContext<'_>) {
+    // Flatten one level of children — top-level component(s) usually wrap the
+    // children we want to show in nav.
+    let mut child_idx = 0usize;
+    let mut modules: Vec<(usize, &ComponentSummary)> = Vec::new();
+    let mut components: Vec<(usize, &ComponentSummary)> = Vec::new();
+    for comp in ctx.components {
+        for child in &comp.children {
+            let kind = child.kind.as_deref().unwrap_or("module");
+            if kind == "component" {
+                components.push((child_idx, child));
+            } else {
+                modules.push((child_idx, child));
+            }
+            child_idx += 1;
+        }
+    }
+
+    let push_group = |items: &mut Vec<SidebarItem>,
+                      label: &str,
+                      sigil: &crate::components::ds::sigil::Sigil,
+                      entries: &[(usize, &ComponentSummary)]| {
+        if entries.is_empty() {
+            return;
+        }
+        let kind_url = if label == "Components" {
+            "component"
+        } else {
+            "module"
+        };
+        let children: Vec<SidebarEntry> = entries
+            .iter()
+            .map(|(idx, child)| {
+                let display = child
+                    .name
+                    .clone()
+                    .unwrap_or_else(|| format!("{kind_url} {idx}"));
+                let active = matches!(ctx.active, SidebarActive::Child(name) if name == display);
+                SidebarEntry {
+                    sigil_bg: sigil.bg,
+                    sigil_color: sigil.color,
+                    sigil_text: sigil.text,
+                    name: display,
+                    href: format!("{}/{}/{}", ctx.url_base, kind_url, idx),
+                    meta: String::new(),
+                    active,
+                }
+            })
+            .collect();
+        let any_active = children.iter().any(|c| c.active);
+        items.push(SidebarItem::Group(SidebarGroup {
+            label: label.to_owned(),
+            href: None,
+            sigil_bg: Some(sigil.bg),
+            sigil_color: Some(sigil.color),
+            sigil_text: Some(sigil.text),
+            open: any_active || ctx.doc.is_none(),
+            count: None,
+            children,
+        }));
+    };
+
+    push_group(items, "Modules", &s::MODULE, &modules);
+    push_group(items, "Components", &s::COMPONENT, &components);
 }

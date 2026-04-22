@@ -1,6 +1,8 @@
 //! Detail page for a child module or component inside a Wasm component.
 
+use crate::components::ds::page_header;
 use crate::components::ds::section_group;
+use crate::components::ds::wit_item::{self, WitItem};
 use html::text_content::{Division, UnorderedList};
 use wasm_meta_registry_client::{ComponentSummary, KnownPackage, PackageVersion};
 
@@ -19,66 +21,48 @@ pub(crate) fn render(
     let kind = child.kind.as_deref().unwrap_or("module");
     let title = format!("{pkg_display} \u{2014} {display_name}");
 
-    // Header
-    let kind_color = if kind == "component" {
-        "text-wit-world"
+    // Build the kicker: "v{version} · {Component|Module} · {size}"
+    let kind_label = if kind == "component" {
+        "Component"
     } else {
-        "text-wit-module"
+        "Module"
+    };
+    let mut kicker_parts = vec![format!("v{version}"), kind_label.to_owned()];
+    if let Some(bytes) = child.size_bytes {
+        kicker_parts.push(super::package::format_size(bytes));
+    }
+    let kicker = kicker_parts.join(" \u{00b7} ");
+
+    // Use the languages list as the tagline (the only descriptive text we have
+    // for a child component).
+    let tagline = if child.languages.is_empty() {
+        "No description available.".to_owned()
+    } else {
+        format!("Built with {}.", child.languages.join(", "))
     };
 
-    let size_text = child
-        .size_bytes
-        .map(super::package::format_size)
-        .unwrap_or_default();
+    let header = page_header::page_header_block(&kicker, display_name, &tagline, None).to_string();
 
-    let lang_text = if child.languages.is_empty() {
-        String::new()
-    } else {
-        child.languages.join(", ")
-    };
-
-    let mut subtitle_parts = vec![kind.to_owned()];
-    if !size_text.is_empty() {
-        subtitle_parts.push(size_text);
-    }
-    if !lang_text.is_empty() {
-        subtitle_parts.push(lang_text);
-    }
-    let subtitle = subtitle_parts.join(" \u{2014} ");
-
-    let header = format!(
-        r#"<div class="max-w-3xl mb-6">
-  <h2 class="text-[28px] sm:text-[36px] font-semibold tracking-tight font-mono">
-    <span class="{kind_color}">{display_name}</span>
-  </h2>
-  <span class="text-[13px] text-ink-500 mt-1 block">{subtitle}</span>
-</div>"#,
-    );
-
-    let mut body = String::from("<div class=\"space-y-10 max-w-3xl pt-4 pb-12\">");
+    let mut body = String::from("<div class=\"space-y-10 pt-8\">");
 
     // WIT imports
     if !child.imports.is_empty() {
-        let entries: Vec<package_shell::ImportExportEntry> = child
+        let entries: Vec<WitItem> = child
             .imports
             .iter()
-            .map(package_shell::iface_ref_to_entry)
+            .map(wit_item::iface_ref_to_item)
             .collect();
-        body.push_str(
-            &package_shell::render_import_export_section("Imports", &entries).to_string(),
-        );
+        body.push_str(&wit_item::render_item_section("Imports", &entries).to_string());
     }
 
     // WIT exports
     if !child.exports.is_empty() {
-        let entries: Vec<package_shell::ImportExportEntry> = child
+        let entries: Vec<WitItem> = child
             .exports
             .iter()
-            .map(package_shell::iface_ref_to_entry)
+            .map(wit_item::iface_ref_to_item)
             .collect();
-        body.push_str(
-            &package_shell::render_import_export_section("Exports", &entries).to_string(),
-        );
+        body.push_str(&wit_item::render_item_section("Exports", &entries).to_string());
     }
 
     // Producers
@@ -93,15 +77,46 @@ pub(crate) fn render(
 
     body.push_str("</div>");
 
+    let pkg_display_full = package_shell::display_name_for(pkg);
+    let url_base = package_shell::url_base_for(pkg, version);
+    let nav_html = {
+        let nav_ctx = super::sidebar::SidebarContext {
+            display_name: &pkg_display_full,
+            version,
+            versions: &pkg.tags,
+            doc: None,
+            components: version_detail.map_or(&[][..], |d| &d.components),
+            url_base: &url_base,
+            active: super::sidebar::SidebarActive::Child(display_name),
+            annotations: version_detail.and_then(|d| d.annotations.as_ref()),
+            kind_label: package_shell::kind_label_for(pkg),
+            description: pkg.description.as_deref(),
+            registry: &pkg.registry,
+            repository: &pkg.repository,
+            digest: version_detail.map(|d| d.digest.as_str()),
+        };
+        Some(super::sidebar::render_sidebar(&nav_ctx).to_string())
+    };
+
     let ctx = package_shell::SidebarContext {
         pkg,
         version,
         version_detail,
         importers: &[],
         exporters: &[],
-        nav_html: None,
+        nav_html,
     };
-    package_shell::render_page_with_crumbs(&ctx, &title, &header, &body, &[], None)
+    package_shell::render_page_with_crumbs(
+        &ctx,
+        &title,
+        &header,
+        &body,
+        &[crate::components::ds::breadcrumb::Crumb {
+            label: display_name.to_owned(),
+            href: None,
+        }],
+        None,
+    )
 }
 
 /// Render producers as a list, excluding language entries (shown in subtitle).
@@ -271,11 +286,11 @@ mod tests {
     }
 
     #[test]
-    fn render_module_uses_module_color() {
+    fn render_module_uses_module_kicker() {
         let pkg = sample_pkg();
         let child = sample_child("module");
         let html = render(&pkg, "1.0.0", None, &child, "inner");
-        assert!(html.contains("text-wit-module"));
+        assert!(html.contains("Module"));
         assert!(html.contains("inner"));
         assert!(html.contains("Imports"));
         assert!(html.contains("Exports"));
@@ -284,11 +299,11 @@ mod tests {
     }
 
     #[test]
-    fn render_component_uses_world_color() {
+    fn render_component_uses_component_kicker() {
         let pkg = sample_pkg();
         let child = sample_child("component");
         let html = render(&pkg, "1.0.0", None, &child, "inner");
-        assert!(html.contains("text-wit-world"));
+        assert!(html.contains("Component"));
     }
 
     #[test]

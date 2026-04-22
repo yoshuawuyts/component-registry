@@ -91,6 +91,13 @@ pub(crate) const MODULE: Sigil = Sigil {
     text: "M",
 };
 
+/// Nested component — plum "C".
+pub(crate) const COMPONENT: Sigil = Sigil {
+    bg: "var(--c-cat-plum)",
+    color: "var(--c-cat-plum-ink)",
+    text: "C",
+};
+
 // ── Design-system showcase ──────────────────────────────────────────
 
 use html::text_content::Division;
@@ -107,6 +114,7 @@ pub(crate) const ALL: &[(&str, &Sigil)] = &[
     ("Variant", &VARIANT),
     ("Enum", &ENUM),
     ("Module", &MODULE),
+    ("Component", &COMPONENT),
     ("Root", &ROOT),
 ];
 

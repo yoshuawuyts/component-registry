@@ -8,7 +8,6 @@
 use html::text_content::Division;
 use wasm_meta_registry_client::{KnownPackage, PackageVersion};
 
-use crate::components::ds::section_group;
 use crate::layout;
 
 /// Context for rendering the package page sidebar.
@@ -337,99 +336,6 @@ pub(crate) fn url_base_for(pkg: &KnownPackage, version: &str) -> String {
         (Some(ns), Some(name)) => format!("/{ns}/{name}/{version}"),
         _ => format!("/{}/{version}", pkg.repository),
     }
-}
-
-/// The kind of a world import/export item.
-#[derive(Debug, Clone, Copy, Default)]
-#[allow(dead_code)]
-pub(crate) enum WorldItemKind {
-    /// An interface.
-    #[default]
-    Interface,
-    /// A function.
-    Function,
-    /// A resource.
-    Resource,
-}
-
-/// A single item in an imports or exports list.
-pub(crate) struct ImportExportEntry {
-    /// Display text (e.g. "wasi:cli/environment").
-    pub label: String,
-    /// Optional link URL.
-    pub url: Option<String>,
-    /// Optional doc excerpt for the interface.
-    pub docs: Option<String>,
-    /// The kind of item (determines color).
-    pub item_kind: WorldItemKind,
-}
-
-/// Convert a `WitInterfaceRef` to an `ImportExportEntry`.
-pub(crate) fn iface_ref_to_entry(
-    iface: &wasm_meta_registry_client::WitInterfaceRef,
-) -> ImportExportEntry {
-    let mut display = iface.package.clone();
-    if let Some(name) = &iface.interface {
-        display.push('/');
-        display.push_str(name);
-    }
-    if let Some(v) = &iface.version {
-        display.push('@');
-        display.push_str(v);
-    }
-    ImportExportEntry {
-        label: display,
-        url: build_iface_href(iface),
-        docs: iface.docs.clone(),
-        item_kind: WorldItemKind::Interface,
-    }
-}
-
-/// Build a URL for a WIT interface reference.
-fn build_iface_href(iface: &wasm_meta_registry_client::WitInterfaceRef) -> Option<String> {
-    let (ns, name) = iface.package.split_once(':')?;
-    match (&iface.interface, &iface.version) {
-        (Some(iface_name), Some(v)) => Some(format!("/{ns}/{name}/{v}/interface/{iface_name}")),
-        (None, Some(v)) => Some(format!("/{ns}/{name}/{v}")),
-        (Some(iface_name), None) => Some(format!("/{ns}/{name}/interface/{iface_name}")),
-        (None, None) => Some(format!("/{ns}/{name}")),
-    }
-}
-
-/// Render a section heading + list of import/export entries.
-///
-/// Shared between the world detail page and the component fallback page.
-/// Item colors are determined by [`WorldItemKind`].
-pub(crate) fn render_import_export_section(heading: &str, items: &[ImportExportEntry]) -> Division {
-    let mut div = Division::builder();
-    div.push(section_group::header(heading, items.len()));
-
-    for item in items {
-        let color = match item.item_kind {
-            WorldItemKind::Interface => section_group::ItemColor::Iface,
-            WorldItemKind::Function => section_group::ItemColor::Func,
-            WorldItemKind::Resource => section_group::ItemColor::Resource,
-        };
-
-        // Extract short name: "wasi:cli/stdin@0.2" → "stdin"
-        let name_without_version = item.label.split_once('@').map_or(&*item.label, |(n, _)| n);
-        let short_name = name_without_version
-            .rfind('/')
-            .map_or(name_without_version, |pos| &name_without_version[pos + 1..]);
-
-        let desc = item.docs.as_deref().unwrap_or("");
-
-        let url = item.url.as_deref().unwrap_or("#");
-
-        div.push(section_group::item_row(
-            short_name,
-            url,
-            &color,
-            &section_group::Stability::Unknown,
-            desc,
-        ));
-    }
-    div.build()
 }
 
 /// Render the version selector dropdown.

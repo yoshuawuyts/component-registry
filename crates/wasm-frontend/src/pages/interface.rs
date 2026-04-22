@@ -1,7 +1,7 @@
 //! Interface detail page.
 
-use crate::components::ds::sigil as s;
-use crate::components::ds::{item_list, page_header, section_group};
+use crate::components::ds::wit_item::{self, TypeTag, WitItem, WitItemKind};
+use crate::components::ds::{page_header, section_group};
 use crate::wit_doc::{FunctionDoc, InterfaceDoc, TypeDoc, TypeKind, WitDocument};
 use html::text_content::Division;
 use wasm_meta_registry_client::{KnownPackage, PackageVersion};
@@ -141,7 +141,9 @@ pub(crate) fn render(
         display_name: &display_name,
         version,
         versions: &pkg.tags,
-        doc,
+        doc: Some(doc),
+        components: version_detail.map_or(&[][..], |d| &d.components),
+        url_base: &package_shell::url_base_for(pkg, version),
         active: super::sidebar::SidebarActive::Interface(&iface.name),
         annotations: version_detail.and_then(|d| d.annotations.as_ref()),
         kind_label: package_shell::kind_label_for(pkg),
@@ -171,58 +173,42 @@ pub(crate) fn render(
 
 /// Render a section of types grouped by kind.
 fn render_type_section(heading: &str, types: &[&TypeDoc]) -> Division {
-    let items: Vec<item_list::DynItemRow> = types
+    let items: Vec<WitItem> = types
         .iter()
-        .map(|ty| {
-            let desc = ty
+        .map(|ty| WitItem {
+            kind: WitItemKind::Type(TypeTag::from_kind(&ty.kind)),
+            name: ty.name.clone(),
+            href: ty.url.clone(),
+            docs: ty
                 .docs
                 .as_deref()
-                .map(|d| crate::markdown::render_inline(&first_sentence(d)))
-                .unwrap_or_default();
-            item_list::DynItemRow {
-                sigil_bg: wit_kind_sigil_bg(&ty.kind).to_owned(),
-                sigil_color: wit_kind_sigil_color(&ty.kind).to_owned(),
-                sigil_text: wit_kind_sigil_text(&ty.kind).to_owned(),
-                name: ty.name.clone(),
-                href: ty.url.clone(),
-                desc,
-                meta: String::new(),
-                deprecated: false,
-                id: None,
-            }
+                .map(|d| crate::markdown::render_inline(&first_sentence(d))),
+            meta: String::new(),
+            deprecated: false,
+            id: None,
         })
         .collect();
-    let mut div = Division::builder();
-    div.push(item_list::render_dyn_item_list(heading, &items));
-    div.build()
+    wit_item::render_item_section(heading, &items)
 }
 
 /// Render the freestanding functions section.
 fn render_function_section(functions: &[FunctionDoc]) -> Division {
-    let items: Vec<item_list::DynItemRow> = functions
+    let items: Vec<WitItem> = functions
         .iter()
-        .map(|func| {
-            let desc = func
+        .map(|func| WitItem {
+            kind: WitItemKind::Function,
+            name: func.name.clone(),
+            href: func.url.clone(),
+            docs: func
                 .docs
                 .as_deref()
-                .map(|d| crate::markdown::render_inline(&first_sentence(d)))
-                .unwrap_or_default();
-            item_list::DynItemRow {
-                sigil_bg: s::FUNC.bg.to_owned(),
-                sigil_color: s::FUNC.color.to_owned(),
-                sigil_text: s::FUNC.text.to_owned(),
-                name: func.name.clone(),
-                href: func.url.clone(),
-                desc,
-                meta: String::new(),
-                deprecated: false,
-                id: None,
-            }
+                .map(|d| crate::markdown::render_inline(&first_sentence(d))),
+            meta: String::new(),
+            deprecated: false,
+            id: None,
         })
         .collect();
-    let mut div = Division::builder();
-    div.push(item_list::render_dyn_item_list("Functions", &items));
-    div.build()
+    wit_item::render_item_section("Functions", &items)
 }
 
 /// Convert a WIT stability to the component enum.
@@ -232,60 +218,6 @@ fn wit_stability(stability: &crate::wit_doc::Stability) -> section_group::Stabil
         crate::wit_doc::Stability::Stable { .. } => section_group::Stability::Stable,
         crate::wit_doc::Stability::Unstable { .. } => section_group::Stability::Unstable,
         crate::wit_doc::Stability::Unknown => section_group::Stability::Unknown,
-    }
-}
-
-/// Get the CSS color class for a type kind.
-///
-/// Palette (OKLCH-based, same hue family as the design system):
-/// - Records/Variants: blue-violet (hue 260) — structural data types
-/// - Enums/Flags: teal (hue 180) — enumerable values
-/// - Resources: amber (hue 70) — managed handles
-/// - Aliases: default accent — pass-through types
-/// - Functions: indigo (hue 240) — callable items
-#[allow(dead_code)]
-fn wit_kind_to_color(kind: &TypeKind) -> section_group::ItemColor {
-    match kind {
-        TypeKind::Record { .. } | TypeKind::Variant { .. } => section_group::ItemColor::Struct,
-        TypeKind::Enum { .. } | TypeKind::Flags { .. } => section_group::ItemColor::Enum,
-        TypeKind::Resource { .. } => section_group::ItemColor::Resource,
-        TypeKind::Alias(_) => section_group::ItemColor::Accent,
-    }
-}
-
-/// Sigil background color for a WIT type kind.
-fn wit_kind_sigil_bg(kind: &TypeKind) -> &'static str {
-    match kind {
-        TypeKind::Record { .. } => s::RECORD.bg,
-        TypeKind::Variant { .. } => s::VARIANT.bg,
-        TypeKind::Enum { .. } => s::ENUM.bg,
-        TypeKind::Flags { .. } => s::FLAGS.bg,
-        TypeKind::Resource { .. } => s::RESOURCE.bg,
-        TypeKind::Alias(_) => s::TYPE.bg,
-    }
-}
-
-/// Sigil text color for a WIT type kind.
-fn wit_kind_sigil_color(kind: &TypeKind) -> &'static str {
-    match kind {
-        TypeKind::Record { .. } => s::RECORD.color,
-        TypeKind::Variant { .. } => s::VARIANT.color,
-        TypeKind::Enum { .. } => s::ENUM.color,
-        TypeKind::Flags { .. } => s::FLAGS.color,
-        TypeKind::Resource { .. } => s::RESOURCE.color,
-        TypeKind::Alias(_) => s::TYPE.color,
-    }
-}
-
-/// Sigil character for a WIT type kind.
-fn wit_kind_sigil_text(kind: &TypeKind) -> &'static str {
-    match kind {
-        TypeKind::Record { .. } => s::RECORD.text,
-        TypeKind::Variant { .. } => s::VARIANT.text,
-        TypeKind::Enum { .. } => s::ENUM.text,
-        TypeKind::Flags { .. } => s::FLAGS.text,
-        TypeKind::Resource { .. } => s::RESOURCE.text,
-        TypeKind::Alias(_) => s::TYPE.text,
     }
 }
 

@@ -1,7 +1,7 @@
 //! World detail page.
 
-use crate::components::ds::sigil as s;
-use crate::components::ds::{item_list, page_header};
+use crate::components::ds::page_header;
+use crate::components::ds::wit_item::{self, TypeTag, WitItem, WitItemKind};
 use crate::wit_doc::{WitDocument, WorldDoc, WorldItemDoc};
 use html::text_content::Division;
 use wasm_meta_registry_client::{KnownPackage, PackageVersion};
@@ -35,20 +35,10 @@ pub(crate) fn render(
     let api_docs = build_api_doc_lookup(version_detail, &world.name);
 
     if !world.imports.is_empty() {
-        content.push(render_item_section(
-            "Imports",
-            &world.imports,
-            true,
-            &api_docs,
-        ));
+        content.push(render_item_section("Imports", &world.imports, &api_docs));
     }
     if !world.exports.is_empty() {
-        content.push(render_item_section(
-            "Exports",
-            &world.exports,
-            false,
-            &api_docs,
-        ));
+        content.push(render_item_section("Exports", &world.exports, &api_docs));
     }
 
     let body_html = content.build().to_string();
@@ -57,7 +47,9 @@ pub(crate) fn render(
         display_name: &display_name,
         version,
         versions: &pkg.tags,
-        doc,
+        doc: Some(doc),
+        components: version_detail.map_or(&[][..], |d| &d.components),
+        url_base: &package_shell::url_base_for(pkg, version),
         active: super::sidebar::SidebarActive::World(&world.name),
         annotations: version_detail.and_then(|d| d.annotations.as_ref()),
         kind_label: package_shell::kind_label_for(pkg),
@@ -120,48 +112,38 @@ fn build_api_doc_lookup(
 fn render_item_section(
     heading: &str,
     items: &[WorldItemDoc],
-    _is_import: bool,
     api_docs: &std::collections::HashMap<String, String>,
 ) -> Division {
-    let rows: Vec<item_list::DynItemRow> = items
+    let rows: Vec<WitItem> = items
         .iter()
         .map(|item| match item {
             WorldItemDoc::Interface { name, url, docs } => {
                 let name_no_ver = strip_version(name);
-                let desc = docs
-                    .clone()
-                    .or_else(|| api_docs.get(name_no_ver).cloned())
-                    .unwrap_or_default();
-                item_list::DynItemRow {
-                    sigil_bg: s::IFACE.bg.to_owned(),
-                    sigil_color: s::IFACE.color.to_owned(),
-                    sigil_text: s::IFACE.text.to_owned(),
+                let desc = docs.clone().or_else(|| api_docs.get(name_no_ver).cloned());
+                WitItem {
+                    kind: WitItemKind::Interface,
                     name: name_no_ver.to_owned(),
                     href: url.clone().unwrap_or_default(),
-                    desc,
+                    docs: desc,
                     meta: String::new(),
                     deprecated: false,
                     id: None,
                 }
             }
-            WorldItemDoc::Function(func) => item_list::DynItemRow {
-                sigil_bg: s::FUNC.bg.to_owned(),
-                sigil_color: s::FUNC.color.to_owned(),
-                sigil_text: s::FUNC.text.to_owned(),
+            WorldItemDoc::Function(func) => WitItem {
+                kind: WitItemKind::Function,
                 name: func.name.clone(),
                 href: func.url.clone(),
-                desc: func.docs.clone().unwrap_or_default(),
+                docs: func.docs.clone(),
                 meta: String::new(),
                 deprecated: false,
                 id: None,
             },
-            WorldItemDoc::Type(ty) => item_list::DynItemRow {
-                sigil_bg: s::TYPE.bg.to_owned(),
-                sigil_color: s::TYPE.color.to_owned(),
-                sigil_text: s::TYPE.text.to_owned(),
+            WorldItemDoc::Type(ty) => WitItem {
+                kind: WitItemKind::Type(TypeTag::from_kind(&ty.kind)),
                 name: ty.name.clone(),
                 href: ty.url.clone(),
-                desc: ty.docs.clone().unwrap_or_default(),
+                docs: ty.docs.clone(),
                 meta: String::new(),
                 deprecated: false,
                 id: None,
@@ -169,7 +151,7 @@ fn render_item_section(
         })
         .collect();
 
-    item_list::render_dyn_item_list(heading, &rows)
+    wit_item::render_item_section(heading, &rows)
 }
 
 /// Strip version suffix from a qualified name.

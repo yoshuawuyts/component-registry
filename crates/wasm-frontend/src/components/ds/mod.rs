@@ -88,6 +88,7 @@ pub(crate) mod toc;
 pub(crate) mod toggles;
 pub(crate) mod tooltip;
 pub(crate) mod typography;
+pub(crate) mod wit_item;
 
 /// Crude HTML pretty-printer for snapshot tests.
 ///
