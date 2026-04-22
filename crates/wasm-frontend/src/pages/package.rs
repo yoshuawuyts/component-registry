@@ -130,7 +130,7 @@ pub(crate) fn render(
         title: &display_name,
         header_html: &header,
         body_html: &body_html,
-        sidebar_active: SidebarActive::Interface(""),
+        sidebar_active: SidebarActive::None,
         extra_crumbs: &[],
         toc_html: toc_html.as_deref(),
         importers,

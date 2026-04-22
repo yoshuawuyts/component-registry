@@ -83,6 +83,8 @@ pub(crate) struct SidebarContext<'a> {
 /// Which item in the sidebar is currently active.
 #[derive(Clone, Copy)]
 pub(crate) enum SidebarActive<'a> {
+    /// No item is active (e.g. the package landing page).
+    None,
     /// An interface page (name of the interface).
     Interface(&'a str),
     /// An item within an interface (interface name, item name).
