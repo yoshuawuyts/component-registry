@@ -28,10 +28,11 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl xz-utils \
     && rm -rf /var/lib/apt/lists/*
 
-RUN case "${TARGETARCH}" in \
-      "amd64") ARCH="x86_64" ;; \
-      "arm64") ARCH="aarch64" ;; \
-      *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
+RUN DETECTED_ARCH="${TARGETARCH:-$(dpkg --print-architecture 2>/dev/null || uname -m)}" \
+    && case "${DETECTED_ARCH}" in \
+      "amd64"|"x86_64") ARCH="x86_64" ;; \
+      "arm64"|"aarch64") ARCH="aarch64" ;; \
+      *) echo "Unsupported architecture: ${DETECTED_ARCH} (TARGETARCH='${TARGETARCH}')" && exit 1 ;; \
     esac \
     && WASMTIME_TARBALL="wasmtime-${WASMTIME_VERSION}-${ARCH}-linux.tar.xz" \
     && curl -fsSL \
