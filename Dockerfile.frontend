@@ -16,7 +16,7 @@ COPY Cargo.toml Cargo.lock ./
 COPY crates/ crates/
 
 ENV API_BASE_URL=${API_BASE_URL}
-RUN cargo build --package wasm-frontend --target wasm32-wasip2
+RUN cargo build --package wasm-frontend --target wasm32-wasip2 --release
 
 # ───── Stage 2: Runtime with wasmtime v44.0.0 ─────
 FROM debian:bookworm-slim AS runtime
@@ -47,7 +47,7 @@ RUN DETECTED_ARCH="${TARGETARCH:-$(dpkg --print-architecture 2>/dev/null || unam
     && chmod +x /usr/local/bin/wasmtime \
     && rm -rf "/tmp/${WASMTIME_TARBALL}" /tmp/SHA256SUMS "/tmp/wasmtime-${WASMTIME_VERSION}-${ARCH}-linux"
 
-COPY --from=builder /build/target/wasm32-wasip2/debug/wasm_frontend.wasm /app/wasm_frontend.wasm
+COPY --from=builder /build/target/wasm32-wasip2/release/wasm_frontend.wasm /app/wasm_frontend.wasm
 
 EXPOSE 8080
 
