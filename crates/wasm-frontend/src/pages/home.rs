@@ -33,7 +33,7 @@ fn render_packages(packages: &[KnownPackage]) -> String {
 /// surface a small notice so visitors know the live data is unavailable.
 fn render_error(err: &ApiError) -> String {
     let notice = format!(
-        r#"<div class="mx-auto max-w-[1280px] px-4 md:px-8 pt-4"><div role="status" class="flex items-start gap-2 rounded-md border border-line bg-surfaceMuted px-3 py-2 text-[12px] text-ink-700"><span class="mono uppercase tracking-wider text-ink-500">Registry offline</span><span>Live package data is temporarily unavailable. Install the CLI below to get started — the registry is not required to use <code class="px-1 py-0.5 rounded-sm bg-surface text-ink-900 mono text-[0.875em]">wasm</code> locally. ({err})</span></div></div>"#,
+        r#"<div class="mx-auto mx-auto max-w-[1280px] w-full px-4 md:px-8 pt-4"><div role="status" class="flex items-start gap-2 rounded-md border border-line bg-surfaceMuted px-3 py-2 text-[12px] text-ink-700"><span class="mono uppercase tracking-wider text-ink-500">Registry offline</span><span>Live package data is temporarily unavailable. Install the CLI below to get started — the registry is not required to use <code class="px-1 py-0.5 rounded-sm bg-surface text-ink-900 mono text-[0.875em]">wasm</code> locally. ({err})</span></div></div>"#,
         err = html_escape(&err.to_string()),
     );
     let body = compose_body(&Stats::default(), Some(&notice));
@@ -300,7 +300,7 @@ fn render_explore(stats: &Stats) -> String {
     );
 
     format!(
-        r#"<section class="mx-auto max-w-[1280px] px-4 md:px-8">
+        r#"<section class="mx-auto mx-auto max-w-[1280px] w-full px-4 md:px-8">
   <div class="max-w-2xl">
     <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Explore</div>
     <h2 class="mt-2 text-[28px] md:text-[32px] font-semibold tracking-tight">The ecosystem.</h2>

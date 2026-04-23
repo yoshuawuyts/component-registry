@@ -83,14 +83,26 @@ pub(crate) fn document_landing(title: &str, body_content: &str) -> String {
     document_inner(title, body_content, &nav, MAIN_CLASS_FULL, true)
 }
 
-/// Centered main column for non-detail pages.
-const MAIN_CLASS_CENTERED: &str = "page-grid-content pb-12";
-/// Full-bleed main for landing pages whose sections center themselves.
-const MAIN_CLASS_FULL: &str = "page-grid-bleed";
+/// Capped main column for non-detail pages — sits in the first grid track
+/// (which already caps at 1280px) and supplies its own inline padding.
+const MAIN_CLASS_CENTERED: &str = "w-full px-4 md:px-8 pb-12";
+/// Full-bleed main for landing pages whose sections cap themselves.
+const MAIN_CLASS_FULL: &str = "col-span-full w-full";
 
 /// Default `<body>` class for the simple grid layout (non-detail pages).
-const BODY_CLASS_SIMPLE_GRID: &str =
-    "bg-canvas text-ink-900 min-h-screen page-grid-simple leading-relaxed font-sans antialiased";
+///
+/// Single column capped at 1280px with a trailing `1fr` whitespace track
+/// (matching the holy-grail reference). Header and footer span all tracks
+/// via `col-span-full`.
+pub(crate) const BODY_CLASS_SIMPLE_GRID: &str = "bg-canvas text-ink-900 min-h-dvh leading-relaxed font-sans antialiased grid grid-rows-[auto_1fr_auto] grid-cols-[minmax(0,1280px)_1fr] [&>*]:min-w-0";
+
+/// `<body>` class for detail pages (header / sidebar / main / toc / footer).
+///
+/// Mobile-first holy-grail grid (see `references/holy-grail.html`):
+/// - mobile: single capped column + 1fr whitespace.
+/// - md (≥768): adds 200px sidebar track on the left.
+/// - lg (≥1024): adds 200px toc track on the right.
+pub(crate) const BODY_CLASS_GRID: &str = "bg-canvas text-ink-900 min-h-dvh leading-relaxed font-sans antialiased grid grid-rows-[auto_1fr_auto] grid-cols-[minmax(0,1280px)_1fr] md:grid-cols-[280px_minmax(0,1000px)_1fr] lg:grid-cols-[280px_minmax(0,780px)_220px_1fr] [&>*]:min-w-0";
 
 /// Inner document renderer for the simple-grid body — header, main, footer
 /// emitted as direct grid children of `.page-grid-simple`.
@@ -570,111 +582,9 @@ fn render_document(title: &str, body_class: &str, body_children: &str) -> String
     input:focus-visible, select:focus-visible, textarea:focus-visible {{ outline: none; }}
     .hairline {{ border-color: var(--c-line-soft); }}
 
-    /* ── Holy-grail body grid ──────────────────────────────
-       Mobile-first responsive layout following the canonical
-       holy-grail pattern (see references/holy-grail.html):
-       header / [sidebar] main [toc] / footer.
+    /* Body grid is defined entirely in Tailwind utility classes on
+       `<body>` (see BODY_CLASS_GRID / BODY_CLASS_SIMPLE_GRID). */
 
-       - Full-bleed body — sidebar/toc sit flush at the
-         viewport edges. The grid itself has no inline padding;
-         instead each cell that needs breathing room (header
-         inner, main column, footer inner) supplies its own.
-       - Real `column-gap` works (no margin tracks to absorb).
-       - `min-width: 0` on children prevents mono code blocks
-         from blowing out the grid. */
-    .page-grid {{
-      display: grid;
-      min-height: 100dvh;
-      column-gap: 2rem;
-      grid-template-rows: auto 1fr auto;
-      grid-template-columns: 1fr;
-      grid-template-areas:
-        "header"
-        "main"
-        "footer";
-    }}
-    .page-grid > * {{ min-width: 0; }}
-    .page-grid-header  {{ grid-area: header; }}
-    .page-grid-article {{ grid-area: main; padding-inline: 1rem; }}
-    .page-grid-footer  {{ grid-area: footer; }}
-    .page-grid-sidebar {{ grid-area: sidebar; display: none; padding-inline: 1rem; }}
-    .page-grid-toc     {{ grid-area: toc;     display: none; padding-inline: 1rem; }}
-    /* Header/footer span all columns. */
-    .page-grid-bleed {{ grid-column: 1 / -1; }}
-
-    @media (min-width: 768px) {{
-      .page-grid {{
-        grid-template-columns: 280px 1fr;
-        grid-template-areas:
-          "header  header"
-          "sidebar main"
-          "footer  footer";
-      }}
-      .page-grid-sidebar {{ display: block; }}
-      /* Sidebar is flush left; main no longer needs its own
-         left padding (the column-gap supplies the gutter). */
-      .page-grid-article {{ padding-left: 0; padding-right: 1.5rem; }}
-    }}
-
-    @media (min-width: 1024px) {{
-      .page-grid {{
-        grid-template-columns: 280px 1fr 220px;
-        grid-template-areas:
-          "header  header  header"
-          "sidebar main    toc"
-          "footer  footer  footer";
-      }}
-      .page-grid-toc {{ display: block; }}
-      /* Toc is flush right; main no longer needs right padding. */
-      .page-grid-article {{ padding-right: 0; }}
-    }}
-
-    /* ── Simple body grid (non-detail pages) ───────────────
-       Same vertical structure (header / main / footer) but
-       always single-column. Main content centers itself via
-       `.page-grid-content` (see below). */
-    .page-grid-simple {{
-      display: grid;
-      min-height: 100dvh;
-      grid-template-rows: auto 1fr auto;
-      grid-template-columns: 1fr;
-      grid-template-areas:
-        "header"
-        "main"
-        "footer";
-    }}
-    .page-grid-simple > * {{ min-width: 0; }}
-    /* Centered content for simple-grid pages — full bleed,
-       matches `.page-grid` inline padding so the navbar stays
-       aligned with the content. */
-    .page-grid-content {{
-      grid-area: main;
-      width: 100%;
-      padding-inline: 1rem;
-    }}
-    @media (min-width: 768px) {{
-      .page-grid-content {{ padding-inline: 1.5rem; }}
-    }}
-    @media (min-width: 1024px) {{
-      .page-grid-content {{ padding-inline: 2rem; }}
-    }}
-
-    /* Navbar inner — flex row spanning the header cell. The
-       header itself spans all body-grid columns, so this just
-       lays out the left/right clusters. */
-    .page-grid-nav-inner {{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: var(--navbar-h);
-      gap: 1rem;
-    }}
-    .page-grid-nav-left,
-    .page-grid-nav-right {{
-      display: flex; align-items: center; min-width: 0;
-    }}
-    .page-grid-nav-left  {{ gap: 0.75rem; }}
-    .page-grid-nav-right {{ gap: 0.5rem; }}
     .rule {{ border-color: var(--c-rule) !important; border-top-width: 1.5px !important; }}
     .swatch {{ height: 88px; border-radius: 5px; border: 1px solid var(--c-swatch-border); }}
     .mono {{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }}

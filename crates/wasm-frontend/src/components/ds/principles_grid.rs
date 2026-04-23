@@ -32,7 +32,7 @@ pub(crate) fn render(kicker: &str, title: &str, lede: &str, items: &[Principle<'
     let tiles = tiles.build();
 
     Section::builder()
-        .class("mx-auto max-w-[1280px] px-4 md:px-8 pt-12 md:pt-16")
+        .class("mx-auto mx-auto max-w-[1280px] w-full px-4 md:px-8 pt-12 md:pt-16")
         .division(|grid| {
             grid.class("grid md:grid-cols-[200px_1fr] gap-6 md:gap-12")
                 .division(|left| {

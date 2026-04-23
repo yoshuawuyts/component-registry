@@ -31,7 +31,7 @@ pub(crate) fn render(cfg: &CtaStrip<'_>) -> String {
     let shref = cfg.secondary_href.to_owned();
 
     Section::builder()
-        .class("mx-auto max-w-[1280px] px-4 md:px-8 mt-12 md:mt-16")
+        .class("mx-auto mx-auto max-w-[1280px] w-full px-4 md:px-8 mt-12 md:mt-16")
         .division(|grid| {
             grid.class("grid md:grid-cols-[1fr_auto] gap-6 items-center border-t border-lineSoft pt-10 md:pt-12")
                 .division(|left| {

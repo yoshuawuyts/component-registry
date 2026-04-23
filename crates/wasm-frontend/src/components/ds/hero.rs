@@ -56,7 +56,7 @@ pub(crate) fn render(hero: &Hero<'_>) -> String {
     let ctas = ctas_div.build();
 
     Section::builder()
-        .class("mx-auto max-w-[1280px] px-4 md:px-8 pt-12 md:pt-20 pb-10 md:pb-14")
+        .class("mx-auto mx-auto max-w-[1280px] w-full px-4 md:px-8 pt-12 md:pt-20 pb-10 md:pb-14")
         .division(|grid| {
             grid.class("grid md:grid-cols-[1fr_440px] gap-10 md:gap-16 items-end")
                 .division(|left| {

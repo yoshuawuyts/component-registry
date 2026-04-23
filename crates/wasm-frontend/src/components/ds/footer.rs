@@ -39,10 +39,10 @@ pub(crate) fn render(footer: &Footer<'_>) -> String {
     let copyright = footer.copyright.to_owned();
 
     FooterEl::builder()
-        .class("page-grid-bleed border-t border-lineSoft")
+        .class("col-span-full border-t border-lineSoft")
         .division(|grid| {
             let grid = grid
-                .class("mx-auto max-w-[1280px] px-4 md:px-8 py-10 grid grid-cols-2 md:grid-cols-5 gap-8 text-[13px]")
+                .class("mx-auto mx-auto max-w-[1280px] w-full px-4 md:px-8 py-10 grid grid-cols-2 md:grid-cols-5 gap-8 text-[13px]")
                 .division(|brand_col| {
                     brand_col
                         .class("col-span-2")
@@ -66,7 +66,7 @@ pub(crate) fn render(footer: &Footer<'_>) -> String {
         })
         .division(|bottom| {
             let mut bottom = bottom
-                .class("mx-auto max-w-[1280px] px-4 md:px-8 py-5 border-t border-lineSoft flex items-center justify-between text-[12px] text-ink-500")
+                .class("mx-auto mx-auto max-w-[1280px] w-full px-4 md:px-8 py-5 border-t border-lineSoft flex items-center justify-between text-[12px] text-ink-500")
                 .span(|s| s.class("mono").text(copyright));
             bottom = bottom.division(|legal| {
                 let mut legal = legal.class("flex items-center gap-5");

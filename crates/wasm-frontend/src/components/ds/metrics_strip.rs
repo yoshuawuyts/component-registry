@@ -23,7 +23,7 @@ pub(crate) struct Metric<'a> {
 #[must_use]
 pub(crate) fn render(metrics: &[Metric<'_>]) -> String {
     let mut section = Section::builder();
-    section.class("mx-auto max-w-[1280px] px-4 md:px-8 grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-lineSoft border-y border-lineSoft");
+    section.class("mx-auto mx-auto max-w-[1280px] w-full px-4 md:px-8 grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-lineSoft border-y border-lineSoft");
     for metric in metrics {
         push_cell(&mut section, metric);
     }

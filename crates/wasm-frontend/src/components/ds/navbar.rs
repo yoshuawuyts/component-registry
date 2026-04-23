@@ -184,18 +184,17 @@ pub(crate) fn render_bar(crumbs: &[Crumb], links: &[NavLink]) -> String {
 
 /// Render the production navbar for grid-body pages.
 ///
-/// Same content as [`render_bar`], but:
-/// - The outer `<header>` is a direct grid child of the body grid and spans
-///   all columns (`page-grid-header`) so its translucent background bleeds
-///   edge-to-edge.
-/// - The inner wrapper uses CSS subgrid (`page-grid-nav-inner`) so left and
-///   right clusters align to the body's sidebar / main / toc column tracks.
+/// Same content as [`render_bar`], but the outer `<header>` is a direct
+/// grid child of the body grid and spans all columns (`col-span-full`) so
+/// its translucent background bleeds edge-to-edge. The inner wrapper caps
+/// at 1280px (left-aligned, no `mx-auto`) so the left and right clusters
+/// align with the content tracks below.
 #[must_use]
 pub(crate) fn render_bar_grid(crumbs: &[Crumb], links: &[NavLink]) -> String {
     let breadcrumb_html = super::breadcrumb::render_breadcrumb(crumbs);
 
     let left = Division::builder()
-        .class("page-grid-nav-left")
+        .class("flex items-center gap-3 min-w-0")
         .anchor(|a| {
             a.href("/")
                 .class("text-[13px] font-semibold text-ink-900 no-underline hover:text-ink-700 transition-colors whitespace-nowrap")
@@ -208,7 +207,7 @@ pub(crate) fn render_bar_grid(crumbs: &[Crumb], links: &[NavLink]) -> String {
 
     let search = search_button(SVG_SEARCH_SM, "Type / to search", true);
     let mut right = Division::builder();
-    right.class("page-grid-nav-right text-[12px] text-ink-500");
+    right.class("flex items-center gap-2 min-w-0 text-[12px] text-ink-500");
     right.division(|d| d.class("hidden sm:block").text(search));
     for link in links {
         let href = link.href.to_owned();
@@ -224,10 +223,10 @@ pub(crate) fn render_bar_grid(crumbs: &[Crumb], links: &[NavLink]) -> String {
     let right = right.build().to_string();
 
     let bar = html::content::Header::builder()
-        .class("page-grid-header page-grid-bleed sticky top-0 z-20 bg-canvas/90 backdrop-blur border-b hairline")
+        .class("col-span-full sticky top-0 z-20 bg-canvas/90 backdrop-blur border-b hairline")
         .division(|inner| {
             inner
-                .class("page-grid-nav-inner px-4 md:px-6 lg:px-8")
+                .class("w-full px-4 md:px-8 h-[var(--navbar-h)] flex items-center justify-between gap-4")
                 .text(left)
                 .text(right)
         })

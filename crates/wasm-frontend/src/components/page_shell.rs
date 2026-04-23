@@ -90,21 +90,23 @@ pub(crate) fn render_page_with_crumbs(
 
     let toc_column = match toc_html {
         Some(toc) => format!(
-            r#"<aside aria-label="Page contents" class="page-grid-toc sticky self-start overflow-y-auto pt-8" style="top: var(--navbar-offset); max-height: calc(100vh - var(--navbar-offset)); transform: translateZ(0); will-change: transform; overscroll-behavior: contain;">{toc}</aside>"#
+            r#"<aside aria-label="Page contents" class="hidden lg:block sticky self-start overflow-y-auto px-4 md:px-6 pt-8" style="top: var(--navbar-offset); max-height: min(100%, calc(100vh - var(--navbar-offset))); overscroll-behavior: contain;">{toc}</aside>"#
         ),
         None => String::new(),
     };
 
     // Body is the grid. Children: <header> (navbar, full-bleed), <aside>
     // (sidebar), <main> (article), <aside> (TOC). Each child opts into a
-    // grid track via its `.page-grid-*` utility class.
-    let body_class =
-        "bg-canvas text-ink-900 min-h-screen page-grid leading-relaxed font-sans antialiased";
+    // grid track via Tailwind utilities (`col-span-full` for header/footer;
+    // sidebar/toc use `hidden md:block` / `hidden lg:block`).
+    let body_class = layout::BODY_CLASS_GRID;
+    let footer_html = crate::footer::render();
     let body_children = format!(
         r#"{nav}
   {sidebar_html}
-  <main id="content" class="page-grid-article min-w-0 pt-8 pb-24"><article>{header}{body_content}</article></main>
-  {toc_column}"#,
+  <main id="content" class="min-w-0 px-4 md:px-6 lg:px-8 pt-8 pb-24"><article>{header}{body_content}</article></main>
+  {toc_column}
+  {footer_html}"#,
     );
 
     layout::document_grid(title, body_class, &body_children)
