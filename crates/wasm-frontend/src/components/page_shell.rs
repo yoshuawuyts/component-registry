@@ -107,7 +107,7 @@ pub(crate) fn render_page_with_crumbs(
   <main id="content" class="min-w-0 px-4 md:px-6 lg:px-8 pt-8 pb-24 bg-canvas"><article>{header}{body_content}</article></main>
   {toc_column}
   <div class="hidden md:block bg-canvas" aria-hidden="true"></div>
-  {footer_html}"#,
+  <div class="detail-footer">{footer_html}</div>"#,
     );
 
     layout::document_grid(title, body_class, &body_children)

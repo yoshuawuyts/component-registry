@@ -627,6 +627,12 @@ fn render_document(title: &str, body_class: &str, body_children: &str) -> String
     .toc-link:hover {{ color: var(--c-ink-900); border-left-color: var(--c-line); }}
     .toc-link.active {{ color: var(--c-ink-900); border-left-color: var(--c-ink-900); }}
     .toc-link.indent {{ padding-left: 22px; }}
+    /* Detail page: sidebar spans content + footer rows; footer skips sidebar column */
+    .detail-footer {{ grid-column: 1 / -1; }}
+    @media (min-width: 768px) {{
+      .detail-footer {{ grid-column: 2 / -1; }}
+      .detail-sidebar {{ grid-row: 2 / 4; }}
+    }}
     /* Item list */
     .item-list {{ margin: 0; background: var(--c-surface); border-radius: 8px; overflow: hidden; }}
     .item-row {{ display: flex; gap: 12px; align-items: baseline; padding: 12px 14px; border-top: 1px solid var(--c-surface-muted); color: inherit; text-decoration: none; }}
