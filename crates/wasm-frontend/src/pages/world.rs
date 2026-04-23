@@ -34,10 +34,20 @@ pub(crate) fn render(
     let mut body = Division::builder();
     body.class("space-y-10 pt-8");
     if !world.imports.is_empty() {
-        body.push(render_item_section("Imports", &world.imports, &api_docs));
+        body.push(render_item_section(
+            "Imports",
+            &world.imports,
+            &api_docs,
+            &display_name,
+        ));
     }
     if !world.exports.is_empty() {
-        body.push(render_item_section("Exports", &world.exports, &api_docs));
+        body.push(render_item_section(
+            "Exports",
+            &world.exports,
+            &api_docs,
+            &display_name,
+        ));
     }
     let body_html = body.build().to_string();
 
@@ -93,6 +103,7 @@ fn render_item_section(
     heading: &str,
     items: &[WorldItemDoc],
     api_docs: &std::collections::HashMap<String, String>,
+    pkg_name: &str,
 ) -> Division {
     let rows: Vec<WitItem> = items
         .iter()
@@ -115,7 +126,7 @@ fn render_item_section(
                     docs: desc,
                     version: ver_suffix,
                     meta: stability.meta_string(),
-                    meta_title: stability.meta_title(),
+                    meta_title: stability.meta_title(pkg_name),
                     deprecated: stability.is_deprecated(),
                     id: None,
                 }
@@ -127,7 +138,7 @@ fn render_item_section(
                 docs: func.docs.clone(),
                 version: String::new(),
                 meta: func.stability.meta_string(),
-                meta_title: func.stability.meta_title(),
+                meta_title: func.stability.meta_title(pkg_name),
                 deprecated: func.stability.is_deprecated(),
                 id: None,
             },
@@ -138,7 +149,7 @@ fn render_item_section(
                 docs: ty.docs.clone(),
                 version: String::new(),
                 meta: ty.stability.meta_string(),
-                meta_title: ty.stability.meta_title(),
+                meta_title: ty.stability.meta_title(pkg_name),
                 deprecated: ty.stability.is_deprecated(),
                 id: None,
             },

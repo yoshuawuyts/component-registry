@@ -87,7 +87,7 @@ pub(crate) fn render_dyn_item_row(item: &DynItemRow) -> Anchor {
     } else {
         let v = &item.version;
         format!(
-            r#" <span class="inline-flex items-center px-1.5 h-5 rounded border border-line text-[10px] mono text-ink-500 ml-2 align-middle">{v}</span>"#
+            r#" <span class="inline-flex items-center px-1.5 h-5 rounded border border-line text-[10px] mono text-ink-500 ml-2 align-middle" title="The version of the item we're targeting">{v}</span>"#
         )
     };
     let name_html = format!(r#"<span class="name">{name}</span>{version_tag}"#);

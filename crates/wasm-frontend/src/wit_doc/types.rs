@@ -361,11 +361,11 @@ impl Stability {
     }
 
     /// Format a descriptive title / alt-text for the stability badge.
-    pub(crate) fn meta_title(&self) -> String {
+    pub(crate) fn meta_title(&self, package_name: &str) -> String {
         match self {
             Self::Unknown => String::new(),
             Self::Stable { since, deprecated } => {
-                let mut s = format!("Available since {since}");
+                let mut s = format!("Available since {package_name} version {since}");
                 if let Some(ver) = deprecated {
                     write!(s, ", deprecated {ver}").unwrap();
                 }

@@ -154,7 +154,7 @@ fn render_wit_content_with_doc(
     let mut section = Section::builder();
     section.class("space-y-10");
     let mut toc: Vec<(String, String, bool)> = Vec::new();
-
+    let display_name = page_shell::display_name_for(pkg);
     if let Some(doc) = doc {
         if !doc.worlds.is_empty() {
             toc.push(("#worlds".to_owned(), "Worlds".to_owned(), false));
@@ -162,7 +162,10 @@ fn render_wit_content_with_doc(
                 let id = format!("world-{}", world.name);
                 toc.push((format!("#{id}"), world.name.clone(), true));
             }
-            section.division(|d| d.id("worlds".to_owned()).push(render_world_overview(doc)));
+            section.division(|d| {
+                d.id("worlds".to_owned())
+                    .push(render_world_overview(doc, &display_name))
+            });
         }
         if !doc.interfaces.is_empty() {
             toc.push(("#interfaces".to_owned(), "Interfaces".to_owned(), false));
@@ -172,7 +175,7 @@ fn render_wit_content_with_doc(
             }
             section.division(|d| {
                 d.id("interfaces".to_owned())
-                    .push(render_interface_overview(doc))
+                    .push(render_interface_overview(doc, &display_name))
             });
         }
     } else {
@@ -337,7 +340,7 @@ fn build_dep_urls(
 }
 
 /// Render the interfaces overview section.
-fn render_interface_overview(doc: &WitDocument) -> Division {
+fn render_interface_overview(doc: &WitDocument, pkg_name: &str) -> Division {
     let items: Vec<WitItem> = doc
         .interfaces
         .iter()
@@ -348,7 +351,7 @@ fn render_interface_overview(doc: &WitDocument) -> Division {
             docs: iface.docs.as_deref().map(first_sentence),
             version: String::new(),
             meta: iface.stability.meta_string(),
-            meta_title: iface.stability.meta_title(),
+            meta_title: iface.stability.meta_title(pkg_name),
             deprecated: iface.stability.is_deprecated(),
             id: Some(format!("iface-{}", iface.name)),
         })
@@ -357,7 +360,7 @@ fn render_interface_overview(doc: &WitDocument) -> Division {
 }
 
 /// Render the worlds overview section.
-fn render_world_overview(doc: &WitDocument) -> Division {
+fn render_world_overview(doc: &WitDocument, pkg_name: &str) -> Division {
     let items: Vec<WitItem> = doc
         .worlds
         .iter()
@@ -368,7 +371,7 @@ fn render_world_overview(doc: &WitDocument) -> Division {
             docs: world.docs.as_deref().map(first_sentence),
             version: String::new(),
             meta: world.stability.meta_string(),
-            meta_title: world.stability.meta_title(),
+            meta_title: world.stability.meta_title(pkg_name),
             deprecated: world.stability.is_deprecated(),
             id: Some(format!("world-{}", world.name)),
         })

@@ -120,10 +120,8 @@ pub(crate) fn render_sidebar(ctx: &SidebarContext<'_>) -> Aside {
     let mut aside = Aside::builder();
     aside
         .aria_label("Package navigation")
-        .class("hidden md:block bg-canvas detail-sidebar");
-    // Inner sticky wrapper — the <aside> stretches the full grid row so the
-    // footer sits below; the inner div sticks within that space.
-    aside.text(r#"<div class="sticky overflow-y-auto px-4 md:px-6 pt-8 pb-8 space-y-4" style="top: var(--navbar-offset); max-height: calc(100vh - var(--navbar-offset)); overscroll-behavior: contain;">"#.to_owned());
+        .class("hidden md:block sticky self-start overflow-y-auto px-4 md:px-6 pt-8 pb-8 space-y-4")
+        .style("top: var(--navbar-offset); max-height: calc(100vh - var(--navbar-offset)); transform: translateZ(0); will-change: transform; overscroll-behavior: contain;");
     aside.text(header_html);
 
     // Version + Digest + Revision block (single bordered section)
@@ -159,9 +157,6 @@ pub(crate) fn render_sidebar(ctx: &SidebarContext<'_>) -> Aside {
         let deps_html = sidebar::render_items_nav(Some("Dependencies"), &dep_items);
         aside.text(deps_html);
     }
-
-    // Close the inner sticky wrapper div
-    aside.text("</div>".to_owned());
 
     aside.build()
 }
@@ -223,7 +218,7 @@ fn build_sidebar_header(ctx: &SidebarContext<'_>) -> String {
     };
 
     format!(
-        r#"<div class="pb-4 border-b-[1.5px] border-rule"><div class="flex items-start gap-2.5"><span class="sigil" style="background:{};color:{};width:28px;height:28px;margin-top:2px;">{icon}</span><div><a href="/{ns}/{}" class="text-[15px] font-semibold text-ink-900 hover:underline no-underline">{}</a><div class="text-[11px] text-ink-500 mono">v{} · {}</div></div></div><p class="mt-2 text-[12px] text-ink-700 leading-relaxed">{desc}</p></div>"#,
+        r#"<div class="pb-4 border-b-[1.5px] border-rule"><div class="flex items-center gap-2.5"><span class="sigil" style="background:{};color:{};width:28px;height:28px;">{icon}</span><div><a href="/{ns}/{}" class="text-[15px] font-semibold text-ink-900 hover:underline no-underline">{}</a><div class="text-[11px] text-ink-500 mono">v{} · {}</div></div></div><p class="mt-2 text-[12px] text-ink-700 leading-relaxed">{desc}</p></div>"#,
         s::ROOT.bg,
         s::ROOT.color,
         ctx.version,

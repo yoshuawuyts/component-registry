@@ -70,50 +70,59 @@ pub(crate) fn render(
     if !resources.is_empty() {
         toc.push(("#resources".to_owned(), "Resources".to_owned()));
         content.division(|d| {
-            d.id("resources".to_owned())
-                .push(render_type_section("Resources", &resources))
+            d.id("resources".to_owned()).push(render_type_section(
+                "Resources",
+                &resources,
+                &display_name,
+            ))
         });
     }
     if !records.is_empty() {
         toc.push(("#records".to_owned(), "Records".to_owned()));
         content.division(|d| {
             d.id("records".to_owned())
-                .push(render_type_section("Records", &records))
+                .push(render_type_section("Records", &records, &display_name))
         });
     }
     if !variants.is_empty() {
         toc.push(("#variants".to_owned(), "Variants".to_owned()));
         content.division(|d| {
-            d.id("variants".to_owned())
-                .push(render_type_section("Variants", &variants))
+            d.id("variants".to_owned()).push(render_type_section(
+                "Variants",
+                &variants,
+                &display_name,
+            ))
         });
     }
     if !enums.is_empty() {
         toc.push(("#enums".to_owned(), "Enums".to_owned()));
         content.division(|d| {
             d.id("enums".to_owned())
-                .push(render_type_section("Enums", &enums))
+                .push(render_type_section("Enums", &enums, &display_name))
         });
     }
     if !flags.is_empty() {
         toc.push(("#flags".to_owned(), "Flags".to_owned()));
         content.division(|d| {
             d.id("flags".to_owned())
-                .push(render_type_section("Flags", &flags))
+                .push(render_type_section("Flags", &flags, &display_name))
         });
     }
     if !aliases.is_empty() {
         toc.push(("#type-aliases".to_owned(), "Type Aliases".to_owned()));
         content.division(|d| {
-            d.id("type-aliases".to_owned())
-                .push(render_type_section("Type Aliases", &aliases))
+            d.id("type-aliases".to_owned()).push(render_type_section(
+                "Type Aliases",
+                &aliases,
+                &display_name,
+            ))
         });
     }
     if !iface.functions.is_empty() {
         toc.push(("#functions".to_owned(), "Functions".to_owned()));
         content.division(|d| {
             d.id("functions".to_owned())
-                .push(render_function_section(&iface.functions))
+                .push(render_function_section(&iface.functions, &display_name))
         });
     }
 
@@ -155,7 +164,7 @@ pub(crate) fn render(
 }
 
 /// Render a section of types grouped by kind.
-fn render_type_section(heading: &str, types: &[&TypeDoc]) -> Division {
+fn render_type_section(heading: &str, types: &[&TypeDoc], pkg_name: &str) -> Division {
     let items: Vec<WitItem> = types
         .iter()
         .map(|ty| WitItem {
@@ -168,7 +177,7 @@ fn render_type_section(heading: &str, types: &[&TypeDoc]) -> Division {
                 .map(|d| crate::markdown::render_inline(&first_sentence(d))),
             version: String::new(),
             meta: ty.stability.meta_string(),
-            meta_title: ty.stability.meta_title(),
+            meta_title: ty.stability.meta_title(pkg_name),
             deprecated: ty.stability.is_deprecated(),
             id: None,
         })
@@ -177,7 +186,7 @@ fn render_type_section(heading: &str, types: &[&TypeDoc]) -> Division {
 }
 
 /// Render the freestanding functions section.
-fn render_function_section(functions: &[FunctionDoc]) -> Division {
+fn render_function_section(functions: &[FunctionDoc], pkg_name: &str) -> Division {
     let items: Vec<WitItem> = functions
         .iter()
         .map(|func| WitItem {
@@ -190,7 +199,7 @@ fn render_function_section(functions: &[FunctionDoc]) -> Division {
                 .map(|d| crate::markdown::render_inline(&first_sentence(d))),
             version: String::new(),
             meta: func.stability.meta_string(),
-            meta_title: func.stability.meta_title(),
+            meta_title: func.stability.meta_title(pkg_name),
             deprecated: func.stability.is_deprecated(),
             id: None,
         })
