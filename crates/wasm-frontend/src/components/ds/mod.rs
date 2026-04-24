@@ -9,8 +9,8 @@ use html::content::Section;
 /// `[600px | 1fr]` grid layout used by every numbered section.
 ///
 /// `id` is the anchor, `num` the section number label (e.g. `"01"`),
-/// `title` the heading text, `desc` the synopsis paragraph, and `content_fn`
-/// builds the right-hand column contents.
+/// `title` the heading text, `desc` the synopsis paragraph, and `content`
+/// is the pre-rendered HTML string for the right-hand column.
 pub(crate) fn section(id: &str, num: &str, title: &str, desc: &str, content: &str) -> String {
     let id = id.to_owned();
     let num = num.to_owned();
@@ -42,7 +42,6 @@ pub(crate) fn section(id: &str, num: &str, title: &str, desc: &str, content: &st
     sec.to_string()
 }
 
-/// Render a subsection heading (h3).
 /// Render a subsection heading (h3).
 #[allow(dead_code)]
 pub(crate) fn sub(text: &str) -> String {

@@ -58,7 +58,6 @@ pub(crate) fn render(
         } else {
             format!("border-radius:{radius}")
         };
-        let label = label.to_owned();
         let label = (*label).to_owned();
         radii_grid.division(|d| {
             d.division(|s| {

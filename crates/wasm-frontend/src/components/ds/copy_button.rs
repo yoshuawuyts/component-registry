@@ -16,6 +16,22 @@ const CHECK_ICON: &str = concat!(
     "</svg>"
 );
 
+/// Escape a string for safe inclusion in an HTML attribute value.
+fn html_escape_attr(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for ch in s.chars() {
+        match ch {
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            '"' => out.push_str("&quot;"),
+            '\'' => out.push_str("&#x27;"),
+            _ => out.push(ch),
+        }
+    }
+    out
+}
+
 /// Render a page heading with a copy-to-clipboard button.
 ///
 /// The copy button appears on hover and copies `fqn` to the clipboard.
@@ -57,11 +73,12 @@ pub(crate) fn heading_with_copy_and_version(
         )
     });
 
+    let fqn_escaped = html_escape_attr(fqn);
     format!(
         r#"<div class="max-w-3xl mb-6">
   <h2 class="text-[28px] sm:text-[36px] font-semibold tracking-tight flex items-baseline gap-2 group flex-wrap">
     <span class="{color_class}">{name}</span>{version_badge}
-    <button id="copy-fqn-btn" class="text-ink-400 hover:text-ink-900 transition-opacity cursor-pointer opacity-0 group-hover:opacity-100" style="font-size:0.5em;vertical-align:middle" title="Copy item path to clipboard">{copy_icon}</button>
+    <button id="copy-fqn-btn" data-copy="{fqn_escaped}" class="text-ink-400 hover:text-ink-900 transition-opacity cursor-pointer opacity-0 group-hover:opacity-100" style="font-size:0.5em;vertical-align:middle" title="Copy item path to clipboard">{copy_icon}</button>
   </h2>
   <span class="text-[13px] text-ink-500 mt-1 block">{subtitle}</span>
   <div class="mt-4">{docs_html}</div>
@@ -72,7 +89,7 @@ pub(crate) fn heading_with_copy_and_version(
   var copyIcon="{copy_icon}";
   var checkIcon="{check_icon}";
   btn.addEventListener('click',function(){{
-    navigator.clipboard.writeText('{fqn}').then(function(){{
+    navigator.clipboard.writeText(btn.getAttribute('data-copy')).then(function(){{
       btn.innerHTML=checkIcon;
       setTimeout(function(){{btn.innerHTML=copyIcon}},2000);
     }});

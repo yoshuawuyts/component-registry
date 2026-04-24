@@ -28,6 +28,22 @@ const COPY_ICON: &str = concat!(
     "</svg>"
 );
 
+/// Escape a string for safe inclusion in an HTML attribute value.
+fn html_escape_attr(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for ch in s.chars() {
+        match ch {
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            '"' => out.push_str("&quot;"),
+            '\'' => out.push_str("&#x27;"),
+            _ => out.push(ch),
+        }
+    }
+    out
+}
+
 /// Render the install card.
 #[must_use]
 pub(crate) fn render(card: &InstallCard<'_>) -> String {
@@ -43,10 +59,7 @@ pub(crate) fn render(card: &InstallCard<'_>) -> String {
     let copy_script = if copy_command.is_empty() {
         String::new()
     } else {
-        let escaped = copy_command.replace('\\', "\\\\").replace('\'', "\\'");
-        format!(
-            r"<script>(function(){{var b=document.getElementById('install-card-copy');if(!b)return;var l=b.querySelector('[data-copy-label]');b.addEventListener('click',function(){{navigator.clipboard.writeText('{escaped}').then(function(){{if(!l)return;var o=l.textContent;l.textContent='Copied';setTimeout(function(){{l.textContent=o}},1500)}})}})}})()</script>"
-        )
+        r"<script>(function(){var b=document.getElementById('install-card-copy');if(!b)return;var l=b.querySelector('[data-copy-label]');b.addEventListener('click',function(){navigator.clipboard.writeText(b.getAttribute('data-copy')).then(function(){if(!l)return;var o=l.textContent;l.textContent='Copied';setTimeout(function(){l.textContent=o},1500)})})})()</script>".to_owned()
     };
 
     let card_html = Division::builder()
@@ -76,11 +89,15 @@ pub(crate) fn render(card: &InstallCard<'_>) -> String {
             foot.class("flex items-center justify-between px-3 h-9 border-t border-lineSoft text-[12px] text-ink-500")
                 .span(|s| s.class("mono").text(format!("SHA256: {sha}")))
                 .button(|b| {
-                    b.type_("button")
+                    let b = b
+                        .type_("button")
                         .id("install-card-copy")
                         .class("inline-flex items-center gap-1.5 hover:text-ink-900")
-                        .aria_label("Copy install command")
-                        .text(COPY_ICON)
+                        .aria_label("Copy install command");
+                    if !copy_command.is_empty() {
+                        b.data("copy", html_escape_attr(&copy_command));
+                    }
+                    b.text(COPY_ICON)
                         .text(r" <span data-copy-label>Copy</span>")
                 })
         })
