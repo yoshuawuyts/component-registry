@@ -24,6 +24,11 @@ pub use logic::{
 };
 pub use models::{InstallResult, PullResult, SyncPolicy, SyncResult};
 
+/// How long (in seconds) to skip re-pulling a tag during background indexing
+/// when its layers are already present in the local store.  Set to one hour
+/// so server restarts don't trigger a full re-fetch of every known version.
+const PULL_COOLDOWN_SECS: u64 = 3600;
+
 /// A cache on disk
 ///
 /// # Example
@@ -849,9 +854,42 @@ impl Manager {
         wit_name: Option<&str>,
         kind: Option<PackageKind>,
     ) -> anyhow::Result<KnownPackage> {
+        self.index_package_inner(reference, wit_namespace, wit_name, kind, false)
+            .await
+    }
+
+    /// Index a package, optionally bypassing the pull cooldown.
+    ///
+    /// When `skip_cooldown` is `true`, every version tag is re-pulled
+    /// from the registry regardless of when it was last fetched.
+    pub async fn index_package_refetch(
+        &self,
+        reference: &Reference,
+        wit_namespace: Option<&str>,
+        wit_name: Option<&str>,
+        kind: Option<PackageKind>,
+    ) -> anyhow::Result<KnownPackage> {
+        self.index_package_inner(reference, wit_namespace, wit_name, kind, true)
+            .await
+    }
+
+    async fn index_package_inner(
+        &self,
+        reference: &Reference,
+        wit_namespace: Option<&str>,
+        wit_name: Option<&str>,
+        kind: Option<PackageKind>,
+        skip_cooldown: bool,
+    ) -> anyhow::Result<KnownPackage> {
         if self.offline {
             return Err(ManagerError::OfflineIndex.into());
         }
+
+        tracing::info!(
+            registry = %reference.registry(),
+            repository = %reference.repository(),
+            "Indexing package"
+        );
 
         // Discover available tags first — the reference may not carry a valid
         // tag (e.g. the default "latest" might not exist).
@@ -902,27 +940,86 @@ impl Manager {
                 })?;
         }
 
-        // Best-effort: pull the wasm layer for the latest stable tag so that
-        // WIT dependency metadata is extracted and stored in the database.
-        // Using the latest stable tag ensures `KnownPackage.dependencies` always
-        // reflects the most recent stable version rather than an arbitrary tag.
+        // Pull every semver-tagged version so that per-version WIT text,
+        // worlds, components and dependency metadata are all available in the
+        // local database.  Tags that are not valid semver (e.g. `latest`,
+        // hash-based signatures like `sha256-...`, or arbitrary strings such
+        // as `dev`/`nightly`) are skipped — they typically duplicate a semver
+        // tag and cannot be reasoned about by the resolver.
+        //
+        // The semver tags are sorted in ascending order so that the highest
+        // stable version is pulled last.  Because `get_package_dependencies`
+        // selects the dependencies of the most recently inserted manifest
+        // (`ORDER BY om.id DESC`), this keeps that query reflecting the
+        // latest stable version.  Pre-release tags are pulled before stable
+        // ones so a stable manifest always wins when both exist.
+        //
+        // Tags that were already pulled recently (within `PULL_COOLDOWN_SECS`
+        // seconds) are skipped to avoid redundant network traffic on server
+        // restarts.
         // r[impl server.index.dependencies]
-        let dep_tag = pick_latest_stable_tag(&tags).unwrap_or_else(|| meta_tag.to_string());
-        let dep_ref: Reference = format!(
-            "{}/{}:{}",
-            reference.registry(),
-            reference.repository(),
-            dep_tag
-        )
-        .parse()?;
-        if let Err(e) = self.pull(dep_ref).await {
-            tracing::debug!(
+        let mut semver_tags: Vec<(&String, semver::Version)> = Vec::with_capacity(tags.len());
+        for tag in &tags {
+            match logic::parse_tag_as_semver(tag) {
+                Some(v) => semver_tags.push((tag, v)),
+                None => {
+                    tracing::debug!(
+                        registry = %reference.registry(),
+                        repository = %reference.repository(),
+                        tag = %tag,
+                        "Skipping pull — tag is not a valid semver version"
+                    );
+                }
+            }
+        }
+        // Sort ascending: pre-releases first, then stable versions in order.
+        // The `cmp` impl on `semver::Version` already orders pre-releases
+        // before their corresponding stable release.
+        semver_tags.sort_by(|(_, a), (_, b)| a.cmp(b));
+
+        for (tag, _version) in &semver_tags {
+            if !skip_cooldown
+                && self.store.is_tag_fresh(
+                    reference.registry(),
+                    reference.repository(),
+                    tag,
+                    PULL_COOLDOWN_SECS,
+                )
+            {
+                tracing::debug!(
+                    registry = %reference.registry(),
+                    repository = %reference.repository(),
+                    tag = %tag,
+                    "Skipping pull — already fresh"
+                );
+                continue;
+            }
+            tracing::info!(
                 registry = %reference.registry(),
                 repository = %reference.repository(),
-                tag = %dep_tag,
-                error = %e,
-                "Could not pull wasm layer during index; dependency metadata unavailable"
+                tag = %tag,
+                "Pulling version for indexing"
             );
+            let tag_ref: Reference = match format!(
+                "{}/{}:{}",
+                reference.registry(),
+                reference.repository(),
+                tag
+            )
+            .parse()
+            {
+                Ok(r) => r,
+                Err(_) => continue,
+            };
+            if let Err(e) = self.pull(tag_ref).await {
+                tracing::debug!(
+                    registry = %reference.registry(),
+                    repository = %reference.repository(),
+                    tag = %tag,
+                    error = %e,
+                    "Could not pull wasm layer during index"
+                );
+            }
         }
 
         // Return the indexed package with its now-populated dependencies.
