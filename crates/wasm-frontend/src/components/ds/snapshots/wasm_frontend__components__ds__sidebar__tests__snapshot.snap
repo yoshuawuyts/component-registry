@@ -60,7 +60,7 @@ expression: "crate::components::ds::pretty_html(&render(\"c-sidebar\", \"C01\",\
                 ·
               </span>
               <span class="mono">
-                wasm
+                component
               </span>
               <span class="ml-auto mono text-[10.5px] text-ink-400">
                 root

@@ -6,7 +6,7 @@ expression: "crate::components::ds::pretty_html(&html)"
   <div class="max-w-[1280px] mx-auto w-full px-4 md:px-8 py-10 grid grid-cols-2 md:grid-cols-[2fr_1fr_1fr_1fr] gap-x-8 gap-y-6 text-[13px]">
     <div class="col-span-2 md:col-span-1 flex flex-col">
       <div class="text-[15px] font-semibold tracking-tight">
-        wasm
+        component
       </div>
       <p class="mt-3 max-w-xs text-ink-500 leading-relaxed">
         The package manager for WebAssembly Components.
@@ -40,7 +40,7 @@ expression: "crate::components::ds::pretty_html(&html)"
       </div>
       <ul class="mt-3 space-y-2 text-ink-700">
         <li>
-          <a href="https://github.com/yoshuawuyts/wasm" class="hover:text-ink-900 no-underline">
+          <a href="https://github.com/yoshuawuyts/component-cli" class="hover:text-ink-900 no-underline">
             GitHub
           </a>
         </li>

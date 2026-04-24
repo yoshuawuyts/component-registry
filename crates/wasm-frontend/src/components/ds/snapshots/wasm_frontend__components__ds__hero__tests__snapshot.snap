@@ -32,7 +32,7 @@ expression: "crate::components::ds::pretty_html(&html)"
         <a href="/packages" class="h-9 px-4 inline-flex items-center gap-2 rounded-lg border-[1.5px] border-ink-900 bg-surface text-ink-900 text-[13px] hover:bg-surfaceMuted no-underline">
           Browse packages
         </a>
-        <a href="https://github.com/yoshuawuyts/wasm" class="text-[13px] text-ink-500 hover:text-ink-900 ml-1 inline-flex items-center gap-1 no-underline">
+        <a href="https://github.com/yoshuawuyts/component-cli" class="text-[13px] text-ink-500 hover:text-ink-900 ml-1 inline-flex items-center gap-1 no-underline">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 19c-5 1.5-5-2.5-7-3"/>
             <path d="M15 22v-4a3.4 3.4 0 0 0-1-2.6c3 0 6-2 6-5.5a4.3 4.3 0 0 0-1.2-3 4 4 0 0 0-.1-3s-1-.3-3.3 1.2a11.4 11.4 0 0 0-6 0C7 3.6 6 3.9 6 3.9a4 4 0 0 0-.1 3 4.3 4.3 0 0 0-1.2 3c0 3.5 3 5.5 6 5.5a3.4 3.4 0 0 0-1 2.6V22"/>

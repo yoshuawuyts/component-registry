@@ -56,7 +56,7 @@ expression: "crate::components::ds::pretty_html(&render(\"c-page-header\", \"C03
                   $
                 </span>
                 <code class="inline-flex items-center px-2.5 h-7 border border-line bg-surface mono text-[12.5px] text-ink-900 whitespace-nowrap">
-                  wasm install wasi:http-handler
+                  component install wasi:http-handler
                 </code>
                 <button type="button" aria-label="Copy install command" class="inline-flex items-center justify-center w-7 h-7 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink-900">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">

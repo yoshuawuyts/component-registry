@@ -20,7 +20,7 @@ expression: "crate::components::ds::pretty_html(&render(\"c-item-list\", \"C04\"
         <div class="text-[12px] text-ink-500 mb-3">
           Subcommands of
           <span class="mono">
-            wasm registry
+            component registry
           </span>
         </div>
         <div class="item-list">

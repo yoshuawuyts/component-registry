@@ -324,7 +324,7 @@ expression: "crate::components::ds::pretty_html(&render(\"fields\", \"13\", \"Fo
             $
           </span>
           <code class="block w-full h-9 px-3 inline-flex items-center border border-line bg-surface mono text-[13px] text-ink-900 overflow-x-auto whitespace-nowrap">
-            wasm install wasi:http-handler
+            component install wasi:http-handler
           </code>
           <button type="button" aria-label="Copy command" class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink-900">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -354,7 +354,7 @@ expression: "crate::components::ds::pretty_html(&render(\"fields\", \"13\", \"Fo
             $
           </span>
           <code class="block w-full h-9 px-3 inline-flex items-center border border-line bg-surface mono text-[13px] text-ink-900 overflow-x-auto whitespace-nowrap">
-            wasm install wasi:http-handler
+            component install wasi:http-handler
           </code>
           <button type="button" aria-label="Copied" class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-positive">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -379,7 +379,7 @@ expression: "crate::components::ds::pretty_html(&render(\"fields\", \"13\", \"Fo
             $
           </span>
           <code class="block w-full h-9 px-3 inline-flex items-center border border-line bg-surface mono text-[13px] text-ink-900 overflow-x-auto whitespace-nowrap">
-            wasm install wasi:http-handler@0.4.2 --registry https://registry.example.com --keychain
+            component install wasi:http-handler@0.4.2 --registry https://registry.example.com --keychain
           </code>
           <button type="button" aria-label="Copy command" class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -401,7 +401,7 @@ expression: "crate::components::ds::pretty_html(&render(\"fields\", \"13\", \"Fo
             $
           </span>
           <code class="block w-full h-9 px-3 inline-flex items-center border border-line bg-surface mono text-[13px] text-ink-900 overflow-x-auto whitespace-nowrap">
-            wasm install wasi:http-handler
+            component install wasi:http-handler
           </code>
           <button type="button" aria-label="Copy failed" class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-negative">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -427,7 +427,7 @@ expression: "crate::components::ds::pretty_html(&render(\"fields\", \"13\", \"Fo
             $
           </span>
           <code class="block w-full h-9 px-3 inline-flex items-center border border-dashed border-line bg-surfaceMuted mono text-[13px] text-ink-400 overflow-x-auto whitespace-nowrap cursor-not-allowed">
-            wasm install wasi:http-handler
+            component install wasi:http-handler
           </code>
           <button disabled type="button" aria-label="Copy command" class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-dashed border-line bg-surfaceMuted text-ink-400 cursor-not-allowed">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">

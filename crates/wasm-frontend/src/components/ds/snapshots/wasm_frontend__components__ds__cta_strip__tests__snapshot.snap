@@ -14,7 +14,7 @@ expression: "crate::components::ds::pretty_html(&html)"
       <p class="mt-2 max-w-xl text-[13px] text-ink-700 leading-relaxed">
         Install the CLI with
         <code class="mono text-[12px]">
-          brew install wasm
+          brew install component
         </code>
         and start composing.
       </p>
@@ -27,7 +27,7 @@ expression: "crate::components::ds::pretty_html(&html)"
           <path d="m12 5 7 7-7 7"/>
         </svg>
       </a>
-      <a href="https://github.com/yoshuawuyts/wasm" class="h-9 px-4 inline-flex items-center gap-2 rounded-lg border-[1.5px] border-ink-900 bg-canvas text-ink-900 text-[13px] hover:bg-surfaceMuted no-underline">
+      <a href="https://github.com/yoshuawuyts/component-cli" class="h-9 px-4 inline-flex items-center gap-2 rounded-lg border-[1.5px] border-ink-900 bg-canvas text-ink-900 text-[13px] hover:bg-surfaceMuted no-underline">
         View on GitHub
       </a>
     </div>

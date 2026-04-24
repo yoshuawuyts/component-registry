@@ -363,7 +363,7 @@ expression: "crate::components::ds::pretty_html(&render(\"c-navbar\", \"C06\", \
                       c
                     </span>
                     <span class="mono text-ink-700">
-                      wasm
+                      component
                       <span class="font-semibold">
                         http
                       </span>
