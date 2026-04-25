@@ -91,7 +91,7 @@ jobs:
         if: matrix.archive == 'tar.gz'
         run: |
           cd target/release
-          tar czf ../../component-${{ matrix.target }}.tar.gz wasm
+          tar czf ../../component-${{ matrix.target }}.tar.gz component
           cd ../..
 
       - name: Package binary (windows)
@@ -151,7 +151,7 @@ jobs:
       - name: Wait for crates.io indexing
         run: sleep 30
 
-      # Tier 4: depends on wasm-detector + wasm-manifest + wasm-package-manager
+      # Tier 4 (component): depends on wasm-detector + wasm-manifest + wasm-package-manager
       - name: Publish component
         run: cargo publish --package component
 

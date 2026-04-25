@@ -28,7 +28,7 @@ leaving the application. Coupled with the "search-by-interface" functionality, t
 ## Quick start
 
 ```bash
-$ component init                              # Create a `wasm.toml` and `wasm.toml.lock` locally
+$ component init                              # Create a `wasm.toml` and `wasm.lock.toml` locally
 $ component install ba:sample-wasi-http-rust  # Install a `wasi:http` server as a dependency
 $ component run ba:sample-wasi-http-rust      # Run the `wasi:http` server
 $ curl localhost:8080                    # Send a request to the `wasi:http` server

@@ -139,7 +139,7 @@ mod tests {
         let snippet = format!(
             "{}\n{}\n{}\n{}",
             muted("# install the component CLI"),
-            prompt("curl -sSf https://get.component.dev | sh"),
+            prompt("curl -sSf https://component.dev/install.sh | sh"),
             muted("# verify"),
             positive("\u{2713} component 0.4.0 installed"),
         );
@@ -148,7 +148,7 @@ mod tests {
             filename: "install.sh",
             snippet_html: &snippet,
             sha: "9f3c\u{2026}a217",
-            copy_command: "curl -sSf https://get.component.dev | sh",
+            copy_command: "curl -sSf https://component.dev/install.sh | sh",
         });
         insta::assert_snapshot!(crate::components::ds::pretty_html(&html));
     }
