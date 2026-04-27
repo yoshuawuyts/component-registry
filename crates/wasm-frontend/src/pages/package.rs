@@ -188,18 +188,18 @@ fn render_wit_content_with_doc(
 
         if has_component_imports {
             for comp in &detail.components {
-                if !comp.imports.is_empty() {
-                    toc.push(("#imports".to_owned(), "Imports".to_owned(), false));
-                    section.division(|d| {
-                        d.id("imports".to_owned())
-                            .push(render_iface_ref_list("Imports", &comp.imports))
-                    });
-                }
                 if !comp.exports.is_empty() {
                     toc.push(("#exports".to_owned(), "Exports".to_owned(), false));
                     section.division(|d| {
                         d.id("exports".to_owned())
                             .push(render_iface_ref_list("Exports", &comp.exports))
+                    });
+                }
+                if !comp.imports.is_empty() {
+                    toc.push(("#imports".to_owned(), "Imports".to_owned(), false));
+                    section.division(|d| {
+                        d.id("imports".to_owned())
+                            .push(render_iface_ref_list("Imports", &comp.imports))
                     });
                 }
             }
@@ -417,11 +417,11 @@ fn render_world_summaries(detail: &PackageVersion) -> Division {
                 });
             }
 
-            if !world.imports.is_empty() {
-                world_div.push(render_iface_ref_list("Imports", &world.imports));
-            }
             if !world.exports.is_empty() {
                 world_div.push(render_iface_ref_list("Exports", &world.exports));
+            }
+            if !world.imports.is_empty() {
+                world_div.push(render_iface_ref_list("Imports", &world.imports));
             }
             world_div
         });
