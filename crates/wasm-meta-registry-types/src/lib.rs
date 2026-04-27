@@ -963,3 +963,35 @@ pub struct QueueTask {
     /// ISO 8601 timestamp of the last modification.
     pub updated_at: String,
 }
+
+/// Outcome of a `POST /v1/packages/.../notify` call.
+///
+/// Returned when an external publisher (e.g. a CI pipeline that just pushed
+/// a new image to GHCR) tells the registry that a new version exists. The
+/// registry is free to enqueue, deduplicate, or skip based on its own
+/// freshness/cooldown policy — the caller MUST treat this purely as a hint.
+///
+/// # Example
+///
+/// ```rust
+/// use wasm_meta_registry_types::NotifyOutcome;
+///
+/// let outcome = NotifyOutcome::Enqueued;
+/// let json = serde_json::to_string(&outcome).unwrap();
+/// assert_eq!(json, r#"{"status":"enqueued"}"#);
+/// ```
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+#[serde(tag = "status", rename_all = "snake_case")]
+pub enum NotifyOutcome {
+    /// A pull task was enqueued (or an existing pending task was found).
+    /// The registry will fetch the manifest and layers as soon as the worker
+    /// picks the task up.
+    Enqueued,
+    /// The tag was already pulled recently and is within the freshness
+    /// window, so no new task was created. Try again later if the upstream
+    /// manifest has actually changed.
+    Skipped {
+        /// Human-readable reason, e.g. `"fresh"`.
+        reason: String,
+    },
+}

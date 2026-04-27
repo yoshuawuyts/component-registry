@@ -8,7 +8,7 @@ use std::sync::Arc;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::{Json, Router, routing::get};
+use axum::{Json, Router, routing::get, routing::post};
 use serde::Deserialize;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
@@ -136,6 +136,10 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/v1/packages/{registry}/{*repository}", get(get_package))
         .route("/v1/queue", get(get_queue_status))
+        .route(
+            "/v1/packages/notify/{registry}/{*repository}",
+            post(notify_new_version),
+        )
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http())
         .with_state(state)
@@ -296,6 +300,36 @@ async fn get_package_version_reordered(
     }
 }
 
+/// Query parameters for `POST /v1/packages/notify/...`.
+#[derive(Debug, Deserialize)]
+pub struct NotifyParams {
+    /// Tag of the newly-published version (e.g. `"1.1.0"`).
+    pub tag: String,
+}
+
+/// Notify the registry that a new version was just published, requesting it
+/// be pulled as soon as possible.
+///
+/// Returns `202 Accepted` with a JSON `NotifyOutcome` body in both the
+/// "enqueued" and "skipped" cases — the request itself was accepted; the
+/// outcome describes what the registry decided to do with it.
+///
+/// To prevent abuse, the registry enforces a freshness window (the same
+/// 1-hour cooldown used by the periodic indexer). Repeated notifications
+/// for a tag that was just pulled are returned as `{"status":"skipped"}`.
+async fn notify_new_version(
+    State(manager): State<AppState>,
+    Path((registry, repository)): Path<(String, String)>,
+    Query(params): Query<NotifyParams>,
+) -> Result<impl IntoResponse, AppError> {
+    let repository = repository.trim_start_matches('/');
+    let manager = manager
+        .lock()
+        .map_err(|e| anyhow::anyhow!("lock poisoned: {e}"))?;
+    let outcome = manager.notify_new_version(&registry, repository, &params.tag)?;
+    Ok((StatusCode::ACCEPTED, Json(outcome)))
+}
+
 /// Application error type that converts to HTTP responses.
 struct AppError(anyhow::Error);
 
@@ -348,6 +382,41 @@ mod tests {
         assert_eq!(body, serde_json::json!({ "status": "ok" }));
 
         // Clean up.
+        server.abort();
+    }
+
+    /// Verify the notify endpoint enqueues a pull task and is idempotent.
+    /// A second notify for the same tag while the task is still pending
+    /// should also return `enqueued` (the queue dedupes internally).
+    #[tokio::test]
+    async fn notify_endpoint_enqueues_pull_task() {
+        use wasm_meta_registry_types::NotifyOutcome;
+
+        let manager = Manager::open().await.expect("failed to open manager");
+        let state = Arc::new(std::sync::Mutex::new(manager));
+        let app = router(state);
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("failed to bind listener");
+        let addr = listener.local_addr().expect("failed to get local addr");
+
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app).await.expect("server error");
+        });
+
+        let url = format!(
+            "http://{addr}/v1/packages/notify/ghcr.io/yoshuawuyts%2Fcomponents%2Fwordmark?tag=1.1.0"
+        );
+        let resp = reqwest::Client::new()
+            .post(&url)
+            .send()
+            .await
+            .expect("request failed");
+        assert_eq!(resp.status(), reqwest::StatusCode::ACCEPTED);
+        let outcome: NotifyOutcome = resp.json().await.expect("invalid json");
+        assert_eq!(outcome, NotifyOutcome::Enqueued);
+
         server.abort();
     }
 }
