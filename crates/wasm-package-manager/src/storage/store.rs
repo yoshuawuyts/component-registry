@@ -19,6 +19,27 @@ use crate::types::{
 use futures_concurrency::prelude::*;
 use oci_client::{Reference, client::ImageData, manifest::OciImageManifest};
 
+/// Outcome of [`Store::try_extract_wit_package`].
+///
+/// Distinguishes between bytes that simply don't carry a WIT package
+/// (`NotApplicable` — e.g. a signed image, a plain wasm module, or a
+/// component without a package name) and an actual database-layer
+/// failure during extraction (`Failed`). Callers wrapping the call in a
+/// transaction or savepoint can commit on `NotApplicable` / `Extracted`
+/// and roll back / surface an error on `Failed`.
+#[derive(Debug)]
+enum WitExtractOutcome {
+    /// The bytes don't represent something we should index — leave the
+    /// row in its current (possibly empty) state and commit.
+    NotApplicable,
+    /// A WIT package was successfully extracted and inserted.
+    Extracted,
+    /// Extraction was attempted but a database insert failed mid-way.
+    /// Callers should roll back any preceding mutations and surface the
+    /// error rather than silently committing a partially-cleared state.
+    Failed(anyhow::Error),
+}
+
 /// The kind of work a [`FetchTask`] represents.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FetchTaskKind {
@@ -440,21 +461,26 @@ impl Store {
         Ok(())
     }
 
-    /// Attempt to extract WIT package from wasm component bytes.
-    /// This is best-effort - if extraction fails, we log a warning and skip.
+    /// Outcome of attempting to extract a WIT package from wasm bytes.
+    ///
+    /// Distinguishes between "the bytes don't represent something we should
+    /// have extracted" (`NotApplicable`) and "we tried to extract but failed
+    /// at the database layer" (`Failed`). Callers that wrap the call in a
+    /// transaction/savepoint can commit on `NotApplicable`/`Extracted` and
+    /// roll back on `Failed`.
     fn try_extract_wit_package(
         &self,
         manifest_id: i64,
         layer_id: Option<i64>,
         wasm_bytes: &[u8],
-    ) -> bool {
+    ) -> WitExtractOutcome {
         let Some(metadata) = extract_wit_metadata(wasm_bytes) else {
-            return false; // Not a valid wasm component, skip
+            return WitExtractOutcome::NotApplicable; // Not a valid wasm component, skip
         };
 
         // Insert the WIT package (best-effort; skip if no package name)
         let Some(raw_name) = metadata.package_name.as_deref() else {
-            return false;
+            return WitExtractOutcome::NotApplicable;
         };
 
         // Split "namespace:name@version" into (package_name, version).
@@ -476,7 +502,9 @@ impl Store {
                     manifest_id,
                     e
                 );
-                return false;
+                return WitExtractOutcome::Failed(anyhow::anyhow!(
+                    "failed to insert wit_package for manifest {manifest_id}: {e}"
+                ));
             }
         };
 
@@ -549,15 +577,18 @@ impl Store {
                 Ok(id) => id,
                 Err(e) => {
                     tracing::warn!("Failed to insert WasmComponent: {}", e);
-                    return false;
+                    return WitExtractOutcome::Failed(anyhow::anyhow!(
+                        "failed to insert wasm_component for manifest {manifest_id}: {e}"
+                    ));
                 }
             };
+
+            let parent_package = parent_pkg_for_manifest(&self.conn, manifest_id);
 
             for world in &metadata.worlds {
                 let wit_world_id = world_ids.get(&world.name).copied();
                 let declared_package = package_name;
-                let is_native = parent_pkg_for_manifest(&self.conn, manifest_id).as_deref()
-                    == Some(declared_package);
+                let is_native = parent_package.as_deref() == Some(declared_package);
 
                 if let Err(e) = ComponentTarget::insert(
                     &self.conn,
@@ -575,7 +606,7 @@ impl Store {
 
         // Best-effort resolution of cross-package foreign keys
         self.try_resolve_foreign_keys(wit_package_id, manifest_id);
-        true
+        WitExtractOutcome::Extracted
     }
 
     /// Best-effort resolution of cross-package foreign keys.
@@ -714,7 +745,12 @@ impl Store {
                         );
                         false
                     },
-                    |_| self.try_extract_wit_package(*manifest_id, Some(*layer_id), &bytes),
+                    |_| {
+                        matches!(
+                            self.try_extract_wit_package(*manifest_id, Some(*layer_id), &bytes),
+                            WitExtractOutcome::Extracted
+                        )
+                    },
                 );
 
             let savepoint_sql = if replaced {
@@ -1324,12 +1360,19 @@ impl Store {
         let bytes = cacache::read(&store_dir, &digest).await?;
 
         // Delete old WIT data, then re-extract from the cached layer bytes.
-        // A `false` return from `try_extract_wit_package` means the layer
-        // isn't a wasm component or carries no WIT package — that's a
-        // legitimate outcome (e.g. signed images, plain wasm modules), not
-        // a failure. The DELETEs still apply (the row is correctly empty)
-        // and we commit; reporting an error here would burn retry attempts
-        // and (depending on queue policy) block other tasks behind it.
+        // The DELETEs above clear any stale rows for this manifest; the
+        // re-extraction can have three outcomes:
+        //
+        // * `NotApplicable`: the layer isn't a wasm component or carries
+        //   no WIT package (e.g. signed images, plain wasm modules).
+        //   That's a legitimate outcome — the row is correctly empty,
+        //   so we commit. Reporting an error here would burn retry
+        //   attempts and (depending on queue policy) block other tasks.
+        // * `Extracted`: re-extraction succeeded. Commit.
+        // * `Failed`: a database insert errored mid-way. Roll back so
+        //   we don't silently clear previously-indexed WIT data, and
+        //   propagate the error so the caller can decide whether to
+        //   retry.
         self.conn.execute_batch("SAVEPOINT reindex_tag")?;
 
         let sql_ok = self
@@ -1353,10 +1396,20 @@ impl Store {
             anyhow::bail!("failed to clear stale WIT data for {registry}/{repository}:{tag}");
         }
 
-        // Best-effort re-extract; logged via tracing inside the helper.
-        let _ = self.try_extract_wit_package(manifest_id, Some(layer_id), &bytes);
-        self.conn.execute_batch("RELEASE SAVEPOINT reindex_tag")?;
-        Ok(())
+        match self.try_extract_wit_package(manifest_id, Some(layer_id), &bytes) {
+            WitExtractOutcome::Extracted | WitExtractOutcome::NotApplicable => {
+                self.conn.execute_batch("RELEASE SAVEPOINT reindex_tag")?;
+                Ok(())
+            }
+            WitExtractOutcome::Failed(e) => {
+                self.conn.execute_batch(
+                    "ROLLBACK TO SAVEPOINT reindex_tag; RELEASE SAVEPOINT reindex_tag",
+                )?;
+                Err(e.context(format!(
+                    "failed to re-extract WIT data for {registry}/{repository}:{tag}"
+                )))
+            }
+        }
     }
 
     /// Get all WIT packages.
