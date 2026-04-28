@@ -67,6 +67,14 @@ fn app() -> Router {
             get(world_detail),
         )
         .route(
+            "/{namespace}/{name}/{version}/world/{world_name}/function/{func_name}",
+            get(world_function_detail),
+        )
+        .route(
+            "/{namespace}/{name}/{version}/function/{func_name}",
+            get(package_function_detail),
+        )
+        .route(
             "/{namespace}/{name}/{version}/module/{child_name}",
             get(module_detail),
         )
@@ -314,8 +322,16 @@ async fn item_detail(
         return with_cache_control(html, "public, max-age=300");
     }
     if let Some(func) = iface_doc.functions.iter().find(|f| f.name == item_name) {
-        let html =
-            pages::item::render_function(&pkg, &version, Some(&version_detail), &iface, func, &doc);
+        let iface_url = format!("/{namespace}/{name}/{version}/interface/{iface}");
+        let html = pages::item::render_function(
+            &pkg,
+            &version,
+            Some(&version_detail),
+            &iface,
+            &iface_url,
+            func,
+            &doc,
+        );
         return with_cache_control(html, "public, max-age=300");
     }
 
@@ -338,7 +354,109 @@ async fn world_detail(
     let Some(world_doc) = doc.worlds.iter().find(|w| w.name == world_name) else {
         return not_found_response();
     };
+    if world_doc.is_synthetic {
+        // Synthetic worlds are inlined into the package page; no detail page.
+        return not_found_response();
+    }
     let html = pages::world::render(&pkg, &version, Some(&version_detail), world_doc, &doc);
+    with_cache_control(html, "public, max-age=300")
+}
+
+/// Detail page for a freestanding function declared directly on a world,
+/// at `/<namespace>/<name>/<version>/world/<world>/function/<func>`.
+async fn world_function_detail(
+    Path((namespace, name, version, world_name, func_name)): Path<(
+        String,
+        String,
+        String,
+        String,
+        String,
+    )>,
+) -> Response {
+    use crate::wit_doc::WorldItemDoc;
+
+    let client = RegistryClient::from_env();
+    let pkg = match fetch_package_or_404(&client, &namespace, &name, &version).await {
+        Ok(Some(pkg)) => pkg,
+        Ok(None) => return not_found_response(),
+        Err(resp) => return resp,
+    };
+    let Some((doc, version_detail)) = fetch_wit_doc(&client, &pkg, &version).await else {
+        return not_found_response();
+    };
+    let Some(world_doc) = doc.worlds.iter().find(|w| w.name == world_name) else {
+        return not_found_response();
+    };
+    let func = world_doc
+        .imports
+        .iter()
+        .chain(world_doc.exports.iter())
+        .find_map(|item| match item {
+            WorldItemDoc::Function(f) if f.name == func_name => Some(f),
+            _ => None,
+        });
+    let Some(func) = func else {
+        return not_found_response();
+    };
+    let world_url = format!("/{namespace}/{name}/{version}/world/{world_name}");
+    let html = pages::item::render_function(
+        &pkg,
+        &version,
+        Some(&version_detail),
+        &world_name,
+        &world_url,
+        func,
+        &doc,
+    );
+    with_cache_control(html, "public, max-age=300")
+}
+
+/// Detail page for a freestanding function inlined onto a package page,
+/// at `/<namespace>/<name>/<version>/function/<func>`. Searches every
+/// world's imports and exports for a function with the given name and
+/// returns the first match.
+async fn package_function_detail(
+    Path((namespace, name, version, func_name)): Path<(String, String, String, String)>,
+) -> Response {
+    use crate::wit_doc::WorldItemDoc;
+
+    let client = RegistryClient::from_env();
+    let pkg = match fetch_package_or_404(&client, &namespace, &name, &version).await {
+        Ok(Some(pkg)) => pkg,
+        Ok(None) => return not_found_response(),
+        Err(resp) => return resp,
+    };
+    let Some((doc, version_detail)) = fetch_wit_doc(&client, &pkg, &version).await else {
+        return not_found_response();
+    };
+    // For component packages the `/function/` URL space belongs exclusively to
+    // the synthetic `root` world's items.  Searching all worlds would pick the
+    // first match across potentially many worlds that happen to define a
+    // function with the same name, making routing ambiguous.  Only look in
+    // worlds where `is_synthetic` is true so the lookup is deterministic.
+    let func = doc.worlds.iter().filter(|w| w.is_synthetic).find_map(|w| {
+        w.imports
+            .iter()
+            .chain(w.exports.iter())
+            .find_map(|item| match item {
+                WorldItemDoc::Function(f) if f.name == func_name => Some(f),
+                _ => None,
+            })
+    });
+    let Some(func) = func else {
+        return not_found_response();
+    };
+    let pkg_url = format!("/{namespace}/{name}/{version}");
+    let display_name = components::page_shell::display_name_for(&pkg);
+    let html = pages::item::render_function(
+        &pkg,
+        &version,
+        Some(&version_detail),
+        &display_name,
+        &pkg_url,
+        func,
+        &doc,
+    );
     with_cache_control(html, "public, max-age=300")
 }
 
@@ -373,9 +491,18 @@ async fn fetch_wit_doc(
         pkg.wit_name.as_deref().unwrap_or(&pkg.repository),
         version
     );
-    let doc =
-        wit_doc::parse_wit_doc_with_type_docs(wit_text, &url_base, &dep_urls, &detail.type_docs)
-            .ok()?;
+    let own_oci_package = match (pkg.wit_namespace.as_deref(), pkg.wit_name.as_deref()) {
+        (Some(ns), Some(n)) => Some(format!("{ns}:{n}")),
+        _ => None,
+    };
+    let doc = wit_doc::parse_wit_doc_with_type_docs(
+        wit_text,
+        &url_base,
+        &dep_urls,
+        &detail.type_docs,
+        own_oci_package.as_deref(),
+    )
+    .ok()?;
     Some((doc, detail))
 }
 

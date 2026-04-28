@@ -866,6 +866,46 @@ impl Manager {
         self.store.get_queue_status()
     }
 
+    /// Notify the registry that a specific version of a package was just
+    /// published, requesting it be pulled as soon as possible.
+    ///
+    /// This is the entry point for external publishers (e.g. CI pipelines)
+    /// that have just pushed a new image and want the registry to index it
+    /// without waiting for the next periodic sync cycle.
+    ///
+    /// To prevent abuse and avoid hammering upstream registries, the request
+    /// is rejected when the tag was already pulled within
+    /// `PULL_COOLDOWN_SECS` (the same freshness window used by the periodic
+    /// sync). The caller MUST treat this as a hint, not a guarantee.
+    ///
+    /// Enqueued tasks are given high priority (priority `-1`) so they jump
+    /// ahead of the routine sync backlog.
+    pub fn notify_new_version(
+        &self,
+        registry: &str,
+        repository: &str,
+        tag: &str,
+    ) -> anyhow::Result<wasm_meta_registry_types::NotifyOutcome> {
+        use wasm_meta_registry_types::NotifyOutcome;
+
+        if self
+            .store
+            .is_tag_fresh(registry, repository, tag, PULL_COOLDOWN_SECS)
+        {
+            return Ok(NotifyOutcome::Skipped {
+                reason: "fresh".to_string(),
+            });
+        }
+
+        // High priority so external notifications jump ahead of the routine
+        // sync backlog. Use `enqueue_refetch` rather than `enqueue_pull` so a
+        // previous "completed" or "failed" queue entry for this tag is reset
+        // to "pending" instead of silently no-oping (which would happen with
+        // `enqueue_pull`'s `ON CONFLICT DO NOTHING`).
+        self.store.enqueue_refetch(registry, repository, tag, -1)?;
+        Ok(NotifyOutcome::Enqueued)
+    }
+
     /// Fetches the manifest and config to extract metadata (description from
     /// OCI annotations), lists all tags, and upserts into the known packages
     /// table. Also pulls the wasm layer for the most recent tag to extract
