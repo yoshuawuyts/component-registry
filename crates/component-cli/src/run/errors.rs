@@ -14,21 +14,21 @@ use miette::Diagnostic;
 pub(crate) enum RunError {
     /// The pulled OCI image has no manifest.
     #[diagnostic(
-        code(wasm::run::no_manifest),
+        code(component::run::no_manifest),
         help("ensure the OCI reference points to a valid Wasm package")
     )]
     NoManifest,
 
     /// The OCI manifest contains no `application/wasm` layer.
     #[diagnostic(
-        code(wasm::run::no_wasm_layer),
+        code(component::run::no_wasm_layer),
         help("ensure the image contains an `application/wasm` layer")
     )]
     NoWasmLayer,
 
     /// A manifest component key is not present in the lockfile.
     #[diagnostic(
-        code(wasm::run::not_in_lockfile),
+        code(component::run::not_in_lockfile),
         help("run `component install {name}` to populate the lockfile")
     )]
     NotInLockfile {
@@ -38,7 +38,7 @@ pub(crate) enum RunError {
 
     /// The lockfile `registry` field is not in the expected `host/repository` format.
     #[diagnostic(
-        code(wasm::run::invalid_registry_path),
+        code(component::run::invalid_registry_path),
         help("registry path '{path}' for '{name}' should have format 'host/repository'")
     )]
     InvalidRegistryPath {
@@ -50,7 +50,7 @@ pub(crate) enum RunError {
 
     /// The vendored file for a manifest component does not exist on disk.
     #[diagnostic(
-        code(wasm::run::vendored_file_missing),
+        code(component::run::vendored_file_missing),
         help("'{path}' not found; run `component install {name}` to vendor the component")
     )]
     VendoredFileMissing {
@@ -62,7 +62,7 @@ pub(crate) enum RunError {
 
     /// The HTTP server could not bind to the requested address.
     #[diagnostic(
-        code(wasm::run::http_bind_failed),
+        code(component::run::http_bind_failed),
         help(
             "{reason}; ensure the address '{addr}' is available and not in use by another process"
         )
@@ -76,7 +76,7 @@ pub(crate) enum RunError {
 
     /// The HTTP server failed to accept an incoming connection.
     #[diagnostic(
-        code(wasm::run::http_accept_failed),
+        code(component::run::http_accept_failed),
         help("the HTTP listener encountered an error: {reason}")
     )]
     HttpAcceptFailed {
@@ -86,8 +86,8 @@ pub(crate) enum RunError {
 
     /// The component requested with `--global` is not present in the local cache.
     #[diagnostic(
-        code(wasm::run::not_in_global_cache),
-        help("run `wasm install {name}` to fetch '{name}' into the cache first")
+        code(component::run::not_in_global_cache),
+        help("run `component install {name}` to fetch '{name}' into the cache first")
     )]
     NotInGlobalCache {
         /// The manifest key that was looked up.
@@ -163,13 +163,13 @@ mod tests {
         ];
 
         let expected_codes = [
-            "wasm::run::no_manifest",
-            "wasm::run::no_wasm_layer",
-            "wasm::run::not_in_lockfile",
-            "wasm::run::invalid_registry_path",
-            "wasm::run::vendored_file_missing",
-            "wasm::run::http_bind_failed",
-            "wasm::run::http_accept_failed",
+            "component::run::no_manifest",
+            "component::run::no_wasm_layer",
+            "component::run::not_in_lockfile",
+            "component::run::invalid_registry_path",
+            "component::run::vendored_file_missing",
+            "component::run::http_bind_failed",
+            "component::run::http_accept_failed",
         ];
 
         for (variant, expected_code) in variants.iter().zip(expected_codes.iter()) {

@@ -16,7 +16,7 @@ use miette::Diagnostic;
 /// let err = OciLayerError::InvalidLayerCount { found: 3 };
 /// assert_eq!(
 ///     err.code().expect("should have a code").to_string(),
-///     "wasm::oci::invalid_layer_count",
+///     "component::oci::invalid_layer_count",
 /// );
 ///
 /// let err = OciLayerError::InvalidMediaType {
@@ -24,7 +24,7 @@ use miette::Diagnostic;
 /// };
 /// assert_eq!(
 ///     err.code().expect("should have a code").to_string(),
-///     "wasm::oci::invalid_media_type",
+///     "component::oci::invalid_media_type",
 /// );
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Diagnostic)]
@@ -34,7 +34,7 @@ pub enum OciLayerError {
     ///
     /// See spec: `r[oci.layers.reject-multi]`
     #[diagnostic(
-        code(wasm::oci::invalid_layer_count),
+        code(component::oci::invalid_layer_count),
         help(
             "expected exactly 1 layer but found {found}; see \
              https://tag-runtime.cncf.io/wgs/wasm/deliverables/wasm-oci-artifact/#faq"
@@ -48,7 +48,7 @@ pub enum OciLayerError {
     ///
     /// See spec: `r[oci.layers.require-wasm-content-type]`
     #[diagnostic(
-        code(wasm::oci::invalid_media_type),
+        code(component::oci::invalid_media_type),
         help("found media type '{found}'; the layer must have media type 'application/wasm'")
     )]
     InvalidMediaType {
@@ -58,7 +58,7 @@ pub enum OciLayerError {
     /// The Docker credential store returned an identity token, which is not
     /// supported by this client.
     #[diagnostic(
-        code(wasm::oci::identity_token_not_supported),
+        code(component::oci::identity_token_not_supported),
         help("configure username/password credentials instead of an identity token")
     )]
     IdentityTokenNotSupported,
@@ -99,7 +99,7 @@ mod tests {
                 .code()
                 .expect("InvalidLayerCount must have a diagnostic code")
                 .to_string(),
-            "wasm::oci::invalid_layer_count",
+            "component::oci::invalid_layer_count",
         );
         assert!(
             invalid_count.help().is_some(),
@@ -114,7 +114,7 @@ mod tests {
                 .code()
                 .expect("InvalidMediaType must have a diagnostic code")
                 .to_string(),
-            "wasm::oci::invalid_media_type",
+            "component::oci::invalid_media_type",
         );
         assert!(
             invalid_media.help().is_some(),
@@ -127,7 +127,7 @@ mod tests {
                 .code()
                 .expect("IdentityTokenNotSupported must have a diagnostic code")
                 .to_string(),
-            "wasm::oci::identity_token_not_supported",
+            "component::oci::identity_token_not_supported",
         );
         assert!(
             identity_token.help().is_some(),

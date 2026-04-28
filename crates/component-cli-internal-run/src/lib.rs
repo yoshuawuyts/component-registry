@@ -3,7 +3,7 @@
 //! Internal crate for executing WebAssembly components via Wasmtime.
 //!
 //! This crate is **not** intended for third-party consumption — it is an
-//! implementation detail of `wasm-cli`. The API may change without notice.
+//! implementation detail of `component-cli`. The API may change without notice.
 //!
 //! It provides two entry points:
 //!

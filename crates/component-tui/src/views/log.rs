@@ -26,7 +26,7 @@ impl Widget for LogView<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         if self.lines.is_empty() {
             let paragraph =
-                Paragraph::new("No log entries found.\n\nRun `wasm self log` to view logs.")
+                Paragraph::new("No log entries found.\n\nRun `component self log` to view logs.")
                     .centered()
                     .style(Style::default().fg(Color::DarkGray));
             paragraph.render(area, buf);

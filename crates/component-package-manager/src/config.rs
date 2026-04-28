@@ -35,7 +35,7 @@ const DEFAULT_CONFIG: &str = r#"# component(1) configuration file
 # credential-helper.username = "/path/to/get-user.sh"
 # credential-helper.password = "/path/to/get-pass.sh"
 
-# Default sandbox permissions for `wasm run`:
+# Default sandbox permissions for `component run`:
 # [run.permissions]
 # inherit-stdio = true
 # inherit-env = false
@@ -61,7 +61,7 @@ pub struct Config {
     #[serde(default)]
     pub registries: HashMap<String, RegistryConfig>,
 
-    /// Default runtime settings for `wasm run`.
+    /// Default runtime settings for `component run`.
     #[serde(default)]
     pub run: Option<RunConfig>,
 
@@ -108,7 +108,7 @@ pub struct RegistryConfig {
     pub credential_helper: Option<CredentialHelper>,
 }
 
-/// Runtime configuration for `wasm run`.
+/// Runtime configuration for `component run`.
 ///
 /// # Examples
 ///

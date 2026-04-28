@@ -11,14 +11,14 @@ use miette::Diagnostic;
 pub enum ComposeError {
     /// No `.wac` files were found in the `seams/` directory.
     #[diagnostic(
-        code(wasm::compose::no_wac_files),
+        code(component::compose::no_wac_files),
         help("add `.wac` files to the `seams/` directory")
     )]
     NoWacFiles,
 
     /// The composition name contains path separators or traversal sequences.
     #[diagnostic(
-        code(wasm::compose::invalid_name),
+        code(component::compose::invalid_name),
         help("'{name}' contains path separators; use a plain name like 'foo'")
     )]
     InvalidName {
@@ -28,7 +28,7 @@ pub enum ComposeError {
 
     /// The requested `.wac` file was not found in `seams/`.
     #[diagnostic(
-        code(wasm::compose::wac_not_found),
+        code(component::compose::wac_not_found),
         help("'seams/{name}.wac' not found; {hint}")
     )]
     WacNotFound {
@@ -40,7 +40,7 @@ pub enum ComposeError {
 
     /// A `.wac` file could not be parsed.
     #[diagnostic(
-        code(wasm::compose::parse_failed),
+        code(component::compose::parse_failed),
         help("check the WAC syntax in '{file}': {reason}")
     )]
     ParseFailed {
@@ -52,7 +52,7 @@ pub enum ComposeError {
 
     /// Could not determine the set of packages referenced by a `.wac` file.
     #[diagnostic(
-        code(wasm::compose::package_discovery_failed),
+        code(component::compose::package_discovery_failed),
         help("check the import declarations in '{file}': {reason}")
     )]
     PackageDiscoveryFailed {
@@ -64,8 +64,10 @@ pub enum ComposeError {
 
     /// Could not resolve the packages required by a `.wac` file.
     #[diagnostic(
-        code(wasm::compose::package_resolution_failed),
-        help("ensure all dependencies for '{file}' are installed via `wasm install`: {reason}")
+        code(component::compose::package_resolution_failed),
+        help(
+            "ensure all dependencies for '{file}' are installed via `component install`: {reason}"
+        )
     )]
     PackageResolutionFailed {
         /// The path to the WAC file.
@@ -76,7 +78,7 @@ pub enum ComposeError {
 
     /// The WAC document resolution step failed.
     #[diagnostic(
-        code(wasm::compose::resolution_failed),
+        code(component::compose::resolution_failed),
         help("check the component wiring in '{file}': {reason}")
     )]
     ResolutionFailed {
@@ -88,7 +90,7 @@ pub enum ComposeError {
 
     /// Encoding the composed component failed.
     #[diagnostic(
-        code(wasm::compose::encode_failed),
+        code(component::compose::encode_failed),
         help("encoding of '{file}' failed: {reason}")
     )]
     EncodeFailed {
@@ -175,14 +177,14 @@ mod tests {
         ];
 
         let expected_codes = [
-            "wasm::compose::no_wac_files",
-            "wasm::compose::invalid_name",
-            "wasm::compose::wac_not_found",
-            "wasm::compose::parse_failed",
-            "wasm::compose::package_discovery_failed",
-            "wasm::compose::package_resolution_failed",
-            "wasm::compose::resolution_failed",
-            "wasm::compose::encode_failed",
+            "component::compose::no_wac_files",
+            "component::compose::invalid_name",
+            "component::compose::wac_not_found",
+            "component::compose::parse_failed",
+            "component::compose::package_discovery_failed",
+            "component::compose::package_resolution_failed",
+            "component::compose::resolution_failed",
+            "component::compose::encode_failed",
         ];
 
         for (variant, expected_code) in variants.iter().zip(expected_codes.iter()) {

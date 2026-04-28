@@ -16,13 +16,13 @@ use miette::Diagnostic;
 /// let err = ManagerError::OfflinePull;
 /// assert_eq!(
 ///     err.code().expect("should have a code").to_string(),
-///     "wasm::manager::offline_pull",
+///     "component::manager::offline_pull",
 /// );
 ///
 /// let err = ManagerError::OfflineIndex;
 /// assert_eq!(
 ///     err.code().expect("should have a code").to_string(),
-///     "wasm::manager::offline_index",
+///     "component::manager::offline_index",
 /// );
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Diagnostic)]
@@ -30,31 +30,31 @@ use miette::Diagnostic;
 pub enum ManagerError {
     /// An attempt was made to pull a package while in offline mode.
     #[diagnostic(
-        code(wasm::manager::offline_pull),
+        code(component::manager::offline_pull),
         help("run without `--offline` to pull packages from the registry")
     )]
     OfflinePull,
 
     /// An attempt was made to index a package while in offline mode.
     #[diagnostic(
-        code(wasm::manager::offline_index),
+        code(component::manager::offline_index),
         help("run without `--offline` to index packages from the registry")
     )]
     OfflineIndex,
 
     /// A previously indexed package could not be retrieved from the database.
     #[diagnostic(
-        code(wasm::manager::index_retrieval_failed),
-        help("try re-indexing the package with `wasm registry sync`")
+        code(component::manager::index_retrieval_failed),
+        help("try re-indexing the package with `component registry sync`")
     )]
     IndexRetrievalFailed,
 
     /// Syncing the package index failed and no local data is available.
     #[diagnostic(
-        code(wasm::manager::sync_no_local_data),
+        code(component::manager::sync_no_local_data),
         help(
             "{reason}; check your network connection and run \
-             `wasm registry sync` to fetch the package index"
+             `component registry sync` to fetch the package index"
         )
     )]
     SyncNoLocalData {
@@ -64,7 +64,7 @@ pub enum ManagerError {
 
     /// No tags were found for the given package reference.
     #[diagnostic(
-        code(wasm::manager::no_tags_found),
+        code(component::manager::no_tags_found),
         help("verify the package name '{registry}/{repository}' is correct")
     )]
     NoTagsFound {
@@ -76,7 +76,7 @@ pub enum ManagerError {
 
     /// The requested tag does not exist in the registry.
     #[diagnostic(
-        code(wasm::manager::manifest_not_found),
+        code(component::manager::manifest_not_found),
         help("tag '{tag}' not found for {registry}/{repository}; {hint}")
     )]
     ManifestNotFound {
@@ -143,7 +143,7 @@ mod tests {
                 .code()
                 .expect("OfflinePull must have a diagnostic code")
                 .to_string(),
-            "wasm::manager::offline_pull",
+            "component::manager::offline_pull",
         );
         assert!(
             offline_pull.help().is_some(),
@@ -156,7 +156,7 @@ mod tests {
                 .code()
                 .expect("OfflineIndex must have a diagnostic code")
                 .to_string(),
-            "wasm::manager::offline_index",
+            "component::manager::offline_index",
         );
         assert!(
             offline_index.help().is_some(),
@@ -169,7 +169,7 @@ mod tests {
                 .code()
                 .expect("IndexRetrievalFailed must have a diagnostic code")
                 .to_string(),
-            "wasm::manager::index_retrieval_failed",
+            "component::manager::index_retrieval_failed",
         );
         assert!(
             index_failed.help().is_some(),
@@ -184,7 +184,7 @@ mod tests {
                 .code()
                 .expect("SyncNoLocalData must have a diagnostic code")
                 .to_string(),
-            "wasm::manager::sync_no_local_data",
+            "component::manager::sync_no_local_data",
         );
         assert!(
             sync_failed.help().is_some(),
@@ -200,7 +200,7 @@ mod tests {
                 .code()
                 .expect("NoTagsFound must have a diagnostic code")
                 .to_string(),
-            "wasm::manager::no_tags_found",
+            "component::manager::no_tags_found",
         );
         assert!(
             no_tags.help().is_some(),
@@ -218,7 +218,7 @@ mod tests {
                 .code()
                 .expect("ManifestNotFound must have a diagnostic code")
                 .to_string(),
-            "wasm::manager::manifest_not_found",
+            "component::manager::manifest_not_found",
         );
         assert!(
             manifest_not_found.help().is_some(),

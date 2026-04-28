@@ -24,7 +24,7 @@ use std::collections::HashSet;
 /// );
 /// assert_eq!(
 ///     err.code().expect("should have a code").to_string(),
-///     "wasm::validation::missing_dependency",
+///     "component::validation::missing_dependency",
 /// );
 ///
 /// let err = ValidationError::InvalidDependency {
@@ -34,7 +34,7 @@ use std::collections::HashSet;
 /// assert!(err.to_string().contains("wasi:http"));
 /// assert_eq!(
 ///     err.code().expect("should have a code").to_string(),
-///     "wasm::validation::invalid_dependency",
+///     "component::validation::invalid_dependency",
 /// );
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Diagnostic)]
@@ -44,7 +44,7 @@ pub enum ValidationError {
     ///
     /// See spec: `r[validation.missing-dependency]`
     #[diagnostic(
-        code(wasm::validation::missing_dependency),
+        code(component::validation::missing_dependency),
         help("remove '{name}' from the lockfile or add it to the manifest")
     )]
     MissingDependency {
@@ -55,7 +55,7 @@ pub enum ValidationError {
     ///
     /// See spec: `r[validation.invalid-dependency]`
     #[diagnostic(
-        code(wasm::validation::invalid_dependency),
+        code(component::validation::invalid_dependency),
         help("add '{dependency}' to the lockfile or remove the reference from '{package}'")
     )]
     InvalidDependency {
@@ -68,7 +68,7 @@ pub enum ValidationError {
     ///
     /// See spec: `r[validation.invalid-version-constraint]`
     #[diagnostic(
-        code(wasm::validation::invalid_version_constraint),
+        code(component::validation::invalid_version_constraint),
         help(
             "'{name}' has version '{version}': {reason}. Use a valid semver constraint such as '1.0.0', '>=1.0, <2.0', '~1.2', '=1.2.3', or '*'"
         )
@@ -86,7 +86,7 @@ pub enum ValidationError {
     ///
     /// See spec: `r[validation.version-conflict]`
     #[diagnostic(
-        code(wasm::validation::version_conflict),
+        code(component::validation::version_conflict),
         help(
             "'{name}' has '{version_a}' in one section and '{version_b}' in another; align versions or use compatible ranges"
         )
@@ -557,7 +557,7 @@ mod tests {
                 .code()
                 .expect("MissingDependency must have a diagnostic code")
                 .to_string(),
-            "wasm::validation::missing_dependency",
+            "component::validation::missing_dependency",
         );
         assert!(
             missing.help().is_some(),
@@ -573,7 +573,7 @@ mod tests {
                 .code()
                 .expect("InvalidDependency must have a diagnostic code")
                 .to_string(),
-            "wasm::validation::invalid_dependency",
+            "component::validation::invalid_dependency",
         );
         assert!(
             invalid.help().is_some(),
@@ -590,7 +590,7 @@ mod tests {
                 .code()
                 .expect("InvalidVersionConstraint must have a diagnostic code")
                 .to_string(),
-            "wasm::validation::invalid_version_constraint",
+            "component::validation::invalid_version_constraint",
         );
         assert!(
             invalid_version.help().is_some(),
@@ -607,7 +607,7 @@ mod tests {
                 .code()
                 .expect("VersionConflict must have a diagnostic code")
                 .to_string(),
-            "wasm::validation::version_conflict",
+            "component::validation::version_conflict",
         );
         assert!(
             conflict.help().is_some(),

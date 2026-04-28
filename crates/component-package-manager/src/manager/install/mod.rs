@@ -1,7 +1,7 @@
 //! Install helpers — core logic for resolving inputs, managing lockfiles,
 //! and unpacking WIT files.
 //!
-//! These functions underpin both the CLI `wasm install` command and any
+//! These functions underpin both the CLI `component install` command and any
 //! programmatic consumers of the package manager library.
 
 use oci_client::Reference;

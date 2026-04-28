@@ -11,14 +11,14 @@ use miette::Diagnostic;
 pub enum RunError {
     /// The binary is a core WebAssembly module, not a component.
     #[diagnostic(
-        code(wasm::run::core_module),
+        code(component::run::core_module),
         help("use a tool like `wasm-tools component new` to wrap the module as a component")
     )]
     CoreModule,
 
     /// The binary could not be parsed as valid WebAssembly.
     #[diagnostic(
-        code(wasm::run::invalid_binary),
+        code(component::run::invalid_binary),
         help("{reason}; ensure the file is a valid WebAssembly binary")
     )]
     InvalidBinary {
@@ -28,7 +28,7 @@ pub enum RunError {
 
     /// The binary has no version header.
     #[diagnostic(
-        code(wasm::run::no_version_header),
+        code(component::run::no_version_header),
         help("ensure the file is a valid WebAssembly binary")
     )]
     NoVersionHeader,
@@ -72,9 +72,9 @@ mod tests {
         ];
 
         let expected_codes = [
-            "wasm::run::core_module",
-            "wasm::run::invalid_binary",
-            "wasm::run::no_version_header",
+            "component::run::core_module",
+            "component::run::invalid_binary",
+            "component::run::no_version_header",
         ];
 
         for (variant, expected_code) in variants.iter().zip(expected_codes.iter()) {

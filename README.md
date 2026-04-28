@@ -69,13 +69,13 @@ Global Options:
 ### Bash (Linux / macOS)
 
 ```sh
-curl --proto '=https' --tlsv1.2 -LsSf https://github.com/yoshuawuyts/wasm-cli/releases/latest/download/install.sh | sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/yoshuawuyts/component-cli/releases/latest/download/install.sh | sh
 ```
 
 ### PowerShell (Windows)
 
 ```powershell
-irm https://github.com/yoshuawuyts/wasm-cli/releases/latest/download/install.ps1 | iex
+irm https://github.com/yoshuawuyts/component-cli/releases/latest/download/install.ps1 | iex
 ```
 
 ### Cargo (Rust)

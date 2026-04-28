@@ -19,7 +19,7 @@ use tracing::debug;
 pub enum CredentialError {
     /// An external credential helper command exited with a non-zero status.
     #[diagnostic(
-        code(wasm::credential::command_failed),
+        code(component::credential::command_failed),
         help("command exited with {status}: {stderr}")
     )]
     CommandFailed {
@@ -221,7 +221,7 @@ mod tests {
                 .code()
                 .expect("CommandFailed must have a diagnostic code")
                 .to_string(),
-            "wasm::credential::command_failed",
+            "component::credential::command_failed",
         );
         assert!(
             cmd_failed.help().is_some(),

@@ -1,4 +1,4 @@
-//! `wasm registry search` subcommand.
+//! `component registry search` subcommand.
 
 use anyhow::Result;
 use comfy_table::{ContentArrangement, Table};

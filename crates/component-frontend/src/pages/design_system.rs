@@ -549,7 +549,7 @@ fn render_landing_components() -> String {
     let cta_demo = cta_strip::render(&CtaStrip {
         kicker: "For maintainers",
         title: "Publish your component.",
-        body_html: "Add your namespace and run <code class=\"px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]\">wasm publish</code>.",
+        body_html: "Add your namespace and run <code class=\"px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]\">component publish</code>.",
         primary_label: "Publishing guide",
         primary_href: "#",
         secondary_label: "Read the spec",

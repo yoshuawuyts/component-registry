@@ -14,10 +14,10 @@ use miette::Diagnostic;
 pub(crate) enum InstallError {
     /// No `wasm.toml` manifest was found in the project.
     #[diagnostic(
-        code(wasm::install::no_manifest),
+        code(component::install::no_manifest),
         help(
             "call `component init` to create a `wasm.toml` manifest locally\n\
-             call `wasm registry fetch <component>` to fetch the package \
+             call `component registry fetch <component>` to fetch the package \
              without affecting the local manifest"
         )
     )]
@@ -25,9 +25,9 @@ pub(crate) enum InstallError {
 
     /// Dependency resolution failed: no compatible set of versions exists.
     #[diagnostic(
-        code(wasm::install::dependency_conflict),
+        code(component::install::dependency_conflict),
         help(
-            "Run `wasm registry fetch` to update the registry index.\n\
+            "Run `component registry fetch` to update the registry index.\n\
              If the conflict persists, check for incompatible dependency\n\
              version constraints in the packages you are installing."
         )
@@ -64,7 +64,7 @@ mod tests {
                 .code()
                 .expect("NoManifest must have a diagnostic code")
                 .to_string(),
-            "wasm::install::no_manifest",
+            "component::install::no_manifest",
         );
         assert!(
             no_manifest.help().is_some(),
@@ -77,7 +77,7 @@ mod tests {
                 .code()
                 .expect("DependencyConflict must have a diagnostic code")
                 .to_string(),
-            "wasm::install::dependency_conflict",
+            "component::install::dependency_conflict",
         );
         assert!(
             dep_conflict.help().is_some(),

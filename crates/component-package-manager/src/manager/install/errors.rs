@@ -11,7 +11,7 @@ use miette::Diagnostic;
 pub enum InstallError {
     /// The input could not be resolved as an OCI reference or manifest key.
     #[diagnostic(
-        code(wasm::install::invalid_input),
+        code(component::install::invalid_input),
         help(
             "'{input}' is not a recognized manifest key (e.g., wasi:logging) \
              or OCI reference (e.g., ghcr.io/owner/repo:tag)"
@@ -24,7 +24,7 @@ pub enum InstallError {
 
     /// A dependency string from the manifest could not be parsed as an OCI reference.
     #[diagnostic(
-        code(wasm::install::invalid_reference),
+        code(component::install::invalid_reference),
         help("check the dependency value in wasm.toml: {reason}")
     )]
     InvalidReference {
@@ -34,10 +34,10 @@ pub enum InstallError {
 
     /// A WIT-style package name could not be resolved via the known-package index.
     #[diagnostic(
-        code(wasm::install::unknown_package),
+        code(component::install::unknown_package),
         help(
             "'{input}' looks like a WIT package name but was not found in the \n\
-             registry index. Try running `wasm registry fetch` first to update \n\
+             registry index. Try running `component registry fetch` first to update \n\
              the index, or use a full OCI reference instead \n\
              (e.g. ghcr.io/webassembly/wasi/http:latest)"
         )
@@ -49,7 +49,7 @@ pub enum InstallError {
 
     /// A manifest dependency could not be resolved.
     #[diagnostic(
-        code(wasm::install::resolve_failure),
+        code(component::install::resolve_failure),
         help("failed to resolve dependency: {reason}")
     )]
     ResolveFailure {
@@ -103,10 +103,10 @@ mod tests {
         ];
 
         let expected_codes = [
-            "wasm::install::invalid_input",
-            "wasm::install::invalid_reference",
-            "wasm::install::unknown_package",
-            "wasm::install::resolve_failure",
+            "component::install::invalid_input",
+            "component::install::invalid_reference",
+            "component::install::unknown_package",
+            "component::install::resolve_failure",
         ];
 
         for (variant, expected_code) in variants.iter().zip(expected_codes.iter()) {

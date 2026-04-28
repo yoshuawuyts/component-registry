@@ -1,8 +1,8 @@
-//! Error types for `wasm registry` subcommands.
+//! Error types for `component registry` subcommands.
 
 use miette::Diagnostic;
 
-/// Error type for `wasm registry inspect` command failures.
+/// Error type for `component registry inspect` command failures.
 ///
 /// Each variant carries a stable [diagnostic error code][miette::Diagnostic::code]
 /// that uniquely identifies the failure.
@@ -11,7 +11,7 @@ use miette::Diagnostic;
 pub(crate) enum InspectError {
     /// The pulled OCI image has no manifest.
     #[diagnostic(
-        code(wasm::registry::inspect_no_manifest),
+        code(component::registry::inspect_no_manifest),
         help("verify the reference '{reference}' points to a valid OCI image")
     )]
     NoManifest {
@@ -21,7 +21,7 @@ pub(crate) enum InspectError {
 
     /// The OCI manifest contains no `application/wasm` layer.
     #[diagnostic(
-        code(wasm::registry::inspect_no_wasm_layer),
+        code(component::registry::inspect_no_wasm_layer),
         help("'{reference}' does not contain an `application/wasm` layer")
     )]
     NoWasmLayer {
@@ -45,7 +45,7 @@ impl std::fmt::Display for InspectError {
 
 impl std::error::Error for InspectError {}
 
-/// Error type for `wasm registry sync` command failures.
+/// Error type for `component registry sync` command failures.
 ///
 /// Each variant carries a stable [diagnostic error code][miette::Diagnostic::code]
 /// that uniquely identifies the failure.
@@ -54,7 +54,7 @@ impl std::error::Error for InspectError {}
 pub(crate) enum SyncError {
     /// The sync operation returned a degraded result.
     #[diagnostic(
-        code(wasm::registry::sync_failed),
+        code(component::registry::sync_failed),
         help("check your network connection and try again: {reason}")
     )]
     Degraded {
@@ -91,7 +91,7 @@ mod tests {
                 .code()
                 .expect("NoManifest must have a diagnostic code")
                 .to_string(),
-            "wasm::registry::inspect_no_manifest",
+            "component::registry::inspect_no_manifest",
         );
         assert!(
             no_manifest.help().is_some(),
@@ -106,7 +106,7 @@ mod tests {
                 .code()
                 .expect("NoWasmLayer must have a diagnostic code")
                 .to_string(),
-            "wasm::registry::inspect_no_wasm_layer",
+            "component::registry::inspect_no_wasm_layer",
         );
         assert!(
             no_layer.help().is_some(),
@@ -121,7 +121,7 @@ mod tests {
                 .code()
                 .expect("Degraded must have a diagnostic code")
                 .to_string(),
-            "wasm::registry::sync_failed",
+            "component::registry::sync_failed",
         );
         assert!(
             degraded.help().is_some(),

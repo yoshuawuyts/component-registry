@@ -1,4 +1,4 @@
-//! `wasm registry sync` subcommand.
+//! `component registry sync` subcommand.
 
 use anyhow::Result;
 use component_package_manager::manager::{Manager, SyncPolicy, SyncResult};
