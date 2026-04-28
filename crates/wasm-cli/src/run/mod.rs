@@ -24,6 +24,7 @@ use wasm_package_manager::manager::Manager;
 
 /// Options for the `wasm run` command.
 #[derive(clap::Parser)]
+#[allow(clippy::struct_excessive_bools)]
 pub(crate) struct Opts {
     /// Local file path, OCI reference, or manifest key (scope:component)
     /// for a Wasm Component.
@@ -81,18 +82,16 @@ impl Opts {
         // Block OCI fallthrough for inputs that look like manifest keys
         // (scope:component) but aren't installed in the local project.
         // With `--global`, fall back to the global cache instead of failing.
-        let global_bytes = if !is_local
-            && manifest_path.is_none()
-            && looks_like_manifest_key(&self.input)
-        {
-            if self.global {
-                Some(load_from_global_cache(&self.input, offline).await?)
+        let global_bytes =
+            if !is_local && manifest_path.is_none() && looks_like_manifest_key(&self.input) {
+                if self.global {
+                    Some(load_from_global_cache(&self.input, offline).await?)
+                } else {
+                    return Err(not_installed_error(&self.input).await);
+                }
             } else {
-                return Err(not_installed_error(&self.input).await);
-            }
-        } else {
-            None
-        };
+                None
+            };
 
         // Only try OCI when the input is not a local file and not a manifest key.
         let reference = if is_local || manifest_path.is_some() || global_bytes.is_some() {
@@ -351,10 +350,9 @@ fn fuzzy_resolve_from_registry(
         [] => Ok(None),
         [pkg] => {
             let reference_str = format!("{}/{}", pkg.registry, pkg.repository);
-            let reference =
-                wasm_package_manager::parse_reference(&reference_str).map_err(|e| {
-                    miette::miette!("failed to build OCI reference for '{reference_str}': {e}")
-                })?;
+            let reference = wasm_package_manager::parse_reference(&reference_str).map_err(|e| {
+                miette::miette!("failed to build OCI reference for '{reference_str}': {e}")
+            })?;
             Ok(Some(reference))
         }
         many => {
