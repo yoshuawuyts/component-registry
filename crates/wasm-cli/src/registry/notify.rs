@@ -2,7 +2,7 @@
 
 #![allow(clippy::print_stdout, clippy::print_stderr)]
 
-use anyhow::{Result, bail};
+use anyhow::{Context as _, Result, bail};
 use wasm_meta_registry_types::NotifyOutcome;
 use wasm_package_manager::Reference;
 use wasm_package_manager::manager::{Manager, SyncPolicy, install};
@@ -90,5 +90,6 @@ async fn resolve_reference(input: &str, manager: &Manager) -> Result<Reference> 
     }
 
     wasm_package_manager::parse_reference(input)
-        .map_err(|e| anyhow::anyhow!("invalid package reference '{input}': {e}"))
+        .map_err(anyhow::Error::msg)
+        .with_context(|| format!("invalid package reference '{input}'"))
 }
