@@ -2,7 +2,7 @@
 
 #![allow(clippy::print_stdout, clippy::print_stderr)]
 
-use anyhow::{Context as _, Result, bail};
+use anyhow::{Result, bail};
 use component_meta_registry_types::NotifyOutcome;
 use component_package_manager::Reference;
 use component_package_manager::manager::{Manager, SyncPolicy, install};
@@ -16,9 +16,8 @@ const DEFAULT_REGISTRY_URL: &str = Manager::DEFAULT_REGISTRY_URL;
 /// soon as possible, instead of waiting for the next periodic sync.
 #[derive(clap::Args)]
 pub(crate) struct NotifyOpts {
-    /// The newly-published package, given as either a WIT-style name
-    /// (e.g., `wasi:http@0.2.11`) or a full OCI reference
-    /// (e.g., `ghcr.io/example/component:1.2.3`).
+    /// The newly-published package, given as a WIT-style name
+    /// (e.g., `wasi:http@0.2.11`).
     package: String,
 
     /// URL of the meta-registry to notify.
@@ -41,7 +40,7 @@ impl NotifyOpts {
         let repository = reference.repository();
         let Some(tag) = reference.tag() else {
             bail!(
-                "'{}' has no version; specify one (e.g., `wasi:http@0.2.11` or `ghcr.io/example/component:1.2.3`) so the registry knows which version to fetch",
+                "'{}' has no version; specify one (e.g., `wasi:http@0.2.11`) so the registry knows which version to fetch",
                 self.package
             );
         };
@@ -70,26 +69,27 @@ impl NotifyOpts {
     }
 }
 
-/// Resolve user input to an OCI [`Reference`].
+/// Resolve a WIT-style name to an OCI [`Reference`].
 ///
-/// Accepts either a WIT-style name (`namespace:package@version`), which is
-/// looked up in the known-package index, or a full OCI reference.
+/// Only WIT-style names (`namespace:package@version`) are accepted; full OCI
+/// references are rejected. The known-package index is opportunistically
+/// refreshed before lookup.
 async fn resolve_reference(input: &str, manager: &Manager) -> Result<Reference> {
-    if install::looks_like_wit_name(input) {
-        // Refresh the known-package index so resolution can find packages
-        // that haven't been touched locally yet. Failures here are
-        // non-fatal — fall through to the local lookup.
-        let _ = manager
-            .sync_from_meta_registry(
-                Manager::DEFAULT_REGISTRY_URL,
-                Manager::DEFAULT_SYNC_INTERVAL,
-                SyncPolicy::IfStale,
-            )
-            .await;
-        return install::resolve_wit_name(input, manager);
+    if !install::looks_like_wit_name(input) {
+        bail!(
+            "'{input}' is not a WIT-style package name; expected `namespace:package@version` (e.g., `wasi:http@0.2.11`)"
+        );
     }
 
-    component_package_manager::parse_reference(input)
-        .map_err(anyhow::Error::msg)
-        .with_context(|| format!("invalid package reference '{input}'"))
+    // Refresh the known-package index so resolution can find packages
+    // that haven't been touched locally yet. Failures here are
+    // non-fatal — fall through to the local lookup.
+    let _ = manager
+        .sync_from_meta_registry(
+            Manager::DEFAULT_REGISTRY_URL,
+            Manager::DEFAULT_SYNC_INTERVAL,
+            SyncPolicy::IfStale,
+        )
+        .await;
+    install::resolve_wit_name(input, manager)
 }

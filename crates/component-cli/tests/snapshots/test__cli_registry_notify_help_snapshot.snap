@@ -7,7 +7,7 @@ Notify a meta-registry that a new version of a package is available
 Usage: component registry notify [OPTIONS] <PACKAGE>
 
 Arguments:
-  <PACKAGE>  The newly-published package, given as either a WIT-style name (e.g., `wasi:http@0.2.11`) or a full OCI reference (e.g., `ghcr.io/example/component:1.2.3`)
+  <PACKAGE>  The newly-published package, given as a WIT-style name (e.g., `wasi:http@0.2.11`)
 
 Options:
       --registry-url <REGISTRY_URL>
