@@ -1612,7 +1612,7 @@ impl Manager {
             anyhow::bail!("cannot publish in offline mode");
         }
         let plan = crate::publish::plan(manifest, manifest_dir, default_registry).await?;
-        let response = self
+        let _response = self
             .client
             .push(
                 &plan.reference,
@@ -1621,16 +1621,11 @@ impl Manager {
             )
             .await?;
 
-        // Best-effort local tag bookkeeping so `component registry tags`
-        // reflects the freshly-published artifact. The registry has the
-        // canonical state; failures here only affect local UX.
-        if let (Some(tag), digest) = (plan.reference.tag(), response.manifest_url) {
-            tracing::debug!(
-                tag,
-                digest,
-                "published artifact, would record tag locally (best-effort)"
-            );
-        }
+        // NOTE: locally recording the freshly-published tag (so
+        // `component registry tags` reflects it without a registry
+        // round-trip) is a future enhancement. For now the registry is
+        // the canonical source — the next `tags` call will refetch it.
+        tracing::debug!(reference = %plan.reference, "published artifact");
         Ok(plan)
     }
 
