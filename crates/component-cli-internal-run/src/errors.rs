@@ -32,6 +32,16 @@ pub enum RunError {
         help("ensure the file is a valid WebAssembly binary")
     )]
     NoVersionHeader,
+
+    /// The component does not export the requested function.
+    #[diagnostic(
+        code(component::run::library_export_missing),
+        help("the component does not export `{path}`; check the component's WIT")
+    )]
+    LibraryExportMissing {
+        /// The export path that was looked up (`func` or `iface#func`).
+        path: String,
+    },
 }
 
 impl std::fmt::Display for RunError {
@@ -48,6 +58,9 @@ impl std::fmt::Display for RunError {
             }
             RunError::NoVersionHeader => {
                 write!(f, "invalid Wasm binary: no version header found")
+            }
+            RunError::LibraryExportMissing { path } => {
+                write!(f, "component has no export named `{path}`")
             }
         }
     }
@@ -69,12 +82,16 @@ mod tests {
                 reason: "test".to_string(),
             }),
             Box::new(RunError::NoVersionHeader),
+            Box::new(RunError::LibraryExportMissing {
+                path: "foo".to_string(),
+            }),
         ];
 
         let expected_codes = [
             "component::run::core_module",
             "component::run::invalid_binary",
             "component::run::no_version_header",
+            "component::run::library_export_missing",
         ];
 
         for (variant, expected_code) in variants.iter().zip(expected_codes.iter()) {
