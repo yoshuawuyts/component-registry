@@ -453,7 +453,7 @@ impl Manager {
     /// Install a package from the registry with per-layer progress reporting.
     ///
     /// Like [`install`](Self::install), but sends `ProgressEvent`s via the provided
-    /// channel to enable progress bar rendering in the CLI or TUI.
+    /// channel to enable progress bar rendering in the CLI.
     ///
     /// # Errors
     ///
@@ -716,7 +716,7 @@ impl Manager {
     ///
     /// **Note:** the current implementation performs one dependency query per
     /// package (N+1). This is acceptable for the typical page sizes used by
-    /// the TUI search (~50 items) and keeps the code simple. A future
+    /// search (~50 items) and keeps the code simple. A future
     /// optimisation could batch-load all dependencies in a single query keyed
     /// by `(registry, repository)` pairs.
     pub fn list_known_packages(

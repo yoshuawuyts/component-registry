@@ -45,7 +45,6 @@ component-meta-registry-types = { workspace = true }
 wasm-metadata = { workspace = true }
 component-package-manager = { workspace = true, features = ["http-sync", "compose"] }
 component-cli-internal-run = { workspace = true }
-component-tui = { workspace = true }
 wasmparser = { workspace = true }
 wac-parser = { workspace = true }
 wac-graph = { workspace = true }

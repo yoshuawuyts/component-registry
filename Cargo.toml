@@ -11,7 +11,6 @@ members = [
     "crates/component-meta-registry-types",
     "crates/component-package-manager",
     "crates/component-detector",
-    "crates/component-tui",
     "crates/xtask",
 ]
 
@@ -84,7 +83,6 @@ component-meta-registry-types = { path = "crates/component-meta-registry-types",
 component-package-manager = { path = "crates/component-package-manager", version = "0.3.0" }
 component-cli-internal-run = { path = "crates/component-cli-internal-run", version = "0.3.0" }
 component-detector = { path = "crates/component-detector", version = "0.3.0" }
-component-tui = { path = "crates/component-tui", version = "0.3.0" }
 
 # shared dependencies
 anyhow = "1.0.100"
@@ -126,8 +124,6 @@ wasmtime = "44.0.0"
 wasmtime-wasi = "44.0.0"
 wasmtime-wasi-http = "44.0.0"
 hyper = { version = "1", features = ["http1", "server"] }
-ratatui = "0.30.0"
-crossterm = "0.29.0"
 
 # store dependencies
 cacache = { version = "13.1.0", features = [

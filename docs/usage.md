@@ -32,27 +32,10 @@ cargo add wasm
 
 `wasm` provides several command categories:
 
-- **Interactive TUI**: Launch with no arguments
 - **Package Management**: Pull, push, and list packages
 - **Local Discovery**: Detect and manage local Wasm files
 - **Inspection**: Examine Wasm component structure
 - **Self Management**: Configure and manage the tool itself
-
-## Interactive Mode
-
-Launch the interactive terminal user interface:
-
-```bash
-component
-```
-
-The TUI provides:
-- Package browsing and search
-- Interactive package details
-- Keyboard navigation
-- Visual package management
-
-**Note**: The TUI only launches when running in an interactive terminal (not when piped or redirected).
 
 ## Package Management
 
@@ -172,9 +155,9 @@ This operation:
 
 ### Exploring a Registry
 
-1. Search for packages (coming soon) or use the TUI
+1. Search for packages (coming soon)
 2. Pull interesting packages to inspect them
-3. Examine with `component inspect` or the TUI
+3. Examine with `component inspect`
 
 ### Publishing a Package
 

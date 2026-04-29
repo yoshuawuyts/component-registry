@@ -136,7 +136,7 @@ No manual `git tag` or `git push` step is needed.
 
 ## Snapshot Testing
 
-This project uses the [`insta`](https://crates.io/crates/insta) crate for snapshot testing the TUI views. Snapshot tests help catch unintentional changes in the UI, providing more confidence during refactoring and new feature development.
+This project uses the [`insta`](https://crates.io/crates/insta) crate for snapshot testing. Snapshot tests help catch unintentional changes in CLI output and rendered components, providing more confidence during refactoring and new feature development.
 
 ### Running Snapshot Tests
 
