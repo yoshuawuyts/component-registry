@@ -27,7 +27,10 @@ registry, repository, tags, dependencies, and timestamps.
 
 r[frontend.pages.package-redirect]
 Requests to `/<namespace>/<name>` (without a version) MUST redirect to
-`/<namespace>/<name>/<latest-version>`.
+`/<namespace>/<name>/<latest-version>`. The latest version is selected
+as the highest stable semver tag; if no stable tags exist, the highest
+pre-release semver tag is used as a fallback so that packages which
+only publish pre-releases remain reachable.
 
 r[frontend.pages.all]
 The `/all` page MUST display a paginated list of all known packages.
