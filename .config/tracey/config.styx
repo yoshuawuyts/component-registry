@@ -18,7 +18,6 @@ specs (
                     crates/component-cli/tests/**/*.rs
                     crates/component-detector/tests/**/*.rs
                     crates/component-frontend/tests/**/*.rs
-                    crates/component-tui/tests/**/*.rs
                     crates/**/src/**/tests.rs
                 )
             }

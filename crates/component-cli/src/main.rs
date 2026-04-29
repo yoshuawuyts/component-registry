@@ -10,8 +10,6 @@ mod run;
 mod self_;
 mod util;
 
-use std::io::IsTerminal;
-
 use clap::{ColorChoice, CommandFactory, Parser};
 use clap_verbosity_flag::Verbosity;
 use miette::{Context, IntoDiagnostic};
@@ -56,11 +54,6 @@ impl Cli {
             Some(Command::Init(opts)) => opts.run().await?,
             Some(Command::Install(opts)) => opts.run(self.offline).await?,
             Some(Command::Self_(opts)) => opts.run().await.map_err(into_miette)?,
-            None if std::io::stdin().is_terminal() => {
-                component_tui::run(self.offline)
-                    .await
-                    .map_err(into_miette)?;
-            }
             None => {
                 // Apply the parsed color choice when printing help
                 Cli::command()

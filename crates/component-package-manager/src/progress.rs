@@ -1,7 +1,7 @@
 /// Events emitted during package pull/install operations to report progress.
 ///
 /// These events are sent via a `tokio::sync::mpsc::Sender<ProgressEvent>` channel
-/// and can be consumed by CLI progress bars or TUI progress displays.
+/// and can be consumed by CLI progress bars or other progress displays.
 ///
 /// # Examples
 ///

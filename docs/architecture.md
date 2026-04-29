@@ -7,8 +7,7 @@ familiarize yourself with the codebase, you are in the right place.
 
 `component(1)` is a unified developer tool for WebAssembly. It can pull and install
 Wasm Components and WIT interfaces from OCI registries, run components via
-Wasmtime with sandboxed permissions, and manage local state through both a CLI
-and an interactive TUI.
+Wasmtime with sandboxed permissions, and manage local state through the CLI.
 
 The project is a Cargo workspace with six crates:
 
@@ -57,36 +56,9 @@ parsing and dispatches to one of the following command modules:
 | `local`      | `local/`        | Detect `.wasm` files in the current project |
 | `registry`   | `registry/`     | Manage cached packages (pull, tags, search, sync, delete, list, known, inspect) |
 | `self`       | `self_/`        | Tool configuration, completions, man pages, state, logs, clean |
-| *(none)*     | `tui/`          | Launch the interactive terminal UI when stdin is a terminal |
 
 [clap]: https://docs.rs/clap
 [wasmtime]: https://docs.rs/wasmtime
-
-### TUI
-
-The interactive UI is built with [ratatui] and lives in `crates/component-cli/src/tui/`.
-
-```
-tui/
-├── mod.rs          # Entry point, bidirectional channel setup
-├── app.rs          # App state, key handling, tab routing
-├── components/     # Reusable widgets (tab bar, etc.)
-└── views/          # One view per tab (Local, Components, Interfaces, Search, Settings, Log)
-```
-
-The TUI and the package manager communicate through two `tokio::sync::mpsc`
-channels:
-
-- **`AppEvent`** — sent from the UI thread to the async manager (e.g. Pull,
-  Delete, SearchPackages, RequestPackages).
-- **`ManagerEvent`** — sent from the manager back to the UI (e.g.
-  PackagesList, PullResult, StateInfo).
-
-The UI runs on a **blocking thread** (`spawn_blocking`) because ratatui's event
-loop is synchronous. The `Manager` runs on a `tokio::task::LocalSet` because it
-is `!Send`.
-
-[ratatui]: https://docs.rs/ratatui
 
 ### Run Command and Permissions
 
