@@ -55,6 +55,7 @@ wasmtime-wasi-http = { workspace = true }
 hyper = { workspace = true }
 thiserror = { workspace = true }
 wit2cli = { workspace = true }
+rustls = { workspace = true }
 
 [dev-dependencies]
 insta = { workspace = true }

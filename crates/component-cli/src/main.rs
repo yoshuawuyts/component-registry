@@ -142,6 +142,12 @@ fn init_tracing(
 
 #[tokio::main]
 async fn main() -> miette::Result<()> {
+    // Install the ring-based CryptoProvider so that rustls can perform
+    // HTTPS connections in all environments, including WASI 0.2.
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .ok();
+
     // Load .env file if present; variables already set in the environment
     // take precedence (system environment is not overridden).
     dotenvy::dotenv().ok();
