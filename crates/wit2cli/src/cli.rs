@@ -692,6 +692,12 @@ fn collect_typed_many(matches: &ArgMatches, id: &str, ty: &WitTy) -> Result<Vec<
             out
         }
         other => {
+            // If the user provided no values for this flag, return an empty
+            // list rather than failing — list<record> fields are optional and
+            // the component's default behaviour applies when omitted.
+            if matches.get_many::<String>(id).is_none() {
+                return Ok(vec![]);
+            }
             return Err(CliError::UnsupportedArg {
                 param: id.to_string(),
                 reason: format!(
