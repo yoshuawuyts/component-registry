@@ -6,16 +6,16 @@ repo := "asw101/component-registry"
 default:
     @just --list
 
-# Trigger a release (version auto-increments if omitted)
-release version="":
+# Trigger a release from a given branch (version auto-increments if omitted)
+release branch="main" version="":
     #!/usr/bin/env bash
     set -euo pipefail
     if [ -n "{{version}}" ]; then
-        echo "Triggering release {{version}}..."
-        gh workflow run "Release (Fork)" --ref main -R {{repo}} -f version="{{version}}"
+        echo "Triggering release {{version}} from {{branch}}..."
+        gh workflow run "Release (Fork)" --ref {{branch}} -R {{repo}} -f version="{{version}}"
     else
-        echo "Triggering release (auto-increment from latest tag)..."
-        gh workflow run "Release (Fork)" --ref main -R {{repo}}
+        echo "Triggering release (auto-increment from latest tag) from {{branch}}..."
+        gh workflow run "Release (Fork)" --ref {{branch}} -R {{repo}}
     fi
     sleep 2
     gh run list --workflow="release-fork.yml" -R {{repo}} --limit 1
