@@ -1108,12 +1108,12 @@ impl Store {
             }
             super::db_config::Backend::Postgres => {
                 // Postgres deploys must run migrations explicitly via
-                // `wasm-cli admin migrate` to avoid races between replicas.
+                // `component admin migrate` to avoid races between replicas.
                 if Migrations::has_pending(&db).await {
                     let snap = Migrations::snapshot(&db).await;
                     anyhow::bail!(
                         "database at {} has pending migrations \
-                         ({} of {} applied). Run `wasm-cli admin migrate` \
+                         ({} of {} applied). Run `component admin migrate` \
                          (or apply via sea-orm-cli) before starting.",
                         cfg.redacted_url(),
                         snap.current,
