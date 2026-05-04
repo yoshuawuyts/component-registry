@@ -1,10 +1,10 @@
-name: Release (Fork)
+name: Release
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version tag (e.g. v0.5.0). Leave blank to auto-increment minor from latest tag."
+        description: "Version (e.g. 0.5.0). Leave blank to auto-increment minor from latest tag."
         required: false
         type: string
 
@@ -25,23 +25,35 @@ jobs:
 
       - name: Determine version
         id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          if [ -n "${{ inputs.version }}" ]; then
-            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          if [ -n "$INPUT_VERSION" ]; then
+            if [[ ! "$INPUT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Invalid version input: '$INPUT_VERSION'. Expected format: X.Y.Z" >&2
+              exit 1
+            fi
+            resolved="$INPUT_VERSION"
           else
-            # Find latest vX.Y.Z tag, increment minor
-            latest=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -1)
+            # Find latest X.Y.Z tag, increment minor
+            latest=$(git tag --list '[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -1)
             if [ -z "$latest" ]; then
-              echo "version=v0.1.0" >> "$GITHUB_OUTPUT"
+              resolved="0.1.0"
             else
-              major=$(echo "$latest" | sed 's/^v//' | cut -d. -f1)
-              minor=$(echo "$latest" | sed 's/^v//' | cut -d. -f2)
-              patch=$(echo "$latest" | sed 's/^v//' | cut -d. -f3)
+              major=$(echo "$latest" | cut -d. -f1)
+              minor=$(echo "$latest" | cut -d. -f2)
               next_minor=$((minor + 1))
-              echo "version=v${major}.${next_minor}.0" >> "$GITHUB_OUTPUT"
+              resolved="${major}.${next_minor}.0"
             fi
           fi
-          echo "Resolved version: $(cat "$GITHUB_OUTPUT" | grep version | cut -d= -f2)"
+
+          if git ls-remote --tags --exit-code origin "refs/tags/${resolved}" >/dev/null 2>&1; then
+            echo "Error: tag '${resolved}' already exists on origin." >&2
+            exit 1
+          fi
+
+          echo "version=${resolved}" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: ${resolved}"
 
   build:
     needs: resolve-version
@@ -76,15 +88,39 @@ jobs:
         with:
           targets: ${{ matrix.cross && matrix.target || '' }}
 
+      - name: Set workspace version to ${{ needs.resolve-version.outputs.version }}
+        shell: python
+        env:
+          VERSION: ${{ needs.resolve-version.outputs.version }}
+        run: |
+          import os, re, pathlib
+          version = os.environ["VERSION"]
+          path = pathlib.Path("Cargo.toml")
+          text = path.read_text()
+          new_text, count = re.subn(
+              r'(\[workspace\.package\][^\[]*?\nversion\s*=\s*")[^"]*(")',
+              lambda m: m.group(1) + version + m.group(2),
+              text,
+              count=1,
+              flags=re.DOTALL,
+          )
+          if count != 1:
+              raise SystemExit("Failed to update [workspace.package] version in Cargo.toml")
+          path.write_text(new_text)
+          print(f"Set workspace version to {version}")
+
       - name: Install cross-compilation tools (aarch64-linux)
         if: matrix.target == 'aarch64-unknown-linux-gnu'
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu
+          sudo apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
 
       - name: Set cross-linker env (aarch64-linux)
         if: matrix.target == 'aarch64-unknown-linux-gnu'
-        run: echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> "$GITHUB_ENV"
+        run: |
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> "$GITHUB_ENV"
+          echo "CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc" >> "$GITHUB_ENV"
+          echo "AR_aarch64_unknown_linux_gnu=aarch64-linux-gnu-ar" >> "$GITHUB_ENV"
 
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.10
