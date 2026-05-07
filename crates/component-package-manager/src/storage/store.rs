@@ -2948,6 +2948,22 @@ mod smoke_tests {
     }
 
     #[tokio::test]
+    async fn open_at_runs_sqlite_migrations_on_disk() {
+        // Exercises the on-disk `Store::open_at` -> `open_inner` path, which
+        // is otherwise only reached via `Manager::open_at` in production
+        // code. Confirms the SQLite auto-migration arm runs to completion
+        // and produces a fully-applied migration snapshot.
+        let tmp = tempfile::tempdir().expect("create temp data dir");
+        let store = Store::open_at(tmp.path().to_path_buf())
+            .await
+            .expect("Store::open_at should succeed for sqlite default");
+        let snapshot = Migrations::snapshot(store.db()).await;
+        assert!(snapshot.total > 0);
+        assert_eq!(snapshot.current, snapshot.total);
+        assert!(tmp.path().join("db").join("metadata-v2.db3").exists());
+    }
+
+    #[tokio::test]
     async fn postgres_concurrent_open_succeeds() {
         let Ok(url) = std::env::var("COMPONENT_DATABASE_URL") else {
             return;
