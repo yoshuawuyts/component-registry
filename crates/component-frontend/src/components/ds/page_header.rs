@@ -43,7 +43,7 @@ pub(crate) fn page_header_block(
     });
     if let Some(meta) = metadata_html {
         let meta = meta.to_owned();
-        div.division(|d| d.class("mt-6 max-w-2xl").text(meta));
+        div.division(|d| d.class("mt-6").text(meta));
     }
     div.build()
 }

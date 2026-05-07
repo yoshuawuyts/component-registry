@@ -43,6 +43,7 @@ pub(crate) fn render(
         .unwrap_or("No description available.");
 
     let command = format!("component install {display_name}@{version}");
+    let run_command = format!("component run {display_name}@{version}");
 
     let copy_svg = concat!(
         r#"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">"#,
@@ -60,37 +61,41 @@ pub(crate) fn render(
     let check_svg_js: String = check_svg.chars().filter(|c| *c != '\n').collect();
 
     let copy_script = format!(
-        r"<script>(function(){{var btn=document.getElementById('copy-install-btn');var ci='{copy_svg_js}';var ch='{check_svg_js}';btn.addEventListener('click',function(){{navigator.clipboard.writeText('{command}').then(function(){{btn.innerHTML=ch;setTimeout(function(){{btn.innerHTML=ci}},2000)}})}})}})()</script>",
+        r"<script>(function(){{var ci='{copy_svg_js}';var ch='{check_svg_js}';['copy-install-btn','copy-run-btn'].forEach(function(id){{var btn=document.getElementById(id);if(!btn)return;var cmd=btn.getAttribute('data-cmd');btn.addEventListener('click',function(){{navigator.clipboard.writeText(cmd).then(function(){{btn.innerHTML=ch;setTimeout(function(){{btn.innerHTML=ci}},2000)}})}})}})}})()</script>",
     );
 
-    let install_meta = Division::builder()
-        .class("inline-flex items-center gap-2")
-        .span(|s| {
-            s.class("text-[11px] mono uppercase tracking-wider text-ink-500")
-                .text("Install")
-        })
-        .division(|cmd| {
-            cmd.class("flex")
-                .span(|s| {
-                    s.class("inline-flex items-center px-2.5 h-7 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[12.5px] text-ink-500 mono select-none")
-                        .aria_hidden(true)
-                        .text("$")
-                })
-                .code(|c| {
-                    c.class("inline-flex items-center px-2.5 h-7 border border-line bg-surface mono text-[12.5px] text-ink-900 whitespace-nowrap")
-                        .text(command.clone())
-                })
-                .button(|b| {
-                    b.type_("button")
-                        .id("copy-install-btn".to_owned())
-                        .class("inline-flex items-center justify-center w-7 h-7 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted")
-                        .aria_label("Copy install command".to_owned())
-                        .text(copy_svg)
-                })
-        })
-        .text(copy_script)
-        .build()
-        .to_string();
+    let install_panel = format!(
+        "<div>\
+            <div class=\"flex\">\
+                <span class=\"inline-flex items-center px-2.5 h-7 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[12.5px] text-ink-500 mono select-none\" aria-hidden=\"true\">$</span>\
+                <code class=\"inline-flex items-center px-2.5 h-7 flex-1 border border-line bg-surface mono text-[12.5px] text-ink-900 whitespace-nowrap\">{command}</code>\
+                <button type=\"button\" id=\"copy-install-btn\" data-cmd=\"{command}\" class=\"inline-flex items-center justify-center w-7 h-7 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted\" aria-label=\"Copy install command\">{copy_svg}</button>\
+            </div>\
+            <p class=\"mt-3 text-[12px] text-ink-500\">\
+                <a href=\"/downloads\" class=\"text-ink-700 underline decoration-line decoration-1 underline-offset-2 hover:text-ink-900\">Learn more</a> about installing the CLI.\
+            </p>\
+        </div>",
+    );
+
+    let run_panel = format!(
+        "<div>\
+            <div class=\"flex\">\
+                <span class=\"inline-flex items-center px-2.5 h-7 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[12.5px] text-ink-500 mono select-none\" aria-hidden=\"true\">$</span>\
+                <code class=\"inline-flex items-center px-2.5 h-7 flex-1 border border-line bg-surface mono text-[12.5px] text-ink-900 whitespace-nowrap\">{run_command}</code>\
+                <button type=\"button\" id=\"copy-run-btn\" data-cmd=\"{run_command}\" class=\"inline-flex items-center justify-center w-7 h-7 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted\" aria-label=\"Copy run command\">{copy_svg}</button>\
+            </div>\
+            <p class=\"mt-3 text-[12px] text-ink-500\">\
+                <a href=\"/downloads\" class=\"text-ink-700 underline decoration-line decoration-1 underline-offset-2 hover:text-ink-900\">Learn more</a> about running components.\
+            </p>\
+        </div>",
+    );
+
+    let tabs_html = crate::components::ds::tabs::panel_tabs_switchable(&[
+        ("Install", &install_panel),
+        ("Run", &run_panel),
+    ]);
+
+    let install_meta = format!("{tabs_html}{copy_script}");
     let header =
         page_header::page_header_block(&kicker, &display_name, tagline, Some(&install_meta))
             .to_string();
