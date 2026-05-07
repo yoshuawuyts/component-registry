@@ -65,11 +65,21 @@ pub(crate) fn render(
         r"<script>(function(){{var ci='{copy_svg_js}';var ch='{check_svg_js}';['copy-install-btn','copy-run-btn','copy-acp-btn'].forEach(function(id){{var btn=document.getElementById(id);if(!btn)return;var cmd=btn.getAttribute('data-cmd');btn.addEventListener('click',function(){{navigator.clipboard.writeText(cmd).then(function(){{btn.innerHTML=ch;setTimeout(function(){{btn.innerHTML=ci}},2000)}})}})}})}})()</script>",
     );
 
+    let install_intro = match pkg.kind {
+        Some(component_meta_registry_client::PackageKind::Interface) => {
+            "Add these interface types to your project:"
+        }
+        Some(component_meta_registry_client::PackageKind::Component) => {
+            "Add this component to your project:"
+        }
+        _ => "Add this package to your project:",
+    };
+
     let install_panel = format!(
         "<div>\
-            <p class=\"mb-2 text-[12px] text-ink-500\">In a terminal, run:</p>\
+            <p class=\"mb-2 text-[12px] text-ink-500\">{install_intro}</p>\
             <div class=\"flex\">\
-                <span class=\"inline-flex items-center px-2.5 h-7 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[12.5px] text-ink-500 mono select-none\" aria-hidden=\"true\">$</span>\
+                <span class=\"inline-flex items-center px-2.5 h-7 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[12.5px] text-ink-500 mono select-none\" aria-hidden=\"true\">\u{276f}</span>\
                 <code class=\"inline-flex items-center px-2.5 h-7 flex-1 border border-line bg-surface mono text-[12.5px] text-ink-900 whitespace-nowrap\">{command}</code>\
                 <button type=\"button\" id=\"copy-install-btn\" data-cmd=\"{command}\" class=\"inline-flex items-center justify-center w-7 h-7 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted\" aria-label=\"Copy install command\">{copy_svg}</button>\
             </div>\
@@ -81,9 +91,9 @@ pub(crate) fn render(
 
     let run_panel = format!(
         "<div>\
-            <p class=\"mb-2 text-[12px] text-ink-500\">In a terminal, run:</p>\
+            <p class=\"mb-2 text-[12px] text-ink-500\">Run this component without installing it:</p>\
             <div class=\"flex\">\
-                <span class=\"inline-flex items-center px-2.5 h-7 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[12.5px] text-ink-500 mono select-none\" aria-hidden=\"true\">$</span>\
+                <span class=\"inline-flex items-center px-2.5 h-7 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[12.5px] text-ink-500 mono select-none\" aria-hidden=\"true\">\u{276f}</span>\
                 <code class=\"inline-flex items-center px-2.5 h-7 flex-1 border border-line bg-surface mono text-[12.5px] text-ink-900 whitespace-nowrap\">{run_command}</code>\
                 <button type=\"button\" id=\"copy-run-btn\" data-cmd=\"{run_command}\" class=\"inline-flex items-center justify-center w-7 h-7 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted\" aria-label=\"Copy run command\">{copy_svg}</button>\
             </div>\
@@ -93,16 +103,17 @@ pub(crate) fn render(
         </div>",
     );
 
+    let acp_arg = format!("{display_name}@{version}");
     let acp_panel = format!(
         "<div>\
-            <p class=\"mb-2 text-[12px] text-ink-500\">In a prompt window, write:</p>\
-            <div class=\"flex\">\
-                <span class=\"inline-flex items-center px-2.5 h-7 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[12.5px] text-ink-500 mono select-none\" aria-hidden=\"true\">&gt;</span>\
-                <code class=\"inline-flex items-center px-2.5 h-7 flex-1 border border-line bg-surface mono text-[12.5px] text-ink-900 whitespace-nowrap\">{acp_command}</code>\
-                <button type=\"button\" id=\"copy-acp-btn\" data-cmd=\"{acp_command}\" class=\"inline-flex items-center justify-center w-7 h-7 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted\" aria-label=\"Copy ACP command\">{copy_svg}</button>\
+            <p class=\"mb-2 text-[12px] text-ink-500\">Ask your AI assistant to install it for you:</p>\
+            <div class=\"flex items-center gap-2 px-2.5 h-9 rounded-md border border-line bg-surface\">\
+                <span class=\"bar-sm bg-cat-blue text-cat-blueInk mono font-semibold\"><span class=\"mr-[2px]\">/</span>install</span>\
+                <code class=\"flex-1 mono text-[12.5px] text-ink-900 whitespace-nowrap\">{acp_arg}</code>\
+                <button type=\"button\" id=\"copy-acp-btn\" data-cmd=\"{acp_command}\" class=\"inline-flex items-center justify-center w-7 h-7 rounded-md text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted\" aria-label=\"Copy ACP command\">{copy_svg}</button>\
             </div>\
             <p class=\"mt-3 text-[12px] text-ink-500\">\
-                <a href=\"https://github.com/yoshuawuyts/playground-wasm-acp\" class=\"text-ink-700 underline decoration-line decoration-1 underline-offset-2 hover:text-ink-900\">Read more</a> about Agent Client Protocol support <span class=\"text-ink-400\">(coming soon)</span>.\
+                <a href=\"https://github.com/yoshuawuyts/playground-wasm-acp\" class=\"text-ink-700 underline decoration-line decoration-1 underline-offset-2 hover:text-ink-900\">Read more</a> about Agent Client Protocol support.\
             </p>\
         </div>",
     );

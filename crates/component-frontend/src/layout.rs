@@ -616,6 +616,7 @@ fn render_document(title: &str, body_class: &str, body_children: &str) -> String
     .swatch {{ height: 88px; border-radius: 5px; border: 1px solid var(--c-swatch-border); }}
     .mono {{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }}
     .bar {{ height: 28px; border-radius: 4px; display: inline-flex; align-items: center; padding: 0 12px; font-size: 12px; font-weight: 500; white-space: nowrap; }}
+    .bar-sm {{ height: 20px; border-radius: 3px; display: inline-flex; align-items: center; padding: 0 6px; font-size: 11px; font-weight: 500; white-space: nowrap; }}
     /* Motion preview helpers */
     .ease-curve {{ height: 56px; width: 100%; display: block; }}
     .ease-curve path.track {{ stroke: var(--c-line-soft); fill: none; stroke-width: 1; }}
