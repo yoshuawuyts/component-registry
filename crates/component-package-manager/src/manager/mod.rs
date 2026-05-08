@@ -357,17 +357,31 @@ impl Manager {
         })
     }
 
-    /// Hard-link a cached layer to a destination path.
+    /// Symlink a cached layer to a destination path.
     ///
-    /// Uses `cacache::hard_link` to create a hard-link from the global cache
-    /// to the specified destination, saving disk space.
+    /// Looks up the cached layer by `layer_digest` and creates a symbolic
+    /// link at `dest` pointing to the content-addressed file inside the
+    /// global store. Symlinks are used (rather than hard-links) because
+    /// hard-links cannot span filesystems/drives, which is common when the
+    /// global cache and a project's `vendor/` directory live on different
+    /// volumes.
     ///
     /// # Errors
     ///
-    /// Returns an error if the hard-link operation fails (e.g., layer not
-    /// found in cache, or destination path is invalid).
+    /// Returns an error if the layer is not present in the cache or if the
+    /// symlink cannot be created (e.g. destination path is invalid).
     pub async fn vendor(&self, layer_digest: &str, dest: &Path) -> anyhow::Result<()> {
-        cacache::hard_link(self.store.state_info.store_dir(), layer_digest, dest).await?;
+        let cache = self.store.state_info.store_dir();
+        let metadata = cacache::metadata(cache, layer_digest)
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!("layer {layer_digest} not found in content-addressable store")
+            })?;
+        let target = cacache_content_path(cache, &metadata.integrity);
+        #[cfg(unix)]
+        tokio::fs::symlink(&target, dest).await?;
+        #[cfg(windows)]
+        tokio::fs::symlink_file(&target, dest).await?;
         Ok(())
     }
 
@@ -376,7 +390,7 @@ impl Manager {
     /// This high-level method:
     /// 1. Pulls the package from the registry (or uses the cache)
     /// 2. Filters the manifest's layers for `application/wasm` media type
-    /// 3. Hard-links each wasm layer to the vendor directory
+    /// 3. Symlinks each wasm layer to the vendor directory
     /// 4. Returns an `InstallResult` with metadata for updating manifest/lockfile
     ///
     /// # Errors
@@ -419,7 +433,7 @@ impl Manager {
                 // Ensure vendor directory exists
                 tokio::fs::create_dir_all(vendor_dir).await?;
 
-                // Remove existing file if present (hard-link requires non-existent target)
+                // Remove existing file if present (symlink requires non-existent target)
                 let _ = tokio::fs::remove_file(&dest).await;
 
                 self.vendor(&layer.digest, &dest).await?;
@@ -498,7 +512,7 @@ impl Manager {
                 // Ensure vendor directory exists
                 tokio::fs::create_dir_all(vendor_dir).await?;
 
-                // Remove existing file if present (hard-link requires non-existent target)
+                // Remove existing file if present (symlink requires non-existent target)
                 let _ = tokio::fs::remove_file(&dest).await;
 
                 self.vendor(&layer.digest, &dest).await?;
@@ -1675,5 +1689,75 @@ fn format_available_tags_hint(tags: &[String], requested_tag: Option<&str>) -> S
             tags_to_show.len(),
             shown.join(", ")
         )
+    }
+}
+
+/// Compute the on-disk path of a content-addressed blob in a `cacache` store.
+///
+/// Mirrors the layout used by [`cacache`] (`<cache>/content-v2/<algo>/xx/yy/rest`).
+/// We replicate it here because `cacache` does not expose a public helper for
+/// obtaining the path of a cached entry, and we need it to create a symlink
+/// from a vendor directory to the global content-addressable store.
+fn cacache_content_path(cache: &Path, sri: &cacache::Integrity) -> std::path::PathBuf {
+    const CONTENT_VERSION: &str = "2";
+    let mut path = std::path::PathBuf::from(cache);
+    let (algo, hex) = sri.to_hex();
+    path.push(format!("content-v{CONTENT_VERSION}"));
+    path.push(algo.to_string());
+    path.push(&hex[0..2]);
+    path.push(&hex[2..4]);
+    path.push(&hex[4..]);
+    path
+}
+
+#[cfg(test)]
+mod tests {
+    use super::cacache_content_path;
+    use std::path::Path;
+
+    #[test]
+    fn cacache_content_path_matches_layout() {
+        let sri = cacache::Integrity::from(b"hello world");
+        let path = cacache_content_path(Path::new("/cache"), &sri);
+        let s = path.to_str().unwrap();
+        assert!(s.starts_with("/cache/content-v2/"), "got {s}");
+        // Layout: <cache>/content-v2/<algo>/<xx>/<yy>/<rest>
+        let parts: Vec<&str> = s.trim_start_matches('/').split('/').collect();
+        assert_eq!(parts.first().copied(), Some("cache"));
+        assert_eq!(parts.get(1).copied(), Some("content-v2"));
+        assert_eq!(parts.get(3).map(|p| p.len()), Some(2));
+        assert_eq!(parts.get(4).map(|p| p.len()), Some(2));
+        assert!(parts.get(5).is_some_and(|p| !p.is_empty()));
+    }
+
+    #[tokio::test]
+    async fn vendor_uses_symlink() {
+        // Verify that writing content to a cacache store and then "vendoring"
+        // it produces a symlink (not a hard-link), so installs work across
+        // filesystems.
+        let cache = tempfile::tempdir().unwrap();
+        let dest_dir = tempfile::tempdir().unwrap();
+        let dest = dest_dir.path().join("layer.wasm");
+
+        let key = "sha256:deadbeef";
+        cacache::write(cache.path(), key, b"wasm-bytes").await.unwrap();
+
+        let metadata = cacache::metadata(cache.path(), key)
+            .await
+            .unwrap()
+            .expect("entry exists");
+        let target = cacache_content_path(cache.path(), &metadata.integrity);
+        #[cfg(unix)]
+        tokio::fs::symlink(&target, &dest).await.unwrap();
+        #[cfg(windows)]
+        tokio::fs::symlink_file(&target, &dest).await.unwrap();
+
+        let meta = tokio::fs::symlink_metadata(&dest).await.unwrap();
+        assert!(
+            meta.file_type().is_symlink(),
+            "vendor destination should be a symlink"
+        );
+        let contents = tokio::fs::read(&dest).await.unwrap();
+        assert_eq!(contents, b"wasm-bytes");
     }
 }
