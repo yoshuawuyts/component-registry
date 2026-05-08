@@ -77,7 +77,7 @@ pub(crate) fn panel_tabs_switchable(items: &[(&str, &str)]) -> String {
         };
         let _ = write!(
             tabs_html,
-            r#"<span class="{tab_class}"{style} role="tab" tabindex="0" data-ptabs-group="{group}" data-ptabs-target="{i}"><span class="dot"></span>{label}</span>"#,
+            r#"<span class="{tab_class}"{style} tabindex="0" data-ptabs-group="{group}" data-ptabs-target="{i}"><span class="dot"></span>{label}</span>"#,
         );
         let hidden = if active { "" } else { " hidden" };
         let _ = write!(
