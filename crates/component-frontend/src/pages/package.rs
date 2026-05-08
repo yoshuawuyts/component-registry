@@ -128,9 +128,9 @@ pub(crate) fn render(
         pkg.kind,
         Some(component_meta_registry_client::PackageKind::Component)
     ) {
-        tab_panels.push(("Run", &run_panel));
+        tab_panels.push(("CLI", &run_panel));
+        tab_panels.push(("ACP", &acp_panel));
     }
-    tab_panels.push(("ACP", &acp_panel));
 
     let tabs_html = crate::components::ds::tabs::panel_tabs_switchable(&tab_panels);
 
