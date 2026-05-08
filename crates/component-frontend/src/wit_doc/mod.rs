@@ -284,6 +284,36 @@ interface api {
     }
 
     #[test]
+    fn async_resource_functions() {
+        let wit = r#"
+package test:asyncresource@1.0.0;
+
+interface api {
+    resource worker {
+        /// Sync method.
+        run: func() -> u32;
+        /// Async method.
+        fetch: async func() -> u32;
+        /// Async static.
+        create: static async func() -> worker;
+    }
+}
+"#;
+        let doc = parse_wit_doc(wit, "/test/asyncresource/1.0.0", &empty_deps()).unwrap();
+        let iface = &doc.interfaces[0];
+        let run = iface.functions.iter().find(|f| f.name == "run").unwrap();
+        let fetch = iface.functions.iter().find(|f| f.name == "fetch").unwrap();
+        let create = iface
+            .functions
+            .iter()
+            .find(|f| f.name == "create")
+            .unwrap();
+        assert!(!run.is_async);
+        assert!(fetch.is_async);
+        assert!(create.is_async);
+    }
+
+    #[test]
     fn cross_interface_type_ref() {
         let wit = r#"
 package test:cross@1.0.0;
