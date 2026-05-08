@@ -55,6 +55,7 @@ pub(crate) fn panel_tabs(items: &[(&str, bool)], body_html: &str) -> Division {
 /// active by default.
 #[allow(dead_code)]
 pub(crate) fn panel_tabs_switchable(items: &[(&str, &str)]) -> String {
+    use std::fmt::Write as _;
     use std::sync::atomic::{AtomicU64, Ordering};
     static COUNTER: AtomicU64 = AtomicU64::new(0);
     let id = COUNTER.fetch_add(1, Ordering::Relaxed);
@@ -74,13 +75,15 @@ pub(crate) fn panel_tabs_switchable(items: &[(&str, &str)]) -> String {
         } else {
             ""
         };
-        tabs_html.push_str(&format!(
+        let _ = write!(
+            tabs_html,
             r#"<span class="{tab_class}"{style} role="tab" tabindex="0" data-ptabs-group="{group}" data-ptabs-target="{i}"><span class="dot"></span>{label}</span>"#,
-        ));
+        );
         let hidden = if active { "" } else { " hidden" };
-        panels_html.push_str(&format!(
+        let _ = write!(
+            panels_html,
             r#"<div data-ptabs-group="{group}" data-ptabs-panel="{i}"{hidden}>{body}</div>"#,
-        ));
+        );
     }
     tabs_html.push_str("</div>");
 
