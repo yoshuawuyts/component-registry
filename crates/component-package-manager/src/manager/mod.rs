@@ -366,11 +366,20 @@ impl Manager {
     /// # Errors
     ///
     /// Returns an error if the layer is not present in the cache, if the
-    /// filesystem does not support reflinks, or if the destination path is
-    /// invalid.
+    /// destination and the cache are on different filesystems, if the
+    /// filesystem does not support reflinks (known-working: APFS, XFS, btrfs,
+    /// ReFS/Windows DevDrive), or if the destination path is invalid.
     pub async fn vendor(&self, layer_digest: &str, dest: &Path) -> anyhow::Result<()> {
+        use anyhow::Context as _;
         let cache = self.store.state_info.store_dir();
-        cacache::reflink(cache, layer_digest, dest).await?;
+        cacache::reflink(cache, layer_digest, dest)
+            .await
+            .with_context(|| {
+                format!(
+                    "failed to reflink layer {layer_digest} to {}",
+                    dest.display()
+                )
+            })?;
         Ok(())
     }
 
