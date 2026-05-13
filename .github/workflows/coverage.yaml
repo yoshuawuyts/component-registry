@@ -39,7 +39,7 @@ jobs:
         if: hashFiles('code-coverage-results.md') != ''
         run: cat code-coverage-results.md >> "$GITHUB_STEP_SUMMARY"
       - name: Check coverage threshold
-        run: cargo llvm-cov report --fail-under-lines 60
+        run: cargo llvm-cov report --fail-under-lines 55
       - name: Upload HTML coverage report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

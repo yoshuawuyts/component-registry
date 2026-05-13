@@ -1,5 +1,6 @@
 ---
 source: crates/component-cli/tests/test.rs
+assertion_line: 88
 expression: output
 ---
 Unified WebAssembly developer tools
