@@ -273,7 +273,11 @@ interface api {
 "#;
         let doc = parse_wit_doc(wit, "/test/asyncfns/1.0.0", &empty_deps()).unwrap();
         let iface = &doc.interfaces[0];
-        let sync_fn = iface.functions.iter().find(|f| f.name == "sync-fn").unwrap();
+        let sync_fn = iface
+            .functions
+            .iter()
+            .find(|f| f.name == "sync-fn")
+            .unwrap();
         let async_fn = iface
             .functions
             .iter()
