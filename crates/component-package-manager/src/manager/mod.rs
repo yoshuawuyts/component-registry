@@ -20,7 +20,7 @@ use component_meta_registry_types::PackageKind;
 pub use errors::ManagerError;
 pub use logic::{
     derive_component_name, filter_tag_suggestions, pick_latest_stable_tag,
-    sanitize_to_wit_identifier, should_sync, vendor_filename,
+    sanitize_to_wit_identifier, should_sync, vendor_filename, vendor_filename_from_reference,
 };
 pub use models::{InstallResult, PullResult, SyncPolicy, SyncResult};
 
@@ -420,17 +420,27 @@ impl Manager {
             .and_then(|m| m.annotations.as_ref())
             .and_then(|a| a.get("org.opencontainers.image.title").cloned());
 
-        // Pre-compute vendor filename from the OCI reference and image digest.
-        let digest_for_name = pull_result.digest.as_deref().unwrap_or("unknown");
-        let filename = vendor_filename(
-            reference.registry(),
-            reference.repository(),
-            reference.tag(),
-            digest_for_name,
-        );
-
         if let Some(ref manifest) = pull_result.manifest {
-            for layer in filter_wasm_layers(&manifest.layers) {
+            let wasm_layers = filter_wasm_layers(&manifest.layers);
+
+            // Inspect cached wasm layers up-front to learn the WIT package
+            // name; this lets us name the vendored artifact after
+            // `namespace:package@version` rather than the OCI reference.
+            for layer in &wasm_layers {
+                if package_name.is_none() {
+                    self.try_extract_layer_metadata(
+                        &layer.digest,
+                        &mut package_name,
+                        &mut is_component,
+                        &mut dependencies,
+                    )
+                    .await;
+                }
+            }
+
+            let filename = pick_vendor_filename(package_name.as_deref(), &reference);
+
+            for layer in &wasm_layers {
                 let dest = vendor_dir.join(&filename);
 
                 // Ensure vendor directory exists
@@ -441,16 +451,6 @@ impl Manager {
 
                 self.vendor(&layer.digest, &dest).await?;
                 vendored_files.push(dest);
-
-                if package_name.is_none() {
-                    self.try_extract_layer_metadata(
-                        &layer.digest,
-                        &mut package_name,
-                        &mut is_component,
-                        &mut dependencies,
-                    )
-                    .await;
-                }
             }
         }
 
@@ -499,17 +499,27 @@ impl Manager {
             .and_then(|m| m.annotations.as_ref())
             .and_then(|a| a.get("org.opencontainers.image.title").cloned());
 
-        // Pre-compute vendor filename from the OCI reference and image digest.
-        let digest_for_name = pull_result.digest.as_deref().unwrap_or("unknown");
-        let filename = vendor_filename(
-            reference.registry(),
-            reference.repository(),
-            reference.tag(),
-            digest_for_name,
-        );
-
         if let Some(ref manifest) = pull_result.manifest {
-            for layer in filter_wasm_layers(&manifest.layers) {
+            let wasm_layers = filter_wasm_layers(&manifest.layers);
+
+            // Inspect cached wasm layers up-front to learn the WIT package
+            // name; this lets us name the vendored artifact after
+            // `namespace:package@version` rather than the OCI reference.
+            for layer in &wasm_layers {
+                if package_name.is_none() {
+                    self.try_extract_layer_metadata(
+                        &layer.digest,
+                        &mut package_name,
+                        &mut is_component,
+                        &mut dependencies,
+                    )
+                    .await;
+                }
+            }
+
+            let filename = pick_vendor_filename(package_name.as_deref(), &reference);
+
+            for layer in &wasm_layers {
                 let dest = vendor_dir.join(&filename);
 
                 // Ensure vendor directory exists
@@ -520,16 +530,6 @@ impl Manager {
 
                 self.vendor(&layer.digest, &dest).await?;
                 vendored_files.push(dest);
-
-                if package_name.is_none() {
-                    self.try_extract_layer_metadata(
-                        &layer.digest,
-                        &mut package_name,
-                        &mut is_component,
-                        &mut dependencies,
-                    )
-                    .await;
-                }
             }
         }
 
@@ -1710,6 +1710,17 @@ impl Manager {
         // the canonical source — the next `tags` call will refetch it.
         tracing::debug!(reference = %plan.reference, "published artifact");
         Ok(plan)
+    }
+}
+
+/// Choose the vendor filename for a wasm artifact, preferring the
+/// `namespace:package@version` derived from the embedded WIT metadata
+/// and falling back to a name derived from the OCI reference when no
+/// WIT package name is available.
+fn pick_vendor_filename(package_name: Option<&str>, reference: &Reference) -> String {
+    match package_name {
+        Some(name) => vendor_filename(name, reference.tag()),
+        None => vendor_filename_from_reference(reference.repository(), reference.tag()),
     }
 }
 
