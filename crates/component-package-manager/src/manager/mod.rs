@@ -1052,8 +1052,32 @@ impl Manager {
             .as_ref()
             .and_then(|a| a.get("org.opencontainers.image.description").cloned());
 
-        // Store every discovered tag.
-        for tag in &tags {
+        // Filter to tags that parse as STRICT semver (e.g. `1.2.3`). Tags
+        // like `latest`, `vX.Y.Z`, `nightly`, or `sha256-...` are excluded
+        // here: they cannot be resolved by the version solver and cause
+        // garbled rendering in the frontend. If no tags are valid, skip
+        // indexing this package entirely so it does not pollute search
+        // results.
+        let valid_tags: Vec<&String> = tags
+            .iter()
+            .filter(|t| semver::Version::parse(t).is_ok())
+            .collect();
+        if valid_tags.is_empty() {
+            tracing::debug!(
+                registry = %reference.registry(),
+                repository = %reference.repository(),
+                discovered = tags.len(),
+                "Skipping package — no tags parse as strict semver"
+            );
+            return Err(ManagerError::NoTagsFound {
+                registry: reference.registry().to_string(),
+                repository: reference.repository().to_string(),
+            }
+            .into());
+        }
+
+        // Store every valid tag.
+        for tag in &valid_tags {
             self.store
                 .add_known_package_with_params(&KnownPackageParams {
                     registry: reference.registry(),
