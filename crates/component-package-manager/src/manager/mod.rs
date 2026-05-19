@@ -440,9 +440,7 @@ impl Manager {
 
             if !wasm_layers.is_empty() {
                 let name = package_name.as_deref().ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "could not determine WIT package name from `{reference}`"
-                    )
+                    anyhow::anyhow!("could not determine WIT package name from `{reference}`")
                 })?;
                 let filename = vendor_filename(name, reference.tag());
 
@@ -526,9 +524,7 @@ impl Manager {
 
             if !wasm_layers.is_empty() {
                 let name = package_name.as_deref().ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "could not determine WIT package name from `{reference}`"
-                    )
+                    anyhow::anyhow!("could not determine WIT package name from `{reference}`")
                 })?;
                 let filename = vendor_filename(name, reference.tag());
 
