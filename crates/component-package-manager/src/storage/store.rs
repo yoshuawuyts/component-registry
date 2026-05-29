@@ -2908,6 +2908,30 @@ mod smoke_tests {
             .add_known_package("ghcr.io", "user/repo", None, Some("hello"))
             .await
             .unwrap();
+        // list_known_packages filters out packages with no semver tags, so
+        // insert a manifest + tag to mimic a real ingested package.
+        let repo_id =
+            upsert_oci_repository_full(&store.db, "ghcr.io", "user/repo", None, None, None)
+                .await
+                .unwrap();
+        let digest = "sha256:deadbeef";
+        upsert_oci_manifest(
+            &store.db,
+            repo_id,
+            digest,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            &HashMap::new(),
+        )
+        .await
+        .unwrap();
+        upsert_oci_tag(&store.db, repo_id, "1.0.0", digest)
+            .await
+            .unwrap();
         let pkgs = store.list_known_packages(0, 10).await.unwrap();
         assert_eq!(pkgs.len(), 1);
         assert_eq!(pkgs[0].registry, "ghcr.io");
