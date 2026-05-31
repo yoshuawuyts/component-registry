@@ -69,8 +69,18 @@ jobs:
         env:
           MESSAGE: ${{ steps.process.outputs.message }}
         run: |
+          set -euo pipefail
+          BRANCH="registry-entry/issue-${ISSUE}"
+          PR_URL="$(gh pr list --repo "$REPO" --head "$BRANCH" --state open \
+            --json url --jq '.[0].url // empty')"
+          if [ -n "$PR_URL" ]; then
+            gh pr merge "$PR_URL" --disable-auto || true
+            gh pr edit "$PR_URL" --remove-label auto-merge || true
+            gh pr ready "$PR_URL" --undo || true
+          fi
+
           .github/scripts/upsert-comment.sh \
-            "$(printf 'Could not process this registry request:\n\n%s' "$MESSAGE")"
+            "$(printf 'Could not process this registry request:\n\n%s\n\nIf a pull request was already open for this issue, it has been paused (converted to draft, auto-merge cancelled) until the request is fixed.' "$MESSAGE")"
 
       - name: Open or update pull request
         if: steps.process.outputs.ok == 'true'
@@ -107,6 +117,8 @@ jobs:
           echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
 
           # Reset any stale state so a reused PR reflects the current request.
+          # `--ready` clears a draft set by a previous invalid submission.
+          gh pr ready "$PR_URL" || true
           gh pr edit "$PR_URL" --remove-label auto-merge || true
           gh pr edit "$PR_URL" --remove-label needs-namespace-review || true
           gh pr merge "$PR_URL" --disable-auto || true

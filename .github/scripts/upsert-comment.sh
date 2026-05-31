@@ -11,6 +11,7 @@ BODY="${MARKER}
 $1"
 
 CID="$(gh api "repos/${REPO}/issues/${ISSUE}/comments" \
+  --paginate \
   --jq ".[] | select(.body | startswith(\"${MARKER}\")) | .id" | head -n1)"
 
 if [ -n "$CID" ]; then

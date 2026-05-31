@@ -132,9 +132,9 @@ function main() {
   const fields = parseForm(body);
 
   const kind = normalize(fields["kind"]).toLowerCase();
-  const namespace = normalize(fields["namespace"]);
-  const pkg = normalize(fields["package name"]);
-  const repository = normalize(fields["repository"]);
+  const namespace = normalize(fields["namespace"]).toLowerCase();
+  const pkg = normalize(fields["package name"]).toLowerCase();
+  const repository = normalize(fields["repository"]).toLowerCase();
   const registry = normalize(fields["oci registry (new namespaces only)"]);
 
   if (kind !== "component" && kind !== "interface") {
