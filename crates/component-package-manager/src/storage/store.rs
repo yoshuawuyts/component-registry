@@ -703,10 +703,7 @@ impl Store {
                         && !docs.is_empty()
                     {
                         let key = format!("{}/{iface_name}/{type_name}", dep.package);
-                        let first = docs
-                            .split_once("\n\n")
-                            .map_or_else(|| docs.trim().to_owned(), |(f, _)| f.trim().to_owned());
-                        result.insert(key, first);
+                        result.insert(key, first_doc_sentence(docs));
                     }
                 }
             }
