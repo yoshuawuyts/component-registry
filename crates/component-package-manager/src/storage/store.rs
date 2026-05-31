@@ -200,18 +200,6 @@ async fn run_postgres_migrations_with_advisory_lock(
     Ok(())
 }
 
-/// Try to parse a tag as semver, accepting an optional leading `v` prefix.
-fn parse_tag_as_semver(tag: &str) -> Option<semver::Version> {
-    if let Ok(v) = semver::Version::parse(tag) {
-        return Some(v);
-    }
-    let stripped = tag.strip_prefix('v')?;
-    if !stripped.starts_with(|c: char| c.is_ascii_digit()) {
-        return None;
-    }
-    semver::Version::parse(stripped).ok()
-}
-
 /// Parse the OCI repository's `kind` text column into a [`PackageKind`].
 fn parse_kind(s: Option<&str>) -> Option<component_meta_registry_types::PackageKind> {
     use component_meta_registry_types::PackageKind;
@@ -247,7 +235,9 @@ async fn known_package_from_repo(
 }
 
 /// Fetch a repository's tags from `oci_tag`, sorted by semver descending.
-/// Non-semver tags are filtered out.
+/// Only tags that parse as semver are returned (accepting an optional leading
+/// `v` prefix, e.g. `1.2.3` or `v1.2.3`); tags like `latest` or `sha256-...`
+/// are excluded.
 async fn fetch_repo_tags(db: &DatabaseConnection, repo_id: i64) -> anyhow::Result<Vec<String>> {
     let rows = oci_tag::Entity::find()
         .filter(oci_tag::Column::OciRepositoryId.eq(repo_id))
@@ -255,7 +245,7 @@ async fn fetch_repo_tags(db: &DatabaseConnection, repo_id: i64) -> anyhow::Resul
         .await?;
     let mut versioned: Vec<(semver::Version, String)> = rows
         .into_iter()
-        .filter_map(|t| parse_tag_as_semver(&t.tag).map(|v| (v, t.tag)))
+        .filter_map(|t| crate::manager::parse_tag_as_semver(&t.tag).map(|v| (v, t.tag)))
         .collect();
     versioned.sort_by(|(a, _), (b, _)| b.cmp(a));
     Ok(versioned.into_iter().map(|(_, t)| t).collect())
@@ -754,7 +744,10 @@ impl Store {
             .await?;
         let mut out = Vec::with_capacity(rows.len());
         for r in rows {
-            out.push(known_package_from_repo(&self.db, r).await?);
+            let pkg = known_package_from_repo(&self.db, r).await?;
+            if !pkg.tags.is_empty() {
+                out.push(pkg);
+            }
         }
         Ok(out)
     }
@@ -2632,7 +2625,10 @@ impl Store {
             .await?;
         let mut out = Vec::with_capacity(rows.len());
         for r in rows {
-            out.push(known_package_from_repo(&self.db, r).await?);
+            let pkg = known_package_from_repo(&self.db, r).await?;
+            if !pkg.tags.is_empty() {
+                out.push(pkg);
+            }
         }
         Ok(out)
     }
@@ -2671,7 +2667,10 @@ impl Store {
             .await?;
         let mut out = Vec::with_capacity(rows.len());
         for r in rows {
-            out.push(known_package_from_repo(&self.db, r).await?);
+            let pkg = known_package_from_repo(&self.db, r).await?;
+            if !pkg.tags.is_empty() {
+                out.push(pkg);
+            }
         }
         Ok(out)
     }
@@ -2689,7 +2688,10 @@ impl Store {
             .await?;
         let mut out = Vec::with_capacity(rows.len());
         for r in rows {
-            out.push(known_package_from_repo(&self.db, r).await?);
+            let pkg = known_package_from_repo(&self.db, r).await?;
+            if !pkg.tags.is_empty() {
+                out.push(pkg);
+            }
         }
         Ok(out)
     }
@@ -3668,6 +3670,30 @@ mod smoke_tests {
         assert!(store.list_known_packages(0, 10).await.unwrap().is_empty());
         store
             .add_known_package("ghcr.io", "user/repo", None, Some("hello"))
+            .await
+            .unwrap();
+        // list_known_packages filters out packages with no semver tags, so
+        // insert a manifest + tag to mimic a real ingested package.
+        let repo_id =
+            upsert_oci_repository_full(&store.db, "ghcr.io", "user/repo", None, None, None)
+                .await
+                .unwrap();
+        let digest = "sha256:deadbeef";
+        upsert_oci_manifest(
+            &store.db,
+            repo_id,
+            digest,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            &HashMap::new(),
+        )
+        .await
+        .unwrap();
+        upsert_oci_tag(&store.db, repo_id, "1.0.0", digest)
             .await
             .unwrap();
         let pkgs = store.list_known_packages(0, 10).await.unwrap();

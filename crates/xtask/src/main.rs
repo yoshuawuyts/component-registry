@@ -7,6 +7,7 @@
 // the primary way it communicates progress.
 #![allow(clippy::print_stdout, clippy::print_stderr)]
 
+mod cleanup;
 mod fixtures;
 mod readme;
 mod serve;
@@ -63,6 +64,13 @@ enum Xtask {
     Fixtures {
         #[command(subcommand)]
         command: FixturesCommand,
+    },
+    /// One-off: purge `oci_tag` rows whose tag isn't strict semver, and
+    /// drop orphan repositories left behind.
+    CleanupBadTags {
+        /// List what would be deleted without modifying the database.
+        #[arg(long)]
+        dry_run: bool,
     },
 }
 
@@ -146,6 +154,7 @@ fn main() -> Result<()> {
             FixturesCommand::Rebuild => fixtures::rebuild()?,
             FixturesCommand::Check => fixtures::check()?,
         },
+        Xtask::CleanupBadTags { dry_run } => cleanup::run(dry_run)?,
     }
 
     Ok(())
