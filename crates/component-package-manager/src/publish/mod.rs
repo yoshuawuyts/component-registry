@@ -234,6 +234,7 @@ mod tests {
             documentation: Some("https://docs.example.com".into()),
             license: Some("Apache-2.0".into()),
             authors: vec!["Yosh <yosh@example.com>".into()],
+            registry_repository: None,
         }
     }
 

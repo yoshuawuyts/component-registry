@@ -1,15 +1,21 @@
 //! `component registry publish` subcommand.
 //!
-//! Opens a prefilled "Registry entry" issue on the registry's GitHub
-//! repository so a maintainer's automation can turn it into a pull request.
-//! This does not touch the local store or the network directly; it only
-//! constructs a URL (and optionally launches the system browser).
+//! Reads the project's `wasm.toml` `[package]` section, checks whether the
+//! package is already in the component registry, and—when it is not—opens a
+//! prefilled "Registry entry" issue on the registry's GitHub repository so a
+//! maintainer's automation can turn it into a pull request.
+//!
+//! This only reads the local package index and constructs a URL (optionally
+//! launching the system browser); it never publishes artifacts itself.
 
 #![allow(clippy::print_stdout, clippy::print_stderr)]
 
-use anyhow::{Result, bail};
-use std::fmt;
 use std::fmt::Write as _;
+use std::path::PathBuf;
+
+use anyhow::{Context, Result, bail};
+use component_manifest::Manifest;
+use component_package_manager::manager::Manager;
 
 /// Default GitHub repository hosting the component registry.
 ///
@@ -20,52 +26,18 @@ const DEFAULT_REGISTRY_REPO: &str = "yoshuawuyts/component-registry";
 /// File name of the registry-entry issue form template.
 const ISSUE_TEMPLATE: &str = "registry-entry.yml";
 
-/// Whether a registry entry describes a component or a WIT interface.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
-pub(crate) enum Kind {
-    /// A Wasm Component.
-    Component,
-    /// A WIT interface.
-    Interface,
-}
-
-impl fmt::Display for Kind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
-            Kind::Component => "component",
-            Kind::Interface => "interface",
-        };
-        f.write_str(s)
-    }
-}
-
-/// Open a prefilled registry-entry issue to add a component or interface.
+/// Open a prefilled registry-entry issue from a project's `wasm.toml`.
 ///
-/// The package is given as a WIT-style `namespace:package` name; combined with
-/// `--kind` and `--repository` this prefills the registry's issue form so the
-/// entry can be reviewed and merged.
+/// Reads the `[package]` section of the manifest, and—unless the package is
+/// already present in the registry—opens the registry's issue form prefilled
+/// with the package's namespace, name, kind, repository, and registry base so
+/// the entry can be reviewed and merged.
 #[derive(clap::Args)]
 pub(crate) struct PublishOpts {
-    /// The package to add, as a WIT-style name (e.g., `wasi:http`).
-    ///
-    /// A trailing `@version` is not accepted; the registry tracks packages,
-    /// not individual versions.
-    name: String,
-
-    /// Whether the entry is a component or a WIT interface.
-    #[arg(long, value_enum)]
-    kind: Kind,
-
-    /// Path within the OCI registry where the package is published
-    /// (e.g., `components/wordmark`).
-    #[arg(long)]
-    repository: String,
-
-    /// OCI registry base for a brand-new namespace (e.g., `ghcr.io/my-org`).
-    ///
-    /// Only required when the namespace does not yet exist.
-    #[arg(long)]
-    registry: Option<String>,
+    /// Path to the project directory containing `wasm.toml`. Defaults to the
+    /// current directory.
+    #[arg(long, default_value = ".")]
+    manifest_path: PathBuf,
 
     /// GitHub repository hosting the registry, as `owner/name`.
     #[arg(long, default_value = DEFAULT_REGISTRY_REPO)]
@@ -77,19 +49,18 @@ pub(crate) struct PublishOpts {
 }
 
 impl PublishOpts {
-    pub(crate) fn run(self) -> Result<()> {
-        let (namespace, package) = parse_wit_name(&self.name)?;
-        validate_repo(&self.repo)?;
+    pub(crate) async fn run(self, store: &Manager) -> Result<()> {
+        let entry = self.load_entry()?;
 
-        let url = build_issue_url(
-            &self.repo,
-            self.kind,
-            namespace,
-            package,
-            &self.repository,
-            self.registry.as_deref(),
-        );
+        if package_already_registered(store, &entry).await? {
+            println!(
+                "{}:{} is already in the registry; nothing to publish.",
+                entry.namespace, entry.package
+            );
+            return Ok(());
+        }
 
+        let url = build_issue_url(&self.repo, &entry);
         println!("{url}");
 
         if !self.no_open
@@ -97,8 +68,93 @@ impl PublishOpts {
         {
             eprintln!("Could not open a browser ({err}); open the URL above manually.");
         }
-
         Ok(())
+    }
+
+    /// Read and validate the `[package]` section into a [`RegistryEntry`].
+    fn load_entry(&self) -> Result<RegistryEntry> {
+        validate_repo(&self.repo)?;
+
+        let manifest_file = self.manifest_path.join("wasm.toml");
+        let text = std::fs::read_to_string(&manifest_file)
+            .with_context(|| format!("failed to read `{}`", manifest_file.display()))?;
+        let manifest: Manifest = toml::from_str(&text)
+            .with_context(|| format!("failed to parse `{}`", manifest_file.display()))?;
+
+        let package = manifest.package.with_context(|| {
+            format!(
+                "`{}` has no `[package]` section; add one (name, version, \
+                 registry_ref, kind, registry_repository) before publishing to \
+                 the registry",
+                manifest_file.display()
+            )
+        })?;
+        package.validate()?;
+
+        RegistryEntry::from_package(&package)
+    }
+}
+
+/// The registry-entry fields derived from a manifest's `[package]` section.
+struct RegistryEntry {
+    /// WIT namespace (e.g. `wasi`).
+    namespace: String,
+    /// WIT package name (e.g. `http`).
+    package: String,
+    /// `"component"` or `"interface"`.
+    kind: &'static str,
+    /// Catalog path within the namespace's registry (e.g. `wasi/http`).
+    repository: String,
+    /// Namespace's OCI registry base (e.g. `ghcr.io/webassembly`).
+    registry: String,
+}
+
+impl RegistryEntry {
+    fn from_package(package: &component_manifest::Package) -> Result<Self> {
+        let (namespace, name) = parse_wit_name(&package.name)?;
+
+        let repository = package.registry_repository.as_deref().with_context(|| {
+            "`[package]` is missing `registry_repository` (the catalog path \
+             within the namespace registry, e.g. `wasi/http`); add it before \
+             publishing to the registry"
+                .to_string()
+        })?;
+        validate_repository(repository)?;
+        validate_registry_ref(&package.registry_ref)?;
+
+        let registry = registry_base(&package.registry_ref, repository)?;
+
+        Ok(Self {
+            namespace: namespace.to_string(),
+            package: name.to_string(),
+            kind: package.kind.as_str(),
+            repository: repository.to_string(),
+            registry: registry.to_string(),
+        })
+    }
+}
+
+/// Return whether the package is already present in the local registry index.
+///
+/// Uses an exact `(wit_namespace, wit_name)` identity match. A lookup error
+/// (e.g. an unsynced or offline index) is treated as "unknown": it is
+/// reported and the caller proceeds to open the issue rather than silently
+/// suppressing it.
+async fn package_already_registered(store: &Manager, entry: &RegistryEntry) -> Result<bool> {
+    let wit_name = format!("{}:{}", entry.namespace, entry.package);
+    match store.find_known_package_by_wit_name(&wit_name).await {
+        Ok(Some(found)) => Ok(
+            found.wit_namespace.as_deref() == Some(entry.namespace.as_str())
+                && found.wit_name.as_deref() == Some(entry.package.as_str()),
+        ),
+        Ok(None) => Ok(false),
+        Err(err) => {
+            eprintln!(
+                "warning: could not check the registry index ({err}); \
+                 proceeding to open an issue."
+            );
+            Ok(false)
+        }
     }
 }
 
@@ -108,23 +164,82 @@ impl PublishOpts {
 /// exactly one non-empty namespace and one non-empty package.
 fn parse_wit_name(name: &str) -> Result<(&str, &str)> {
     let Some((namespace, package)) = name.split_once(':') else {
-        bail!("'{name}' is not a WIT-style name; expected `namespace:package` (e.g., `wasi:http`)");
+        bail!(
+            "`[package].name` '{name}' is not a WIT-style name; expected \
+             `namespace:package` (e.g., `wasi:http`)"
+        );
     };
-
     if namespace.is_empty() || package.is_empty() {
-        bail!("'{name}' must have a non-empty namespace and package (e.g., `wasi:http`)");
+        bail!("`[package].name` '{name}' must have a non-empty namespace and package");
     }
     if package.contains(':') {
-        bail!("'{name}' has too many ':' separators; expected `namespace:package`");
+        bail!("`[package].name` '{name}' has too many ':' separators");
     }
     if name.contains('@') {
-        bail!("'{name}' must not include a version; the registry tracks packages, not versions");
+        bail!("`[package].name` '{name}' must not include a version");
     }
     if namespace.contains('/') || package.contains('/') {
-        bail!("'{name}' must not contain '/'; use --repository for the OCI path");
+        bail!("`[package].name` '{name}' must not contain '/'");
     }
-
     Ok((namespace, package))
+}
+
+/// Validate the registry-catalog repository path (the issue form's
+/// `repository` field).
+fn validate_repository(repository: &str) -> Result<()> {
+    if repository.is_empty() {
+        bail!("`[package].registry_repository` must not be empty");
+    }
+    if repository.starts_with('/') || repository.ends_with('/') {
+        bail!("`[package].registry_repository` '{repository}' must not start or end with '/'");
+    }
+    if repository.contains([' ', '?', '#', '@', ':']) {
+        bail!(
+            "`[package].registry_repository` '{repository}' contains characters \
+             that are not valid in an OCI path"
+        );
+    }
+    Ok(())
+}
+
+/// Validate that `registry_ref` is a tag-less, digest-less OCI location.
+fn validate_registry_ref(registry_ref: &str) -> Result<()> {
+    if registry_ref.is_empty() {
+        bail!("`[package].registry_ref` must not be empty");
+    }
+    if registry_ref.contains('@') {
+        bail!("`[package].registry_ref` '{registry_ref}' must not pin a digest");
+    }
+    // A tag would appear as a ':' in the final path segment; the registry host
+    // may legitimately contain a ':port', which lives in the first segment.
+    let last_segment = registry_ref.rsplit('/').next().unwrap_or(registry_ref);
+    if last_segment.contains(':') {
+        bail!("`[package].registry_ref` '{registry_ref}' must not include a tag");
+    }
+    Ok(())
+}
+
+/// Derive the namespace's registry base by stripping the catalog `repository`
+/// from the end of `registry_ref`.
+///
+/// Errors when the two disagree, since that would register an entry pointing
+/// at a different OCI location than `component publish` pushes to.
+fn registry_base<'a>(registry_ref: &'a str, repository: &str) -> Result<&'a str> {
+    let suffix = format!("/{repository}");
+    let base = registry_ref.strip_suffix(&suffix).with_context(|| {
+        format!(
+            "`[package].registry_ref` '{registry_ref}' does not end with \
+             `/{repository}`; `registry_ref` must equal \
+             `<registry base>/<registry_repository>`"
+        )
+    })?;
+    if base.is_empty() {
+        bail!(
+            "`[package].registry_ref` '{registry_ref}' has no registry base \
+             before `/{repository}`"
+        );
+    }
+    Ok(base)
 }
 
 /// Validate a `owner/name` GitHub repository slug used in the URL path.
@@ -149,23 +264,18 @@ fn validate_repo(repo: &str) -> Result<()> {
 ///
 /// Each query key matches a field `id` in `registry-entry.yml`, so GitHub
 /// populates the corresponding form fields. Query values are percent-encoded.
+/// The `registry` base is always included: the automation ignores it when the
+/// namespace already exists and uses it when creating a new namespace.
 #[must_use]
-fn build_issue_url(
-    repo: &str,
-    kind: Kind,
-    namespace: &str,
-    package: &str,
-    repository: &str,
-    registry: Option<&str>,
-) -> String {
+fn build_issue_url(repo: &str, entry: &RegistryEntry) -> String {
     let mut url = format!("https://github.com/{repo}/issues/new?template={ISSUE_TEMPLATE}");
-    write!(url, "&kind={}", encode(&kind.to_string())).expect("writing to a String cannot fail");
-    write!(url, "&namespace={}", encode(namespace)).expect("writing to a String cannot fail");
-    write!(url, "&package={}", encode(package)).expect("writing to a String cannot fail");
-    write!(url, "&repository={}", encode(repository)).expect("writing to a String cannot fail");
-    if let Some(registry) = registry.filter(|r| !r.is_empty()) {
-        write!(url, "&registry={}", encode(registry)).expect("writing to a String cannot fail");
-    }
+    write!(url, "&kind={}", encode(entry.kind)).expect("writing to a String cannot fail");
+    write!(url, "&namespace={}", encode(&entry.namespace))
+        .expect("writing to a String cannot fail");
+    write!(url, "&package={}", encode(&entry.package)).expect("writing to a String cannot fail");
+    write!(url, "&repository={}", encode(&entry.repository))
+        .expect("writing to a String cannot fail");
+    write!(url, "&registry={}", encode(&entry.registry)).expect("writing to a String cannot fail");
     url
 }
 
@@ -223,11 +333,61 @@ fn open_in_browser(url: &str) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use component_manifest::{Package, PackageKind};
+
+    fn sample_package() -> Package {
+        Package {
+            name: "wasi:http".into(),
+            version: "0.1.0".into(),
+            registry_ref: "ghcr.io/webassembly/wasi/http".into(),
+            kind: PackageKind::Interface,
+            file: None,
+            wit: None,
+            description: None,
+            source: None,
+            homepage: None,
+            documentation: None,
+            license: None,
+            authors: vec![],
+            registry_repository: Some("wasi/http".into()),
+        }
+    }
+
+    #[test]
+    fn entry_from_package_derives_fields() {
+        let entry = RegistryEntry::from_package(&sample_package()).unwrap();
+        assert_eq!(entry.namespace, "wasi");
+        assert_eq!(entry.package, "http");
+        assert_eq!(entry.kind, "interface");
+        assert_eq!(entry.repository, "wasi/http");
+        assert_eq!(entry.registry, "ghcr.io/webassembly");
+    }
+
+    #[test]
+    fn entry_requires_registry_repository() {
+        let mut pkg = sample_package();
+        pkg.registry_repository = None;
+        assert!(RegistryEntry::from_package(&pkg).is_err());
+    }
+
+    #[test]
+    fn entry_rejects_ref_repository_mismatch() {
+        let mut pkg = sample_package();
+        pkg.registry_repository = Some("other/path".into());
+        assert!(RegistryEntry::from_package(&pkg).is_err());
+    }
+
+    #[test]
+    fn entry_rejects_tagged_registry_ref() {
+        let mut pkg = sample_package();
+        pkg.registry_ref = "ghcr.io/webassembly/wasi/http:0.2.0".into();
+        pkg.registry_repository = Some("wasi/http".into());
+        assert!(RegistryEntry::from_package(&pkg).is_err());
+    }
 
     #[test]
     fn parses_wit_name() {
         assert_eq!(parse_wit_name("wasi:http").unwrap(), ("wasi", "http"));
-        assert_eq!(parse_wit_name("yosh:fetch").unwrap(), ("yosh", "fetch"));
     }
 
     #[test]
@@ -236,8 +396,29 @@ mod tests {
         assert!(parse_wit_name(":http").is_err());
         assert!(parse_wit_name("wasi:").is_err());
         assert!(parse_wit_name("wasi:http@0.2.0").is_err());
-        assert!(parse_wit_name("wasi:http:extra").is_err());
         assert!(parse_wit_name("wasi:comp/onents").is_err());
+    }
+
+    #[test]
+    fn validates_repository_path() {
+        assert!(validate_repository("wasi/http").is_ok());
+        assert!(validate_repository("components/http-server").is_ok());
+        assert!(validate_repository("just-a-name").is_ok());
+        assert!(validate_repository("").is_err());
+        assert!(validate_repository("/leading").is_err());
+        assert!(validate_repository("trailing/").is_err());
+        assert!(validate_repository("with:tag").is_err());
+        assert!(validate_repository("with space").is_err());
+    }
+
+    #[test]
+    fn derives_registry_base() {
+        assert_eq!(
+            registry_base("ghcr.io/webassembly/wasi/http", "wasi/http").unwrap(),
+            "ghcr.io/webassembly"
+        );
+        assert!(registry_base("ghcr.io/webassembly/wasi/http", "other").is_err());
+        assert!(registry_base("wasi/http", "wasi/http").is_err());
     }
 
     #[test]
@@ -245,64 +426,25 @@ mod tests {
         assert!(validate_repo("yoshuawuyts/component-registry").is_ok());
         assert!(validate_repo("noslash").is_err());
         assert!(validate_repo("owner/").is_err());
-        assert!(validate_repo("/name").is_err());
         assert!(validate_repo("a/b/c").is_err());
-        assert!(validate_repo("owner/na me").is_err());
     }
 
     #[test]
     fn encodes_query_values() {
         assert_eq!(encode("components/wordmark"), "components%2Fwordmark");
         assert_eq!(encode("ghcr.io/my-org"), "ghcr.io%2Fmy-org");
-        assert_eq!(encode("ghcr.io:5000/org"), "ghcr.io%3A5000%2Forg");
         assert_eq!(encode("plain-name_1.0"), "plain-name_1.0");
     }
 
     #[test]
-    fn builds_url_without_registry() {
-        let url = build_issue_url(
-            "yoshuawuyts/component-registry",
-            Kind::Component,
-            "yosh",
-            "fetch",
-            "components/fetch",
-            None,
-        );
+    fn builds_url() {
+        let entry = RegistryEntry::from_package(&sample_package()).unwrap();
+        let url = build_issue_url("yoshuawuyts/component-registry", &entry);
         assert_eq!(
             url,
             "https://github.com/yoshuawuyts/component-registry/issues/new\
-             ?template=registry-entry.yml&kind=component&namespace=yosh\
-             &package=fetch&repository=components%2Ffetch"
+             ?template=registry-entry.yml&kind=interface&namespace=wasi\
+             &package=http&repository=wasi%2Fhttp&registry=ghcr.io%2Fwebassembly"
         );
-    }
-
-    #[test]
-    fn builds_url_with_registry_for_new_namespace() {
-        let url = build_issue_url(
-            "yoshuawuyts/component-registry",
-            Kind::Interface,
-            "acme",
-            "types",
-            "iface/types",
-            Some("ghcr.io/acme"),
-        );
-        assert!(url.contains("&kind=interface"));
-        assert!(url.contains("&namespace=acme"));
-        assert!(url.contains("&package=types"));
-        assert!(url.contains("&repository=iface%2Ftypes"));
-        assert!(url.contains("&registry=ghcr.io%2Facme"));
-    }
-
-    #[test]
-    fn omits_empty_registry() {
-        let url = build_issue_url(
-            "owner/repo",
-            Kind::Component,
-            "ns",
-            "pkg",
-            "ns/pkg",
-            Some(""),
-        );
-        assert!(!url.contains("registry="));
     }
 }

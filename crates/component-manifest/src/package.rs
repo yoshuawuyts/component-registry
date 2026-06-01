@@ -140,6 +140,20 @@ pub struct Package {
     /// `Name <email>`).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub authors: Vec<String>,
+    /// Catalog path for this package within its namespace's OCI registry,
+    /// e.g. `wasi/http`.
+    ///
+    /// This is the `repository` value recorded in the registry's
+    /// `registry/<namespace>.toml` entry. The package's full OCI location is
+    /// `<namespace registry base>/<registry_repository>`, which must equal
+    /// [`registry_ref`](Self::registry_ref); `component registry publish`
+    /// derives the namespace's registry base by stripping this path from the
+    /// end of `registry_ref`.
+    ///
+    /// Optional: only needed to register the package with the component
+    /// registry via `component registry publish`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub registry_repository: Option<String>,
 }
 
 /// Errors produced when validating a [`Package`] section.
@@ -322,6 +336,7 @@ mod tests {
             documentation: None,
             license: None,
             authors: vec![],
+            registry_repository: None,
         };
         assert_eq!(pkg.validate(), Err(PackageError::ComponentWithWit));
     }
@@ -342,6 +357,7 @@ mod tests {
             documentation: None,
             license: None,
             authors: vec![],
+            registry_repository: None,
         };
         assert_eq!(pkg.validate(), Err(PackageError::InterfaceWithFile));
     }
@@ -362,6 +378,7 @@ mod tests {
             documentation: None,
             license: None,
             authors: vec![],
+            registry_repository: None,
         };
         assert!(matches!(
             pkg.validate(),
@@ -385,6 +402,7 @@ mod tests {
             documentation: None,
             license: None,
             authors: vec![],
+            registry_repository: None,
         };
         assert_eq!(pkg.validate(), Err(PackageError::EmptyName));
     }
@@ -405,6 +423,7 @@ mod tests {
             documentation: None,
             license: None,
             authors: vec![],
+            registry_repository: None,
         };
         assert_eq!(pkg.validate(), Err(PackageError::EmptyRegistryRef));
     }
@@ -425,6 +444,7 @@ mod tests {
             documentation: None,
             license: None,
             authors: vec![],
+            registry_repository: None,
         };
         assert_eq!(pkg.artifact_path(), PathBuf::from("build/fetch.wasm"));
 
