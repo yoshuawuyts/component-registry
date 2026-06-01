@@ -122,9 +122,10 @@ component registry publish
 It reads the package's `name`, `kind`, `registry_ref`, and `registry_repository`
 from `wasm.toml`, checks whether the package is already in the registry, and (if
 not) opens the **Registry entry** issue form in your browser with the fields
-already filled in. If the package already exists in the registry it does
-nothing. Pass `--no-open` to print the URL instead of launching a browser, and
-`--manifest-path <dir>` to point at a project other than the current directory.
+already filled in. If the package already exists in the registry, it reports
+that and exits without opening an issue. The issue URL is always printed to
+stdout; pass `--no-open` to skip launching the browser, and `--manifest-path
+<dir>` to point at a project other than the current directory.
 
 The relevant `[package]` fields look like this:
 

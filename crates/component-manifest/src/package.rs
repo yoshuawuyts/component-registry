@@ -145,10 +145,11 @@ pub struct Package {
     ///
     /// This is the `repository` value recorded in the registry's
     /// `registry/<namespace>.toml` entry. The package's full OCI location is
-    /// `<namespace registry base>/<registry_repository>`, which must equal
-    /// [`registry_ref`](Self::registry_ref); `component registry publish`
+    /// `<namespace registry base>/<registry_repository>`. `component registry
+    /// publish` requires this to equal [`registry_ref`](Self::registry_ref) and
     /// derives the namespace's registry base by stripping this path from the
-    /// end of `registry_ref`.
+    /// end of `registry_ref`; note that [`Package::validate()`](Self::validate)
+    /// does not check this invariant.
     ///
     /// Optional: only needed to register the package with the component
     /// registry via `component registry publish`.

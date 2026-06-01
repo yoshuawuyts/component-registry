@@ -43,7 +43,7 @@ pub(crate) struct PublishOpts {
     #[arg(long, default_value = DEFAULT_REGISTRY_REPO)]
     repo: String,
 
-    /// Print the issue URL without launching a browser.
+    /// Do not launch a browser; the issue URL is always printed to stdout.
     #[arg(long)]
     no_open: bool,
 }
@@ -193,13 +193,24 @@ fn validate_repository(repository: &str) -> Result<()> {
     if repository.starts_with('/') || repository.ends_with('/') {
         bail!("`[package].registry_repository` '{repository}' must not start or end with '/'");
     }
-    if repository.contains([' ', '?', '#', '@', ':']) {
+    if !is_valid_repository_path(repository) {
         bail!(
-            "`[package].registry_repository` '{repository}' contains characters \
-             that are not valid in an OCI path"
+            "`[package].registry_repository` '{repository}' must start with an \
+             alphanumeric and contain only ASCII letters, digits, `.`, `_`, `-`, \
+             and `/`"
         );
     }
     Ok(())
+}
+
+fn is_valid_repository_path(repository: &str) -> bool {
+    repository
+        .chars()
+        .next()
+        .is_some_and(|c| c.is_ascii_alphanumeric())
+        && repository
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-' | '/'))
 }
 
 /// Validate that `registry_ref` is a tag-less, digest-less OCI location.
@@ -411,12 +422,20 @@ mod tests {
     fn validates_repository_path() {
         assert!(validate_repository("wasi/http").is_ok());
         assert!(validate_repository("components/http-server").is_ok());
+        assert!(validate_repository("wasm-pkg/fermyon-experimental/azure-client").is_ok());
         assert!(validate_repository("just-a-name").is_ok());
         assert!(validate_repository("").is_err());
         assert!(validate_repository("/leading").is_err());
         assert!(validate_repository("trailing/").is_err());
         assert!(validate_repository("with:tag").is_err());
         assert!(validate_repository("with space").is_err());
+        assert!(validate_repository("wasi/ht%2Ftp").is_err());
+        assert!(validate_repository("wasi/ht\ttp").is_err());
+        assert!(validate_repository("wasi/ht\ntp").is_err());
+        assert!(validate_repository(".wasi/http").is_err());
+        assert!(validate_repository("_wasi/http").is_err());
+        assert!(validate_repository("-wasi/http").is_err());
+        assert!(validate_repository("wasi/café").is_err());
     }
 
     #[test]
