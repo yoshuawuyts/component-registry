@@ -112,6 +112,16 @@ pull request that adds the entry to the matching `registry/<namespace>.toml`.
 Entries in an existing namespace are merged automatically; creating a brand new
 namespace is flagged for manual review.
 
+To prefill that issue from the command line, run `component registry publish`:
+
+```sh
+component registry publish wasi:http --kind interface --repository wasi/http
+```
+
+This opens the **Registry entry** issue form in your browser with the fields
+already filled in. Pass `--no-open` to print the URL instead of launching a
+browser, and `--registry ghcr.io/my-org` when creating a brand new namespace.
+
 [registry-entry-issue]: https://github.com/yoshuawuyts/component-registry/issues/new?template=registry-entry.yml
 
 ## Crates

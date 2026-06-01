@@ -9,6 +9,7 @@ use component_package_manager::{Reference, format_size};
 mod errors;
 mod inspect;
 mod notify;
+mod publish;
 mod search;
 mod sync;
 
@@ -27,6 +28,8 @@ pub(crate) enum Opts {
     Sync(sync::SyncOpts),
     /// Notify a meta-registry that a new version of a package is available
     Notify(notify::NotifyOpts),
+    /// Open a prefilled issue to add a component or interface to the registry
+    Publish(publish::PublishOpts),
     /// Delete a package from the local store
     Delete(DeleteOpts),
     /// List all installed packages
@@ -76,6 +79,11 @@ pub(crate) struct KnownOpts {
 
 impl Opts {
     pub(crate) async fn run(self, offline: bool) -> Result<()> {
+        // `publish` only builds a URL; it needs neither the store nor network.
+        if let Opts::Publish(opts) = self {
+            return opts.run();
+        }
+
         let store = if offline {
             Manager::open_offline().await?
         } else {
@@ -142,6 +150,8 @@ impl Opts {
             Opts::Search(opts) => opts.run(offline).await,
             Opts::Sync(opts) => opts.run().await,
             Opts::Notify(opts) => opts.run(offline).await,
+            // Handled before the store is opened; see the early return above.
+            Opts::Publish(_) => unreachable!("publish is handled before opening the store"),
             Opts::Delete(opts) => {
                 let deleted = store.delete(opts.reference.clone()).await?;
                 if deleted {
