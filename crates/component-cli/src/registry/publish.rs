@@ -149,8 +149,9 @@ async fn package_already_registered(store: &Manager, entry: &RegistryEntry) -> R
 
 /// Split a WIT-style `namespace:package` name into its two parts.
 ///
-/// Rejects versions (`@`), path separators (`/`), and anything that is not
-/// exactly one non-empty namespace and one non-empty package.
+/// Rejects versions (`@`), path separators (`/`), invalid registry-entry
+/// names, and anything that is not exactly one non-empty namespace and one
+/// non-empty package.
 fn parse_wit_name(name: &str) -> Result<(&str, &str)> {
     let Some((namespace, package)) = name.split_once(':') else {
         bail!(
@@ -170,7 +171,27 @@ fn parse_wit_name(name: &str) -> Result<(&str, &str)> {
     if namespace.contains('/') || package.contains('/') {
         bail!("`[package].name` '{name}' must not contain '/'");
     }
+    validate_wit_name_part(name, "namespace", namespace)?;
+    validate_wit_name_part(name, "package", package)?;
     Ok((namespace, package))
+}
+
+fn validate_wit_name_part(full_name: &str, label: &str, part: &str) -> Result<()> {
+    if is_valid_registry_entry_name(part) {
+        return Ok(());
+    }
+    bail!(
+        "`[package].name` '{full_name}' has an invalid {label}; use ASCII letters,          digits, `.`, `_`, or `-`, starting with a letter or digit"
+    );
+}
+
+fn is_valid_registry_entry_name(name: &str) -> bool {
+    name.chars()
+        .next()
+        .is_some_and(|c| c.is_ascii_alphanumeric())
+        && name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))
 }
 
 /// Split the manifest's full OCI `registry` reference into the registry
@@ -413,6 +434,10 @@ mod tests {
     #[test]
     fn parses_wit_name() {
         assert_eq!(parse_wit_name("wasi:http").unwrap(), ("wasi", "http"));
+        assert_eq!(
+            parse_wit_name("wasi-1:ht.tp_2").unwrap(),
+            ("wasi-1", "ht.tp_2")
+        );
     }
 
     #[test]
@@ -422,6 +447,14 @@ mod tests {
         assert!(parse_wit_name("wasi:").is_err());
         assert!(parse_wit_name("wasi:http@0.2.0").is_err());
         assert!(parse_wit_name("wasi:comp/onents").is_err());
+        assert!(parse_wit_name("wasi:ht tp").is_err());
+        assert!(parse_wit_name("wasi:bad?name").is_err());
+        assert!(parse_wit_name(".wasi:http").is_err());
+        assert!(parse_wit_name("_wasi:http").is_err());
+        assert!(parse_wit_name("-wasi:http").is_err());
+        assert!(parse_wit_name("wasi:.http").is_err());
+        assert!(parse_wit_name("wasi:_http").is_err());
+        assert!(parse_wit_name("wasi:-http").is_err());
     }
 
     #[test]
