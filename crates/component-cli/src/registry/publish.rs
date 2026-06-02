@@ -190,7 +190,7 @@ fn validate_wit_name_part(full_name: &str, label: &str, part: &str) -> Result<()
         return Ok(());
     }
     bail!(
-        "`[package].name` '{full_name}' has an invalid {label}; use ASCII letters,          digits, `.`, `_`, or `-`, starting with a letter or digit"
+        "`[package].name` '{full_name}' has an invalid {label}; use ASCII letters, digits, `.`, `_`, or `-`, starting with a letter or digit"
     );
 }
 
