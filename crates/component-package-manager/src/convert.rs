@@ -56,6 +56,18 @@ mod tests {
         assert_eq!(len_to_i64(1024).unwrap(), 1024);
     }
 
+    #[cfg(target_pointer_width = "64")]
+    #[test]
+    fn len_to_i64_overflow_errors() {
+        // `usize` only exceeds `i64::MAX` on 64-bit targets.
+        let too_big = i64::MAX as usize + 1;
+        let err = len_to_i64(too_big).expect_err("overflow must be rejected");
+        assert!(
+            err.to_string().contains("exceeds i64::MAX"),
+            "error should carry overflow context, got: {err}"
+        );
+    }
+
     #[test]
     fn size_to_i64_in_range() {
         assert_eq!(size_to_i64(0).unwrap(), 0);

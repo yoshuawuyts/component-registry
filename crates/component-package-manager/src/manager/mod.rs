@@ -434,7 +434,7 @@ impl Manager {
     /// [`install_with_progress`](Self::install_with_progress).
     ///
     /// When `progress_tx` is `Some`, layers are pulled with per-layer progress
-    /// reporting and an [`ProgressEvent::InstallComplete`] event is emitted at
+    /// reporting and a [`ProgressEvent::InstallComplete`] event is emitted at
     /// the end; when `None`, the package is pulled without progress reporting.
     async fn install_inner(
         &self,
@@ -464,39 +464,19 @@ impl Manager {
         if let Some(ref manifest) = pull_result.manifest {
             let wasm_layers = filter_wasm_layers(&manifest.layers);
 
-            // Inspect cached wasm layers up-front to learn the WIT package
-            // name; this lets us name the vendored artifact after
-            // `namespace:package@version` rather than the OCI reference.
-            for layer in &wasm_layers {
-                if package_name.is_none() {
-                    self.try_extract_layer_metadata(
-                        &layer.digest,
-                        &mut package_name,
-                        &mut is_component,
-                        &mut dependencies,
-                    )
-                    .await;
-                }
-            }
+            let inspected = self.inspect_wasm_layers(&wasm_layers).await;
+            package_name = inspected.0;
+            is_component = inspected.1;
+            dependencies = inspected.2;
 
             if !wasm_layers.is_empty() {
                 let name = package_name.as_deref().ok_or_else(|| {
                     anyhow::anyhow!("could not determine WIT package name from `{reference}`")
                 })?;
                 let filename = vendor_filename(name, reference.tag());
-
-                for layer in &wasm_layers {
-                    let dest = vendor_dir.join(&filename);
-
-                    // Ensure vendor directory exists
-                    tokio::fs::create_dir_all(vendor_dir).await?;
-
-                    // Remove existing file if present before reflinking
-                    let _ = tokio::fs::remove_file(&dest).await;
-
-                    self.vendor(&layer.digest, &dest).await?;
-                    vendored_files.push(dest);
-                }
+                vendored_files = self
+                    .vendor_wasm_layers(&wasm_layers, vendor_dir, &filename)
+                    .await?;
             }
         }
 
@@ -515,6 +495,61 @@ impl Manager {
             is_component,
             dependencies,
         })
+    }
+
+    /// Inspect cached wasm layers up-front to learn the WIT package name; this
+    /// lets us name the vendored artifact after `namespace:package@version`
+    /// rather than the OCI reference.
+    ///
+    /// Returns the discovered package name, whether the artifact is a component
+    /// (vs. a WIT package), and its dependencies.
+    async fn inspect_wasm_layers(
+        &self,
+        wasm_layers: &[&oci_client::manifest::OciDescriptor],
+    ) -> (Option<String>, bool, Vec<crate::types::DependencyItem>) {
+        let mut package_name = None;
+        let mut is_component = true; // Default to component
+        let mut dependencies = Vec::new();
+
+        for layer in wasm_layers {
+            if package_name.is_none() {
+                self.try_extract_layer_metadata(
+                    &layer.digest,
+                    &mut package_name,
+                    &mut is_component,
+                    &mut dependencies,
+                )
+                .await;
+            }
+        }
+
+        (package_name, is_component, dependencies)
+    }
+
+    /// Reflink each wasm layer into the vendor directory under `filename`,
+    /// returning the vendored file paths.
+    async fn vendor_wasm_layers(
+        &self,
+        wasm_layers: &[&oci_client::manifest::OciDescriptor],
+        vendor_dir: &Path,
+        filename: &str,
+    ) -> anyhow::Result<Vec<std::path::PathBuf>> {
+        let mut vendored_files = Vec::new();
+
+        for layer in wasm_layers {
+            let dest = vendor_dir.join(filename);
+
+            // Ensure vendor directory exists
+            tokio::fs::create_dir_all(vendor_dir).await?;
+
+            // Remove existing file if present before reflinking
+            let _ = tokio::fs::remove_file(&dest).await;
+
+            self.vendor(&layer.digest, &dest).await?;
+            vendored_files.push(dest);
+        }
+
+        Ok(vendored_files)
     }
 
     /// List all stored images and their metadata.
