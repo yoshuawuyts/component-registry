@@ -96,7 +96,7 @@ async fn main() -> anyhow::Result<()> {
         info!("Skipping WIT re-index at startup (use --reindex-wit-on-startup to enable)");
     }
 
-    let state = Arc::new(tokio::sync::Mutex::new(server_manager));
+    let state = Arc::new(tokio::sync::RwLock::new(server_manager));
 
     // Start background indexer on a dedicated thread (Manager is !Sync)
     let indexer_config = config.clone();
