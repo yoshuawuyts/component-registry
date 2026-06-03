@@ -184,18 +184,7 @@ pub(crate) fn render(
 
 /// Escape a string for safe inclusion in an HTML attribute value.
 fn html_escape_attr(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    for ch in s.chars() {
-        match ch {
-            '&' => out.push_str("&amp;"),
-            '<' => out.push_str("&lt;"),
-            '>' => out.push_str("&gt;"),
-            '"' => out.push_str("&quot;"),
-            '\'' => out.push_str("&#x27;"),
-            _ => out.push(ch),
-        }
-    }
-    out
+    crate::escape::escape_html_attr(s)
 }
 
 /// Render the WIT content section for a package version.

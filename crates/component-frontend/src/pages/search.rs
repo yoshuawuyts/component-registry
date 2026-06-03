@@ -6,6 +6,7 @@ use component_meta_registry_client::KnownPackage;
 use html::text_content::Division;
 
 use crate::components::ds::{package_row, search_bar};
+use crate::escape::escape_html_text;
 use crate::layout;
 use component_meta_registry_client::{ApiError, RegistryClient};
 
@@ -26,7 +27,10 @@ fn render_results(query: &str, packages: &[KnownPackage]) -> String {
         div.class("pt-8 pb-6 border-b-[1.5px] border-rule mb-6")
             .heading_1(|h1| {
                 h1.class(crate::components::ds::typography::H1_CLASS)
-                    .text(format!("Results for \u{201c}{query}\u{201d}"))
+                    .text(format!(
+                        "Results for \u{201c}{}\u{201d}",
+                        escape_html_text(query)
+                    ))
             })
             .paragraph(|p| {
                 p.class(format!(
@@ -87,7 +91,10 @@ fn render_error(query: &str, err: &ApiError) -> String {
         div.class("pt-8 pb-6 border-b-[1.5px] border-rule mb-6")
             .heading_1(|h1| {
                 h1.class(crate::components::ds::typography::H1_CLASS)
-                    .text(format!("Results for \u{201c}{query}\u{201d}"))
+                    .text(format!(
+                        "Results for \u{201c}{}\u{201d}",
+                        escape_html_text(query)
+                    ))
             })
     });
 

@@ -150,7 +150,7 @@ pub(crate) fn inline(query: &str) -> Division {
                     input
                         .type_("search")
                         .name("q")
-                        .value(query.to_owned())
+                        .value(crate::escape::escape_html_attr(query))
                         .placeholder("Search\u{2026}")
                         .class("flex-1 h-9 px-3 rounded-md border border-line bg-surface text-[14px] text-ink-900 placeholder:text-ink-400 focus:outline-none focus:border-ink-900")
                 })

@@ -5,6 +5,7 @@
 
 use crate::components::ds::sidebar::{self, SidebarEntry, SidebarGroup, SidebarItem};
 use crate::components::ds::sigil as s;
+use crate::escape::{escape_html_attr, escape_html_text, escape_js_string, sanitize_url};
 use crate::wit_doc::WitDocument;
 use component_meta_registry_client::{ComponentSummary, OciAnnotations};
 use html::content::Aside;
@@ -190,6 +191,7 @@ fn build_dependency_entries(
         .map(|dep| {
             let href = format!("/{}", dep.package.replace(':', "/"));
             let meta = dep.version.as_deref().map_or(String::new(), |v| {
+                let v = escape_html_text(v);
                 format!(
                     r#"<span class="inline-flex items-center px-1.5 h-5 rounded border border-line text-[10px] mono text-ink-500">{v}</span>"#
                 )
@@ -209,8 +211,12 @@ fn build_dependency_entries(
 
 /// Build the sidebar header with icon, title, version subtitle, and description.
 fn build_sidebar_header(ctx: &SidebarContext<'_>) -> String {
-    let ns = ctx.display_name.replace(':', "/");
-    let desc = ctx.description.unwrap_or("No description available.");
+    let ns = escape_html_attr(&ctx.display_name.replace(':', "/"));
+    let desc = escape_html_text(ctx.description.unwrap_or("No description available."));
+    let display_name = escape_html_text(ctx.display_name);
+    let version_text = escape_html_text(ctx.version);
+    let version_attr = escape_html_attr(ctx.version);
+    let kind_label = escape_html_text(ctx.kind_label);
     let icon = match ctx.kind_label {
         "Component" => SVG_PACKAGE,
         "Interface Types" => SVG_LAYERS,
@@ -218,13 +224,9 @@ fn build_sidebar_header(ctx: &SidebarContext<'_>) -> String {
     };
 
     format!(
-        r#"<div class="pb-4 border-b-[1.5px] border-rule"><div class="flex items-center gap-2.5"><span class="sigil" style="background:{};color:{};width:28px;height:28px;">{icon}</span><div><a href="/{ns}/{}" class="text-[15px] font-semibold text-ink-900 hover:underline no-underline">{}</a><div class="text-[11px] text-ink-500 mono">v{} · {}</div></div></div><p class="mt-2 text-[12px] text-ink-700 leading-relaxed">{desc}</p></div>"#,
+        r#"<div class="pb-4 border-b-[1.5px] border-rule"><div class="flex items-center gap-2.5"><span class="sigil" style="background:{};color:{};width:28px;height:28px;">{icon}</span><div><a href="/{ns}/{version_attr}" class="text-[15px] font-semibold text-ink-900 hover:underline no-underline">{display_name}</a><div class="text-[11px] text-ink-500 mono">v{version_text} · {kind_label}</div></div></div><p class="mt-2 text-[12px] text-ink-700 leading-relaxed">{desc}</p></div>"#,
         s::ROOT.bg,
         s::ROOT.color,
-        ctx.version,
-        ctx.display_name,
-        ctx.version,
-        ctx.kind_label,
     )
 }
 
@@ -293,6 +295,8 @@ fn build_project_section(ctx: &SidebarContext<'_>) -> Option<String> {
 
 /// Render a project link as a tree-link with an icon and label.
 fn project_link(href: &str, icon: &str, label: &str) -> String {
+    let href = escape_html_attr(&sanitize_url(href));
+    let label = escape_html_text(label);
     format!(
         r#"<a href="{href}" class="tree-link" target="_blank" rel="noopener"><span class="project-icon">{icon}</span> <span>{label}</span></a>"#
     )
@@ -300,6 +304,7 @@ fn project_link(href: &str, icon: &str, label: &str) -> String {
 
 /// Render a non-link row with an icon and text (tree-link styling, no href).
 fn project_icon_row(icon: &str, text: &str) -> String {
+    let text = escape_html_text(text);
     format!(
         r#"<div class="tree-link"><span class="project-icon">{icon}</span> <span>{text}</span></div>"#
     )
@@ -307,6 +312,8 @@ fn project_icon_row(icon: &str, text: &str) -> String {
 
 /// Render a key-value detail row for the project section.
 fn detail_row(label: &str, value: &str) -> String {
+    let label = escape_html_text(label);
+    let value = escape_html_text(value);
     format!(
         r#"<div class="flex items-baseline justify-between gap-4 py-1 text-[12px]"><span class="text-ink-500">{label}</span><span class="text-ink-700 mono text-right truncate">{value}</span></div>"#
     )
@@ -377,6 +384,7 @@ fn build_digest_row(digest: &str) -> String {
     let prefix_box = if prefix.is_empty() {
         String::new()
     } else {
+        let prefix = escape_html_text(prefix);
         format!(
             r#"<span class="inline-flex items-center px-2.5 h-7 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[11px] text-ink-500 mono select-none">{prefix}</span>"#
         )
@@ -387,19 +395,19 @@ fn build_digest_row(digest: &str) -> String {
         ""
     };
 
+    let hash = escape_html_text(hash);
+    let digest_attr = escape_html_attr(digest);
+    let digest_js = escape_js_string(digest);
     format!(
-        r#"<div><div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-1 flex items-center gap-1">Image Digest {info}</div><div class="flex">{prefix_box}<code class="inline-flex items-center px-2.5 h-7 flex-1 min-w-0 border border-line bg-surface mono text-[11px] text-ink-700 truncate {code_rounding}" title="{digest}">{hash}</code><button type="button" id="copy-digest-btn" class="inline-flex items-center justify-center w-7 h-7 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted" aria-label="Copy digest">{copy_svg}</button></div></div><script>(function(){{var b=document.getElementById('copy-digest-btn');var ci='{copy_svg}';var ch='{check_svg}';b.addEventListener('click',function(){{navigator.clipboard.writeText('{digest}').then(function(){{b.innerHTML=ch;setTimeout(function(){{b.innerHTML=ci}},2000)}})}})}})()</script>"#,
+        r#"<div><div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-1 flex items-center gap-1">Image Digest {info}</div><div class="flex">{prefix_box}<code class="inline-flex items-center px-2.5 h-7 flex-1 min-w-0 border border-line bg-surface mono text-[11px] text-ink-700 truncate {code_rounding}" title="{digest_attr}">{hash}</code><button type="button" id="copy-digest-btn" class="inline-flex items-center justify-center w-7 h-7 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted" aria-label="Copy digest">{copy_svg}</button></div></div><script>(function(){{var b=document.getElementById('copy-digest-btn');var ci='{copy_svg}';var ch='{check_svg}';b.addEventListener('click',function(){{navigator.clipboard.writeText('{digest_js}').then(function(){{b.innerHTML=ch;setTimeout(function(){{b.innerHTML=ci}},2000)}})}})}})()</script>"#,
         info = sidebar::INFO_BUBBLE_DIGEST,
     )
 }
 
 /// Build the revision row matching the digest copy button pattern.
 fn build_revision_row(revision: &str) -> String {
-    let short = if revision.len() > 12 {
-        format!("{}…", &revision[..12])
-    } else {
-        revision.to_owned()
-    };
+    let short = truncate_chars(revision, 12);
+    let short = escape_html_text(&short);
     let copy_svg: String = SVG_COPY_SM.chars().filter(|c| *c != '\n').collect();
     let check_svg_raw = concat!(
         r#"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-positive">"#,
@@ -408,10 +416,24 @@ fn build_revision_row(revision: &str) -> String {
     );
     let check_svg: String = check_svg_raw.chars().filter(|c| *c != '\n').collect();
 
+    let revision_attr = escape_html_attr(revision);
+    let revision_js = escape_js_string(revision);
     format!(
-        r#"<div><div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-1 flex items-center gap-1">Revision {info}</div><div class="flex"><code class="inline-flex items-center px-2.5 h-7 flex-1 min-w-0 border border-line bg-surface mono text-[11px] text-ink-700 truncate rounded-l-md" title="{revision}">{short}</code><button type="button" id="copy-revision-btn" class="inline-flex items-center justify-center w-7 h-7 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted" aria-label="Copy revision">{copy_svg}</button></div></div><script>(function(){{var b=document.getElementById('copy-revision-btn');var ci='{copy_svg}';var ch='{check_svg}';b.addEventListener('click',function(){{navigator.clipboard.writeText('{revision}').then(function(){{b.innerHTML=ch;setTimeout(function(){{b.innerHTML=ci}},2000)}})}})}})()</script>"#,
+        r#"<div><div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-1 flex items-center gap-1">Revision {info}</div><div class="flex"><code class="inline-flex items-center px-2.5 h-7 flex-1 min-w-0 border border-line bg-surface mono text-[11px] text-ink-700 truncate rounded-l-md" title="{revision_attr}">{short}</code><button type="button" id="copy-revision-btn" class="inline-flex items-center justify-center w-7 h-7 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted" aria-label="Copy revision">{copy_svg}</button></div></div><script>(function(){{var b=document.getElementById('copy-revision-btn');var ci='{copy_svg}';var ch='{check_svg}';b.addEventListener('click',function(){{navigator.clipboard.writeText('{revision_js}').then(function(){{b.innerHTML=ch;setTimeout(function(){{b.innerHTML=ci}},2000)}})}})}})()</script>"#,
         info = sidebar::INFO_BUBBLE_REVISION,
     )
+}
+
+/// Truncate a string to at most `max` characters, appending an ellipsis when
+/// truncation occurs. Operates on `char` boundaries to avoid panicking on
+/// multi-byte UTF-8 input.
+fn truncate_chars(input: &str, max: usize) -> String {
+    if input.chars().count() > max {
+        let truncated: String = input.chars().take(max).collect();
+        format!("{truncated}\u{2026}")
+    } else {
+        input.to_owned()
+    }
 }
 
 /// Format an ISO 8601 date string to a human-friendly form.
@@ -419,8 +441,8 @@ fn build_revision_row(revision: &str) -> String {
 /// `"2025-03-15T10:30:00Z"` → `"Mar 15, 2025"`
 /// Falls back to the first 10 characters if parsing fails.
 fn format_date(iso: &str) -> String {
-    // Extract YYYY-MM-DD
-    let date_part = if iso.len() >= 10 { &iso[..10] } else { iso };
+    // Extract YYYY-MM-DD (char-safe slice to avoid panics on non-ASCII input).
+    let date_part: String = iso.chars().take(10).collect();
     let parts: Vec<&str> = date_part.split('-').collect();
     if let [year, mm, dd] = parts.as_slice() {
         let month = match *mm {
@@ -436,12 +458,12 @@ fn format_date(iso: &str) -> String {
             "10" => "Oct",
             "11" => "Nov",
             "12" => "Dec",
-            _ => return date_part.to_owned(),
+            _ => return date_part.clone(),
         };
         let day = dd.trim_start_matches('0');
         format!("{month} {day}, {year}")
     } else {
-        date_part.to_owned()
+        date_part.clone()
     }
 }
 
@@ -642,4 +664,66 @@ fn push_component_children_nav(items: &mut Vec<SidebarItem>, ctx: &SidebarContex
 
     push_group(items, "Modules", &s::MODULE, &modules);
     push_group(items, "Components", &s::COMPONENT, &components);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // r[verify frontend.security.html-escaping]
+    #[test]
+    fn project_link_neutralizes_href_injection() {
+        let html = project_link(r#"https://x"><img src=x onerror=alert(1)>"#, "", "Homepage");
+        assert!(!html.contains(r#""><img"#));
+        assert!(html.contains("&quot;&gt;"));
+    }
+
+    #[test]
+    fn project_link_drops_javascript_scheme() {
+        let html = project_link("javascript:alert(1)", "", "Homepage");
+        assert!(!html.contains("javascript:"));
+        assert!(html.contains(r##"href="#""##));
+    }
+
+    #[test]
+    fn project_icon_row_escapes_script() {
+        let html = project_icon_row("", "</span><script>alert(1)</script>");
+        assert!(!html.contains("<script>"));
+        assert!(html.contains("&lt;script&gt;"));
+    }
+
+    #[test]
+    fn detail_row_escapes_value() {
+        let html = detail_row("Authors", "</span><script>alert(1)</script>");
+        assert!(!html.contains("<script>"));
+        assert!(html.contains("&lt;script&gt;"));
+    }
+
+    #[test]
+    fn digest_row_escapes_attr_and_js() {
+        let html = build_digest_row(r#"sha256:'"></script><script>alert(1)"#);
+        // No raw script terminator survives in either the HTML attr or JS string.
+        assert!(!html.contains("</script><script>"));
+        assert!(!html.contains(r#""></script>"#));
+        assert!(html.contains("\\x3C"));
+    }
+
+    #[test]
+    fn revision_row_escapes_attr_and_js() {
+        let html = build_revision_row(r#"'"></script><script>alert(1)"#);
+        assert!(!html.contains("</script><script>"));
+        assert!(html.contains("\\x3C"));
+    }
+
+    #[test]
+    fn revision_row_handles_non_ascii_without_panic() {
+        // Multi-byte chars must not panic the char-boundary truncation.
+        let html = build_revision_row("日本語日本語日本語日本語日本語");
+        assert!(html.contains("\u{2026}"));
+    }
+
+    #[test]
+    fn format_date_handles_non_ascii_without_panic() {
+        let _ = format_date("日本語日本語日本語");
+    }
 }

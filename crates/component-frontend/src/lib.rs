@@ -12,6 +12,7 @@
 // r[impl frontend.server.wasi-http]
 
 mod components;
+mod escape;
 mod footer;
 mod layout;
 mod markdown;
