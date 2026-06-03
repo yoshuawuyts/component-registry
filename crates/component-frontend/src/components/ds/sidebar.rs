@@ -1,5 +1,6 @@
 //! C01 — Nested Sidebar.
 
+use crate::escape::{escape_html_attr, escape_html_text};
 use html::content::Navigation;
 use html::interactive::Details;
 use html::text_content::Division;
@@ -145,9 +146,11 @@ pub(crate) fn render_version_selector(
         } else {
             format!("v{v}")
         };
+        let value = escape_html_attr(&format!("{base_url}{v}"));
+        let label = escape_html_text(&label);
         let _ = write!(
             options,
-            r#"<option value="{base_url}{v}"{selected}>{label}</option>"#
+            r#"<option value="{value}"{selected}>{label}</option>"#
         );
     }
     let html = Division::builder()
@@ -231,10 +234,12 @@ fn render_entry(entry: &SidebarEntry) -> html::inline_text::Anchor {
         "tree-link"
     };
     let mut a = html::inline_text::Anchor::builder();
-    a.href(entry.href.clone()).class(cls);
+    a.href(escape_html_attr(&entry.href)).class(cls);
     a.text(entry_sigil);
-    a.span(|s| s.class("mono").text(entry.name.clone()));
+    a.span(|s| s.class("mono").text(escape_html_text(&entry.name)));
     if !entry.meta.is_empty() {
+        // `meta` is a trusted pre-rendered HTML fragment built by callers
+        // (already escaped); embed it verbatim.
         let meta = entry.meta.clone();
         a.span(|s| {
             s.class("ml-auto mono text-[10.5px] text-ink-400")
@@ -281,8 +286,10 @@ fn render_group(group: &SidebarGroup) -> Details {
     };
 
     // Build the label part — either a navigating <a> or plain spans
+    let label = escape_html_text(label);
     let label_html = match &group.href {
         Some(href) => {
+            let href = escape_html_attr(href);
             format!(
                 r#"<a href="{href}" class="flex items-center gap-1.5 flex-1 min-w-0" onclick="event.stopPropagation()">{grp_sigil}<span class="mono">{label}</span><span class="ml-auto mono text-[10.5px] text-ink-400">{count}</span></a>"#
             )
@@ -495,5 +502,19 @@ mod tests {
             SIGIL_LEGEND,
             ANATOMY_ITEMS,
         )));
+    }
+
+    // r[verify frontend.security.html-escaping]
+    #[test]
+    fn version_selector_neutralizes_injection() {
+        let html = render_version_selector(
+            r#"1"><script>alert(1)</script>"#,
+            &[r#"1"><script>alert(1)</script>"#],
+            "/v/",
+        )
+        .expect("selector should render");
+        assert!(!html.contains("<script>"));
+        assert!(!html.contains(r#""><script>"#));
+        assert!(html.contains("&lt;script&gt;"));
     }
 }

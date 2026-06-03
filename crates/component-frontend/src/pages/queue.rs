@@ -264,8 +264,5 @@ fn render_error(message: &str) -> String {
 
 /// Minimal HTML entity escaping.
 fn html_escape(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
+    crate::escape::escape_html_text(s)
 }

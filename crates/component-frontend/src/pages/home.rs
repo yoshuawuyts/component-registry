@@ -42,9 +42,7 @@ fn render_error(err: &ApiError) -> String {
 
 /// Minimal HTML escape for inline error text.
 fn html_escape(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
+    crate::escape::escape_html_text(s)
 }
 
 /// Aggregated landing-page statistics derived from the registry index.

@@ -1,5 +1,6 @@
 //! C04 — Item List.
 
+use crate::escape::{escape_html_attr, escape_html_text};
 use html::inline_text::Anchor;
 use html::text_content::Division;
 
@@ -67,15 +68,16 @@ pub(crate) fn render_dyn_item_row(item: &DynItemRow) -> Anchor {
         "item-row"
     };
     let _sigil_style = format!("background:{};color:{};", item.sigil_bg, item.sigil_color);
-    let sigil_text = item.sigil_text.clone();
-    let name = item.name.clone();
-    let desc = item.desc.clone();
-    let meta = item.meta.clone();
-    let href = item.href.clone();
+    let sigil_text = escape_html_text(&item.sigil_text);
+    let name = escape_html_text(&item.name);
+    let desc = escape_html_text(&item.desc);
+    let meta = escape_html_text(&item.meta);
+    let href = escape_html_attr(&item.href);
     // Raw HTML: Span::style() creates a <style> child, not an inline style attribute.
+    // `sigil_bg`/`sigil_color` are design-system palette constants (trusted).
     let sigil_html = format!(
-        r#"<span class="sigil" style="background:{};color:{};">{}</span>"#,
-        item.sigil_bg, item.sigil_color, sigil_text
+        r#"<span class="sigil" style="background:{};color:{};">{sigil_text}</span>"#,
+        item.sigil_bg, item.sigil_color
     );
     let mut a = Anchor::builder();
     a.href(href).class(row_class);
@@ -85,7 +87,7 @@ pub(crate) fn render_dyn_item_row(item: &DynItemRow) -> Anchor {
     let version_tag = if item.version.is_empty() {
         String::new()
     } else {
-        let v = &item.version;
+        let v = escape_html_text(&item.version);
         format!(
             r#" <span class="inline-flex items-center px-1.5 h-5 rounded border border-line text-[10px] mono text-ink-500 ml-2 align-middle" title="The version of the item we're targeting">{v}</span>"#
         )
@@ -94,7 +96,7 @@ pub(crate) fn render_dyn_item_row(item: &DynItemRow) -> Anchor {
     a.text(sigil_html)
         .division(|d| d.text(name_html).division(|dd| dd.class("desc").text(desc)));
     if !meta.is_empty() {
-        let meta_title = &item.meta_title;
+        let meta_title = escape_html_attr(&item.meta_title);
         let meta_tag = format!(
             r#"<span class="meta inline-flex items-center px-1.5 h-5 rounded border border-line text-[10px] mono text-ink-500" title="{meta_title}">{meta}</span>"#
         );
@@ -105,7 +107,7 @@ pub(crate) fn render_dyn_item_row(item: &DynItemRow) -> Anchor {
 
 /// Render a list of dynamic item rows.
 pub(crate) fn render_dyn_item_list(title: &str, items: &[DynItemRow]) -> Division {
-    let title = title.to_owned();
+    let title = escape_html_text(title);
     let mut list_html = String::new();
     list_html.push_str(r#"<div class="item-list">"#);
     for item in items {
@@ -294,5 +296,37 @@ mod tests {
             ENDPOINT_ROWS,
             ANATOMY_ITEMS,
         )));
+    }
+
+    fn malicious_row() -> DynItemRow {
+        DynItemRow {
+            sigil_bg: "var(--c-cat-green)".to_owned(),
+            sigil_color: "var(--c-cat-green-ink)".to_owned(),
+            sigil_text: "c".to_owned(),
+            name: "</span><script>alert(1)</script>".to_owned(),
+            href: r#"/x"><img src=x onerror=alert(1)>"#.to_owned(),
+            desc: "<script>alert(2)</script>".to_owned(),
+            version: r#"<img src=x onerror=alert(3)>"#.to_owned(),
+            meta: "<b>m</b>".to_owned(),
+            meta_title: r#""><script>alert(4)</script>"#.to_owned(),
+            deprecated: false,
+            id: None,
+        }
+    }
+
+    // r[verify frontend.security.html-escaping]
+    #[test]
+    fn dyn_item_row_neutralizes_injection() {
+        let html = render_dyn_item_row(&malicious_row()).to_string();
+        assert!(!html.contains("<script>"));
+        assert!(!html.contains("<img"));
+        assert!(html.contains("&lt;script&gt;"));
+    }
+
+    #[test]
+    fn dyn_item_list_escapes_title() {
+        let html = render_dyn_item_list("</h2><script>alert(1)</script>", &[]).to_string();
+        assert!(!html.contains("<script>"));
+        assert!(html.contains("&lt;script&gt;"));
     }
 }
