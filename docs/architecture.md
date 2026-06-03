@@ -23,7 +23,7 @@ crates/
 ├── component-meta-registry            # Binary + library — HTTP metadata server for package search
 ├── component-meta-registry-client     # Library — HTTP client for a meta-registry instance
 ├── component-meta-registry-types      # Library — shared serde wire types for the meta-registry API
-├── component-frontend                 # Binary — server-side rendered web frontend (wasm32-wasip2 component)
+├── component-frontend                 # Library (cdylib) — server-side rendered web frontend (wasm32-wasip2 component)
 └── xtask                              # Internal — build automation (fmt, clippy, test, SQL migrations)
 ```
 
@@ -273,7 +273,7 @@ exposes a search API. It consists of:
 
 A dependency-light library in `crates/component-meta-registry-types` that defines the
 shared wire types serialized as JSON between the meta-registry server and its clients. It
-has no HTTP, database, or runtime dependencies — only `serde`. Both
+has no HTTP, database, or runtime dependencies — only `serde` and `serde_json`. Both
 `component-meta-registry` (server), `component-meta-registry-client`, and `component-cli`
 depend on it so that the request/response shapes (such as `KnownPackage`) stay in sync.
 
