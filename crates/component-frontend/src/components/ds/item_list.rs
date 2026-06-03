@@ -82,7 +82,7 @@ pub(crate) fn render_dyn_item_row(item: &DynItemRow) -> Anchor {
     let mut a = Anchor::builder();
     a.href(href).class(row_class);
     if let Some(id) = &item.id {
-        a.id(id.clone());
+        a.id(escape_html_attr(id));
     }
     let version_tag = if item.version.is_empty() {
         String::new()
@@ -310,7 +310,7 @@ mod tests {
             meta: "<b>m</b>".to_owned(),
             meta_title: r#""><script>alert(4)</script>"#.to_owned(),
             deprecated: false,
-            id: None,
+            id: Some(r#"x"><script>alert(5)</script>"#.to_owned()),
         }
     }
 
