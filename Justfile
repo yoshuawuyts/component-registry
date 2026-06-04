@@ -37,3 +37,7 @@ build:
 # Run the full test suite (fmt + clippy + tests + sql check)
 test:
     cargo xtask test
+
+# Run the server
+serve:
+    cargo xtask serve
