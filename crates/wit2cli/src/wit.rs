@@ -326,9 +326,9 @@ fn fallback_library_surface(bytes: &[u8]) -> Option<LibrarySurface> {
                         None => Vec::new(),
                     };
                     func_map.insert(
-                        export.name.0.to_string(),
+                        export.name.name.to_string(),
                         FuncDecl {
-                            name: export.name.0.to_string(),
+                            name: export.name.name.to_string(),
                             doc: None,
                             params: param_decls,
                             results: result_decls,
@@ -339,7 +339,7 @@ fn fallback_library_surface(bytes: &[u8]) -> Option<LibrarySurface> {
             Payload::ComponentExportSection(reader) if depth == 1 => {
                 for export in reader.into_iter().flatten() {
                     if export.kind == ComponentExternalKind::Instance {
-                        let full_name = export.name.0.to_string();
+                        let full_name = export.name.name.to_string();
                         let short_name = iface_short_name(&full_name);
                         instance_exports.push((full_name, short_name));
                     }
