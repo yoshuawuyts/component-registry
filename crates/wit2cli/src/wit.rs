@@ -181,6 +181,19 @@ pub enum LibraryExtractError {
     },
 }
 
+impl LibraryExtractError {
+    /// Whether this error means a single export should be skipped (it uses a
+    /// type we cannot express as a CLI argument) rather than aborting the
+    /// whole extraction. Decode/invariant failures are *not* skippable — they
+    /// indicate a real problem and must propagate so extraction fails loudly.
+    fn is_skippable(&self) -> bool {
+        matches!(
+            self,
+            LibraryExtractError::Resource { .. } | LibraryExtractError::UnsupportedKind { .. }
+        )
+    }
+}
+
 /// Best-effort extraction for components that lack a `component-type` custom
 /// section (e.g. components built with older `wit-bindgen` toolchains).
 ///
@@ -431,7 +444,9 @@ pub fn extract_library_surface(bytes: &[u8]) -> Result<LibrarySurface, LibraryEx
                 match func_to_decl(&resolve, &func.name, func) {
                     Ok(decl) => items.push(LibraryItem::Func(decl)),
                     // skip functions with unsupported types (streams, futures, resources, etc.)
-                    Err(e) => skipped.push(e.to_string()),
+                    Err(e) if e.is_skippable() => skipped.push(e.to_string()),
+                    // decode/invariant errors are real bugs — fail loudly.
+                    Err(e) => return Err(e),
                 }
             }
             WorldItem::Interface { id, .. } => {
@@ -452,7 +467,9 @@ pub fn extract_library_surface(bytes: &[u8]) -> Result<LibrarySurface, LibraryEx
                     match func_to_decl(&resolve, &func.name, func) {
                         Ok(decl) => funcs.push(decl),
                         // skip functions with unsupported types (streams, futures, resources, etc.)
-                        Err(e) => skipped.push(e.to_string()),
+                        Err(e) if e.is_skippable() => skipped.push(e.to_string()),
+                        // decode/invariant errors are real bugs — fail loudly.
+                        Err(e) => return Err(e),
                     }
                 }
                 if !funcs.is_empty() {

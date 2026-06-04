@@ -197,9 +197,16 @@ fn add_param_args(
                     let arg = Arg::new(flag.clone())
                         .long(flag)
                         .required(false)
-                        .num_args(1)
                         .help(format!("field `{fname}` of optional `{}`", param.name));
-                    cmd = cmd.arg(attach_value_parser(arg, effective));
+                    // list<T> fields are repeatable flags: --flag v1 --flag v2,
+                    // matching how non-optional record list fields are collected.
+                    if let WitTy::List(inner) = effective {
+                        let arg = arg.action(ArgAction::Append).num_args(1);
+                        cmd = cmd.arg(attach_value_parser(arg, inner));
+                    } else {
+                        let arg = arg.num_args(1);
+                        cmd = cmd.arg(attach_value_parser(arg, effective));
+                    }
                 }
                 Ok(cmd)
             }
@@ -1225,5 +1232,166 @@ mod tests {
         ))]);
         let err = build_clap(&s, "test").expect_err("must detect collision");
         assert!(matches!(err, CliError::FlagCollision { ref flag } if flag == "a-b-c"));
+    }
+
+    // r[verify run.library-args]
+    #[test]
+    fn option_record_collapses_to_none() {
+        // option<record> with none of its --param-field flags supplied
+        // collapses to `none`.
+        let rec_ty = WitTy::Record(vec![
+            ("name".to_string(), WitTy::String),
+            ("age".to_string(), WitTy::U32),
+        ]);
+        let s = surface(vec![LibraryItem::Func(func(
+            "set",
+            vec![("who", WitTy::Option(Box::new(rec_ty)))],
+        ))]);
+        let inv = parse(&s, &["set"]).unwrap();
+        assert!(matches!(&inv.args[0], Val::Option(None)));
+    }
+
+    // r[verify run.library-args]
+    #[test]
+    fn option_record_with_values() {
+        // Supplying any field flag materializes the whole record inside `some`.
+        let rec_ty = WitTy::Record(vec![
+            ("name".to_string(), WitTy::String),
+            ("age".to_string(), WitTy::Option(Box::new(WitTy::U32))),
+        ]);
+        let s = surface(vec![LibraryItem::Func(func(
+            "set",
+            vec![("who", WitTy::Option(Box::new(rec_ty)))],
+        ))]);
+        let inv = parse(&s, &["set", "--who-name", "ada"]).unwrap();
+        let Val::Option(Some(boxed)) = &inv.args[0] else {
+            panic!("expected some(record)");
+        };
+        let Val::Record(pairs) = boxed.as_ref() else {
+            panic!("expected record");
+        };
+        assert!(matches!(&pairs[0].1, Val::String(s) if s == "ada"));
+        // The unsupplied optional field is `none`.
+        assert!(matches!(&pairs[1].1, Val::Option(None)));
+    }
+
+    // r[verify run.library-args]
+    #[test]
+    fn option_record_with_repeatable_list_field() {
+        // A list field inside option<record> must accept multiple
+        // --param-field occurrences, like non-optional record list fields.
+        let rec_ty = WitTy::Record(vec![
+            ("name".to_string(), WitTy::String),
+            ("tags".to_string(), WitTy::List(Box::new(WitTy::String))),
+        ]);
+        let s = surface(vec![LibraryItem::Func(func(
+            "set",
+            vec![("who", WitTy::Option(Box::new(rec_ty)))],
+        ))]);
+        let inv = parse(
+            &s,
+            &[
+                "set",
+                "--who-name",
+                "ada",
+                "--who-tags",
+                "a",
+                "--who-tags",
+                "b",
+            ],
+        )
+        .unwrap();
+        let Val::Option(Some(boxed)) = &inv.args[0] else {
+            panic!("expected some(record)");
+        };
+        let Val::Record(pairs) = boxed.as_ref() else {
+            panic!("expected record");
+        };
+        assert_eq!(pairs[1].0, "tags");
+        let Val::List(elems) = &pairs[1].1 else {
+            panic!("expected list");
+        };
+        assert_eq!(elems.len(), 2);
+        assert!(matches!(&elems[0], Val::String(s) if s == "a"));
+        assert!(matches!(&elems[1], Val::String(s) if s == "b"));
+    }
+
+    // r[verify run.library-args]
+    #[test]
+    fn list_record_json_input() {
+        // list<record> elements are supplied as JSON object strings, one per
+        // repeated flag occurrence, and may contain nested options/lists.
+        let rec_ty = WitTy::Record(vec![
+            ("name".to_string(), WitTy::String),
+            ("age".to_string(), WitTy::Option(Box::new(WitTy::U32))),
+            ("tags".to_string(), WitTy::List(Box::new(WitTy::String))),
+        ]);
+        let s = surface(vec![LibraryItem::Func(func(
+            "add",
+            vec![("people", WitTy::List(Box::new(rec_ty)))],
+        ))]);
+        let inv = parse(
+            &s,
+            &[
+                "add",
+                r#"{"name":"ada","age":36,"tags":["x","y"]}"#,
+                r#"{"name":"bob","tags":[]}"#,
+            ],
+        )
+        .unwrap();
+        let Val::List(elems) = &inv.args[0] else {
+            panic!("expected list");
+        };
+        assert_eq!(elems.len(), 2);
+        let Val::Record(first) = &elems[0] else {
+            panic!("expected record");
+        };
+        assert!(matches!(&first[0].1, Val::String(s) if s == "ada"));
+        assert!(matches!(&first[1].1, Val::Option(Some(b)) if matches!(b.as_ref(), Val::U32(36))));
+        let Val::List(tags) = &first[2].1 else {
+            panic!("expected list");
+        };
+        assert_eq!(tags.len(), 2);
+        // Second element: omitted optional `age` becomes `none`.
+        let Val::Record(second) = &elems[1] else {
+            panic!("expected record");
+        };
+        assert!(matches!(&second[1].1, Val::Option(None)));
+    }
+
+    // r[verify run.library-args]
+    #[test]
+    fn list_record_missing_required_field_errors() {
+        // A required (non-option) field absent from the JSON object is an error.
+        let rec_ty = WitTy::Record(vec![
+            ("name".to_string(), WitTy::String),
+            ("age".to_string(), WitTy::U32),
+        ]);
+        let s = surface(vec![LibraryItem::Func(func(
+            "add",
+            vec![("people", WitTy::List(Box::new(rec_ty)))],
+        ))]);
+        let err = parse(&s, &["add", r#"{"name":"ada"}"#])
+            .expect_err("missing required field must error");
+        assert!(
+            err.contains("age"),
+            "expected error to mention `age`: {err}"
+        );
+    }
+
+    // r[verify run.library-args]
+    #[test]
+    fn list_record_invalid_json_errors() {
+        // A malformed JSON object string is rejected.
+        let rec_ty = WitTy::Record(vec![("name".to_string(), WitTy::String)]);
+        let s = surface(vec![LibraryItem::Func(func(
+            "add",
+            vec![("people", WitTy::List(Box::new(rec_ty)))],
+        ))]);
+        let err = parse(&s, &["add", "not-json"]).expect_err("invalid JSON must error");
+        assert!(
+            err.to_lowercase().contains("json"),
+            "expected error to mention JSON: {err}"
+        );
     }
 }
