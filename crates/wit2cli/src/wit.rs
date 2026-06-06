@@ -204,53 +204,108 @@ impl LibraryExtractError {
 ///
 /// Returns `Some(LibrarySurface)` if at least one interface with at least one
 /// function was found, `None` otherwise.
+fn prim_to_wit(p: wasmparser::PrimitiveValType) -> Option<WitTy> {
+    #[allow(clippy::match_wildcard_for_single_variants)]
+    match p {
+        wasmparser::PrimitiveValType::Bool => Some(WitTy::Bool),
+        wasmparser::PrimitiveValType::S8 => Some(WitTy::S8),
+        wasmparser::PrimitiveValType::S16 => Some(WitTy::S16),
+        wasmparser::PrimitiveValType::S32 => Some(WitTy::S32),
+        wasmparser::PrimitiveValType::S64 => Some(WitTy::S64),
+        wasmparser::PrimitiveValType::U8 => Some(WitTy::U8),
+        wasmparser::PrimitiveValType::U16 => Some(WitTy::U16),
+        wasmparser::PrimitiveValType::U32 => Some(WitTy::U32),
+        wasmparser::PrimitiveValType::U64 => Some(WitTy::U64),
+        wasmparser::PrimitiveValType::F32 => Some(WitTy::F32),
+        wasmparser::PrimitiveValType::F64 => Some(WitTy::F64),
+        wasmparser::PrimitiveValType::Char => Some(WitTy::Char),
+        wasmparser::PrimitiveValType::String => Some(WitTy::String),
+        // `error-context` (and any future kinds) cannot be CLI args.
+        _ => None,
+    }
+}
+
+fn cval_to_wit(cty: wasmparser::ComponentValType) -> Option<WitTy> {
+    match cty {
+        wasmparser::ComponentValType::Primitive(p) => prim_to_wit(p),
+        wasmparser::ComponentValType::Type(_) => None, // complex type: skip
+    }
+}
+
+fn build_func_decl(
+    name: &str,
+    params: &[(String, wasmparser::ComponentValType)],
+    result: Option<wasmparser::ComponentValType>,
+) -> Option<FuncDecl> {
+    let mut param_decls = Vec::new();
+    for (pname, pty) in params {
+        let wty = cval_to_wit(*pty)?;
+        param_decls.push(ParamDecl {
+            name: pname.clone(),
+            ty: wty,
+        });
+    }
+    let result_decls = match result {
+        Some(r) => vec![ResultDecl {
+            ty: cval_to_wit(r)?,
+        }],
+        None => Vec::new(),
+    };
+    Some(FuncDecl {
+        name: name.to_string(),
+        doc: None,
+        params: param_decls,
+        results: result_decls,
+    })
+}
+
+fn iface_short_name(export_name: &str) -> String {
+    // "local:time-server/time"   → "time"
+    // "wasi:io/streams@0.2.0"   → "streams"
+    let after_slash = export_name.rsplit('/').next().unwrap_or(export_name);
+    after_slash
+        .split('@')
+        .next()
+        .unwrap_or(after_slash)
+        .to_string()
+}
+
+fn parse_package_docs(
+    pkg_docs_json: Option<&str>,
+) -> Option<std::collections::HashMap<String, std::collections::HashMap<String, Option<String>>>> {
+    pkg_docs_json.and_then(|json| {
+        let val: serde_json::Value = serde_json::from_str(json).ok()?;
+        let ifaces = val.get("interfaces")?.as_object()?;
+        let mut result: std::collections::HashMap<
+            String,
+            std::collections::HashMap<String, Option<String>>,
+        > = std::collections::HashMap::new();
+        for (iname, ival) in ifaces {
+            let mut fmap: std::collections::HashMap<String, Option<String>> =
+                std::collections::HashMap::new();
+            if let Some(funcs) = ival.get("funcs").and_then(|v| v.as_object()) {
+                for (fname, fval) in funcs {
+                    let doc = fval
+                        .get("docs")
+                        .and_then(|v| v.as_str())
+                        .map(ToString::to_string);
+                    fmap.insert(fname.clone(), doc);
+                }
+            }
+            result.insert(iname.clone(), fmap);
+        }
+        Some(result)
+    })
+}
+
 fn fallback_library_surface(bytes: &[u8]) -> Option<LibrarySurface> {
     use std::collections::HashMap;
     use wasmparser::{
         ComponentExternalKind, ComponentType as WpComponentType, ComponentTypeRef,
-        ComponentValType, Encoding, Parser, Payload, PrimitiveValType,
+        ComponentValType, Encoding, Parser, Payload,
     };
     // A nested component function signature: its named params and optional result.
     type InnerFunc = (Vec<(String, ComponentValType)>, Option<ComponentValType>);
-
-    fn prim_to_wit(p: PrimitiveValType) -> Option<WitTy> {
-        #[allow(clippy::match_wildcard_for_single_variants)]
-        match p {
-            PrimitiveValType::Bool => Some(WitTy::Bool),
-            PrimitiveValType::S8 => Some(WitTy::S8),
-            PrimitiveValType::S16 => Some(WitTy::S16),
-            PrimitiveValType::S32 => Some(WitTy::S32),
-            PrimitiveValType::S64 => Some(WitTy::S64),
-            PrimitiveValType::U8 => Some(WitTy::U8),
-            PrimitiveValType::U16 => Some(WitTy::U16),
-            PrimitiveValType::U32 => Some(WitTy::U32),
-            PrimitiveValType::U64 => Some(WitTy::U64),
-            PrimitiveValType::F32 => Some(WitTy::F32),
-            PrimitiveValType::F64 => Some(WitTy::F64),
-            PrimitiveValType::Char => Some(WitTy::Char),
-            PrimitiveValType::String => Some(WitTy::String),
-            // `error-context` (and any future kinds) cannot be CLI args.
-            _ => None,
-        }
-    }
-
-    fn cval_to_wit(cty: ComponentValType) -> Option<WitTy> {
-        match cty {
-            ComponentValType::Primitive(p) => prim_to_wit(p),
-            ComponentValType::Type(_) => None, // complex type: skip
-        }
-    }
-
-    fn iface_short_name(export_name: &str) -> String {
-        // "local:time-server/time"   → "time"
-        // "wasi:io/streams@0.2.0"   → "streams"
-        let after_slash = export_name.rsplit('/').next().unwrap_or(export_name);
-        after_slash
-            .split('@')
-            .next()
-            .unwrap_or(after_slash)
-            .to_string()
-    }
 
     let mut depth: u32 = 0;
     let mut in_inner_component = false;
@@ -303,37 +358,10 @@ fn fallback_library_surface(bytes: &[u8]) -> Option<LibrarySurface> {
                     let Some(Some((params, result))) = inner_types.get(type_idx) else {
                         continue;
                     };
-                    let mut param_decls = Vec::new();
-                    let mut params_ok = true;
-                    for (pname, pty) in params {
-                        let Some(wty) = cval_to_wit(*pty) else {
-                            params_ok = false;
-                            break;
-                        };
-                        param_decls.push(ParamDecl {
-                            name: pname.clone(),
-                            ty: wty,
-                        });
-                    }
-                    if !params_ok {
+                    let Some(func_decl) = build_func_decl(export.name.name, params, *result) else {
                         continue;
-                    }
-                    let result_decls = match result {
-                        Some(r) => match cval_to_wit(*r) {
-                            Some(wty) => vec![ResultDecl { ty: wty }],
-                            None => continue,
-                        },
-                        None => Vec::new(),
                     };
-                    func_map.insert(
-                        export.name.name.to_string(),
-                        FuncDecl {
-                            name: export.name.name.to_string(),
-                            doc: None,
-                            params: param_decls,
-                            results: result_decls,
-                        },
-                    );
+                    func_map.insert(export.name.name.to_string(), func_decl);
                 }
             }
             Payload::ComponentExportSection(reader) if depth == 1 => {
@@ -358,26 +386,7 @@ fn fallback_library_surface(bytes: &[u8]) -> Option<LibrarySurface> {
 
     // Parse `package-docs` JSON to get interface→(func→doc) mapping.
     // Format: {"interfaces":{"time":{"funcs":{"get-current-time":{"docs":"..."}}}}}
-    let iface_funcs: Option<HashMap<String, HashMap<String, Option<String>>>> =
-        pkg_docs_json.as_deref().and_then(|json| {
-            let val: serde_json::Value = serde_json::from_str(json).ok()?;
-            let ifaces = val.get("interfaces")?.as_object()?;
-            let mut result: HashMap<String, HashMap<String, Option<String>>> = HashMap::new();
-            for (iname, ival) in ifaces {
-                let mut fmap: HashMap<String, Option<String>> = HashMap::new();
-                if let Some(funcs) = ival.get("funcs").and_then(|v| v.as_object()) {
-                    for (fname, fval) in funcs {
-                        let doc = fval
-                            .get("docs")
-                            .and_then(|v| v.as_str())
-                            .map(ToString::to_string);
-                        fmap.insert(fname.clone(), doc);
-                    }
-                }
-                result.insert(iname.clone(), fmap);
-            }
-            Some(result)
-        });
+    let iface_funcs = parse_package_docs(pkg_docs_json.as_deref());
 
     let mut items = Vec::new();
     for (export_name, short_name) in &instance_exports {
