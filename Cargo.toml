@@ -26,7 +26,7 @@ exclude = [
 ]
 
 [workspace.package]
-version = "0.3.0"
+version = "0.4.0"
 documentation = "https://github.com/yoshuawuyts/wasm"
 repository = "https://github.com/yoshuawuyts/wasm"
 edition = "2024"
@@ -87,15 +87,15 @@ str_to_string = "allow"
 [workspace.dependencies]
 
 # local dependencies
-component-manifest = { path = "crates/component-manifest", version = "0.3.0" }
-component-meta-registry = { path = "crates/component-meta-registry", version = "0.3.0" }
-component-meta-registry-client = { path = "crates/component-meta-registry-client", version = "0.3.0", default-features = false }
-component-meta-registry-types = { path = "crates/component-meta-registry-types", version = "0.3.0" }
-component-package-manager = { path = "crates/component-package-manager", version = "0.3.0" }
-component-package-manager-migration = { path = "crates/component-package-manager-migration", version = "0.3.0" }
-component-cli-internal-run = { path = "crates/component-cli-internal-run", version = "0.3.0" }
-component-detector = { path = "crates/component-detector", version = "0.3.0" }
-wit2cli = { path = "crates/wit2cli", version = "0.3.0" }
+component-manifest = { path = "crates/component-manifest", version = "0.4.0" }
+component-meta-registry = { path = "crates/component-meta-registry", version = "0.4.0" }
+component-meta-registry-client = { path = "crates/component-meta-registry-client", version = "0.4.0", default-features = false }
+component-meta-registry-types = { path = "crates/component-meta-registry-types", version = "0.4.0" }
+component-package-manager = { path = "crates/component-package-manager", version = "0.4.0" }
+component-package-manager-migration = { path = "crates/component-package-manager-migration", version = "0.4.0" }
+component-cli-internal-run = { path = "crates/component-cli-internal-run", version = "0.4.0" }
+component-detector = { path = "crates/component-detector", version = "0.4.0" }
+wit2cli = { path = "crates/wit2cli", version = "0.4.0" }
 
 # shared dependencies
 anyhow = "1.0.100"
