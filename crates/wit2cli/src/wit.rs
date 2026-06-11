@@ -194,217 +194,224 @@ impl LibraryExtractError {
     }
 }
 
-/// Best-effort extraction for components that lack a `component-type` custom
-/// section (e.g. components built with older `wit-bindgen` toolchains).
-///
-/// Streams the binary through [`wasmparser::Validator`] to obtain the
-/// fully-typed [`wasmparser::types::Types`] table, then resolves each
-/// root-level export via [`TypesRef::component_item_for_export`]. Free
-/// functions become [`LibraryItem::Func`]; instance exports become
-/// [`LibraryItem::Interface`] entries containing one [`FuncDecl`] per
-/// exported function. The full WIT type vocabulary is supported
-/// (records, variants, lists, options, results, tuples, enums, flags),
-/// not just the primitive subset.
-///
-/// Individual functions that reference unsupported types (resources,
-/// futures, streams, maps, fixed-length lists, error-context) are
-/// silently dropped — that's consistent with the `Option<LibrarySurface>`
-/// contract of the fallback path. When extraction fails entirely or
-/// yields nothing, returns `None` so the original `wit_parser::decode`
-/// error can propagate.
-fn fallback_library_surface(bytes: &[u8]) -> Option<LibrarySurface> {
-    use std::collections::HashMap;
-    use wasmparser::component_types::{
-        ComponentDefinedType, ComponentDefinedTypeId, ComponentEntityType, ComponentFuncType,
-        ComponentFuncTypeId, ComponentInstanceType, ComponentInstanceTypeId, ComponentValType,
-    };
-    use wasmparser::types::TypesRef;
-    use wasmparser::{
-        Encoding, Parser, Payload, PrimitiveValType, ValidPayload, Validator, WasmFeatures,
-    };
+/// Per-interface, per-function documentation strings keyed by the
+/// interface's short name (or `""` for free, top-level functions).
+type PackageDocs = std::collections::HashMap<String, std::collections::HashMap<String, String>>;
 
-    fn prim_to_wit(p: PrimitiveValType) -> Option<WitTy> {
-        #[allow(clippy::match_wildcard_for_single_variants)]
-        match p {
-            PrimitiveValType::Bool => Some(WitTy::Bool),
-            PrimitiveValType::S8 => Some(WitTy::S8),
-            PrimitiveValType::S16 => Some(WitTy::S16),
-            PrimitiveValType::S32 => Some(WitTy::S32),
-            PrimitiveValType::S64 => Some(WitTy::S64),
-            PrimitiveValType::U8 => Some(WitTy::U8),
-            PrimitiveValType::U16 => Some(WitTy::U16),
-            PrimitiveValType::U32 => Some(WitTy::U32),
-            PrimitiveValType::U64 => Some(WitTy::U64),
-            PrimitiveValType::F32 => Some(WitTy::F32),
-            PrimitiveValType::F64 => Some(WitTy::F64),
-            PrimitiveValType::Char => Some(WitTy::Char),
-            PrimitiveValType::String => Some(WitTy::String),
-            // `error-context` (and any future kinds) cannot be CLI args.
-            _ => None,
-        }
+/// Outcome of streaming a component through `wasmparser::Validator` in
+/// the fallback path: the fully populated type table, the root-level
+/// export names in declaration order, and the raw bytes of the
+/// `package-docs` custom section (if present).
+struct FallbackParts {
+    types: wasmparser::types::Types,
+    root_exports: Vec<String>,
+    package_docs: Option<Vec<u8>>,
+}
+
+fn fallback_prim_to_wit(p: wasmparser::PrimitiveValType) -> Option<WitTy> {
+    use wasmparser::PrimitiveValType;
+    #[allow(clippy::match_wildcard_for_single_variants)]
+    match p {
+        PrimitiveValType::Bool => Some(WitTy::Bool),
+        PrimitiveValType::S8 => Some(WitTy::S8),
+        PrimitiveValType::S16 => Some(WitTy::S16),
+        PrimitiveValType::S32 => Some(WitTy::S32),
+        PrimitiveValType::S64 => Some(WitTy::S64),
+        PrimitiveValType::U8 => Some(WitTy::U8),
+        PrimitiveValType::U16 => Some(WitTy::U16),
+        PrimitiveValType::U32 => Some(WitTy::U32),
+        PrimitiveValType::U64 => Some(WitTy::U64),
+        PrimitiveValType::F32 => Some(WitTy::F32),
+        PrimitiveValType::F64 => Some(WitTy::F64),
+        PrimitiveValType::Char => Some(WitTy::Char),
+        PrimitiveValType::String => Some(WitTy::String),
+        // `error-context` (and any future kinds) cannot be CLI args.
+        _ => None,
     }
+}
 
-    fn cval_to_wit(r: &TypesRef<'_>, vt: &ComponentValType) -> Option<WitTy> {
-        match vt {
-            ComponentValType::Primitive(p) => prim_to_wit(*p),
-            ComponentValType::Type(id) => defined_to_wit(r, defined_type(r, *id)),
-        }
+fn fallback_cval_to_wit(
+    r: &wasmparser::types::TypesRef<'_>,
+    vt: &wasmparser::component_types::ComponentValType,
+) -> Option<WitTy> {
+    use wasmparser::component_types::ComponentValType;
+    match vt {
+        ComponentValType::Primitive(p) => fallback_prim_to_wit(*p),
+        ComponentValType::Type(id) => fallback_defined_to_wit(r, fallback_defined_type(r, *id)),
     }
+}
 
-    fn defined_to_wit(r: &TypesRef<'_>, d: &ComponentDefinedType) -> Option<WitTy> {
-        match d {
-            ComponentDefinedType::Primitive(p) => prim_to_wit(*p),
-            ComponentDefinedType::Record(rec) => {
-                let mut fields = Vec::with_capacity(rec.fields.len());
-                for (fname, fty) in &rec.fields {
-                    fields.push((fname.to_string(), cval_to_wit(r, fty)?));
-                }
-                Some(WitTy::Record(fields))
+fn fallback_defined_to_wit(
+    r: &wasmparser::types::TypesRef<'_>,
+    d: &wasmparser::component_types::ComponentDefinedType,
+) -> Option<WitTy> {
+    use wasmparser::component_types::ComponentDefinedType;
+    match d {
+        ComponentDefinedType::Primitive(p) => fallback_prim_to_wit(*p),
+        ComponentDefinedType::Record(rec) => {
+            let mut fields = Vec::with_capacity(rec.fields.len());
+            for (fname, fty) in &rec.fields {
+                fields.push((fname.to_string(), fallback_cval_to_wit(r, fty)?));
             }
-            ComponentDefinedType::Variant(v) => {
-                let mut cases = Vec::with_capacity(v.cases.len());
-                for (cname, case) in &v.cases {
-                    let payload = match &case.ty {
-                        Some(t) => Some(Box::new(cval_to_wit(r, t)?)),
-                        None => None,
-                    };
-                    cases.push((cname.to_string(), payload));
-                }
-                Some(WitTy::Variant(cases))
-            }
-            ComponentDefinedType::List(t) => Some(WitTy::List(Box::new(cval_to_wit(r, t)?))),
-            ComponentDefinedType::Option(t) => Some(WitTy::Option(Box::new(cval_to_wit(r, t)?))),
-            ComponentDefinedType::Tuple(t) => {
-                let mut tys = Vec::with_capacity(t.types.len());
-                for v in &t.types {
-                    tys.push(cval_to_wit(r, v)?);
-                }
-                Some(WitTy::Tuple(tys))
-            }
-            ComponentDefinedType::Enum(s) => {
-                Some(WitTy::Enum(s.iter().map(ToString::to_string).collect()))
-            }
-            ComponentDefinedType::Flags(s) => {
-                Some(WitTy::Flags(s.iter().map(ToString::to_string).collect()))
-            }
-            ComponentDefinedType::Result { ok, err } => {
-                let ok = match ok {
-                    Some(t) => Some(Box::new(cval_to_wit(r, t)?)),
+            Some(WitTy::Record(fields))
+        }
+        ComponentDefinedType::Variant(v) => {
+            let mut cases = Vec::with_capacity(v.cases.len());
+            for (cname, case) in &v.cases {
+                let payload = match &case.ty {
+                    Some(t) => Some(Box::new(fallback_cval_to_wit(r, t)?)),
                     None => None,
                 };
-                let err = match err {
-                    Some(t) => Some(Box::new(cval_to_wit(r, t)?)),
-                    None => None,
-                };
-                Some(WitTy::Result { ok, err })
+                cases.push((cname.to_string(), payload));
             }
-            // Unsupported: owned/borrowed handles (resources), futures,
-            // streams, maps, fixed-length lists. Skip the affected function.
-            ComponentDefinedType::Own(_)
-            | ComponentDefinedType::Borrow(_)
-            | ComponentDefinedType::Future(_)
-            | ComponentDefinedType::Stream(_)
-            | ComponentDefinedType::Map(_, _)
-            | ComponentDefinedType::FixedLengthList(_, _) => None,
+            Some(WitTy::Variant(cases))
         }
-    }
-
-    // Type ids surfaced by `wasmparser::Validator` always resolve, so the
-    // underlying `Index` impl can't panic on us — these wrappers just
-    // isolate the one place clippy would otherwise flag.
-    #[allow(clippy::indexing_slicing)]
-    fn func_type<'a>(r: &'a TypesRef<'a>, id: ComponentFuncTypeId) -> &'a ComponentFuncType {
-        &r[id]
-    }
-    #[allow(clippy::indexing_slicing)]
-    fn instance_type<'a>(
-        r: &'a TypesRef<'a>,
-        id: ComponentInstanceTypeId,
-    ) -> &'a ComponentInstanceType {
-        &r[id]
-    }
-    #[allow(clippy::indexing_slicing)]
-    fn defined_type<'a>(
-        r: &'a TypesRef<'a>,
-        id: ComponentDefinedTypeId,
-    ) -> &'a ComponentDefinedType {
-        &r[id]
-    }
-
-    fn build_func_decl(
-        r: &TypesRef<'_>,
-        name: &str,
-        func_ty: &ComponentFuncType,
-        doc: Option<String>,
-    ) -> Option<FuncDecl> {
-        let mut params = Vec::with_capacity(func_ty.params.len());
-        for (pname, pty) in &func_ty.params {
-            params.push(ParamDecl {
-                name: pname.to_string(),
-                ty: cval_to_wit(r, pty)?,
-            });
+        ComponentDefinedType::List(t) => Some(WitTy::List(Box::new(fallback_cval_to_wit(r, t)?))),
+        ComponentDefinedType::Option(t) => {
+            Some(WitTy::Option(Box::new(fallback_cval_to_wit(r, t)?)))
         }
-        let results = match &func_ty.result {
-            Some(ty) => vec![ResultDecl {
-                ty: cval_to_wit(r, ty)?,
-            }],
-            None => Vec::new(),
-        };
-        Some(FuncDecl {
-            name: name.to_string(),
-            doc,
-            params,
-            results,
-        })
-    }
-
-    fn iface_short_name(export_name: &str) -> String {
-        // "local:time-server/time"   → "time"
-        // "wasi:io/streams@0.2.0"   → "streams"
-        let after_slash = export_name.rsplit('/').next().unwrap_or(export_name);
-        after_slash
-            .split('@')
-            .next()
-            .unwrap_or(after_slash)
-            .to_string()
-    }
-
-    // Parse `package-docs` JSON into `{ iface_short_name -> { func_name -> doc } }`.
-    // The empty string `""` keys the top-level (free) functions. Unknown JSON shapes
-    // are silently ignored — docs are a best-effort enhancement, never required.
-    fn parse_package_docs(raw: Option<&[u8]>) -> HashMap<String, HashMap<String, String>> {
-        let mut out: HashMap<String, HashMap<String, String>> = HashMap::new();
-        let Some(bytes) = raw else { return out };
-        let Ok(json) = serde_json::from_slice::<serde_json::Value>(bytes) else {
-            return out;
-        };
-        if let Some(top_funcs) = json.get("funcs").and_then(|v| v.as_object()) {
-            let entry = out.entry(String::new()).or_default();
-            for (fname, fobj) in top_funcs {
-                if let Some(doc) = fobj.get("docs").and_then(|d| d.as_str()) {
-                    entry.insert(fname.clone(), doc.to_string());
-                }
+        ComponentDefinedType::Tuple(t) => {
+            let mut tys = Vec::with_capacity(t.types.len());
+            for v in &t.types {
+                tys.push(fallback_cval_to_wit(r, v)?);
             }
+            Some(WitTy::Tuple(tys))
         }
-        if let Some(ifaces) = json.get("interfaces").and_then(|v| v.as_object()) {
-            for (iname, iobj) in ifaces {
-                let Some(funcs) = iobj.get("funcs").and_then(|v| v.as_object()) else {
-                    continue;
-                };
-                let entry = out.entry(iname.clone()).or_default();
-                for (fname, fobj) in funcs {
-                    if let Some(doc) = fobj.get("docs").and_then(|d| d.as_str()) {
-                        entry.insert(fname.clone(), doc.to_string());
-                    }
-                }
-            }
+        ComponentDefinedType::Enum(s) => {
+            Some(WitTy::Enum(s.iter().map(ToString::to_string).collect()))
         }
-        out
+        ComponentDefinedType::Flags(s) => {
+            Some(WitTy::Flags(s.iter().map(ToString::to_string).collect()))
+        }
+        ComponentDefinedType::Result { ok, err } => {
+            let ok = match ok {
+                Some(t) => Some(Box::new(fallback_cval_to_wit(r, t)?)),
+                None => None,
+            };
+            let err = match err {
+                Some(t) => Some(Box::new(fallback_cval_to_wit(r, t)?)),
+                None => None,
+            };
+            Some(WitTy::Result { ok, err })
+        }
+        // Unsupported: owned/borrowed handles (resources), futures,
+        // streams, maps, fixed-length lists. Skip the affected function.
+        ComponentDefinedType::Own(_)
+        | ComponentDefinedType::Borrow(_)
+        | ComponentDefinedType::Future(_)
+        | ComponentDefinedType::Stream(_)
+        | ComponentDefinedType::Map(_, _)
+        | ComponentDefinedType::FixedLengthList(_, _) => None,
     }
+}
 
-    // Stream the bytes through the validator, recording the root export
-    // names + `package-docs` custom section. The validator returns the
-    // fully-populated `Types` on its outermost `ValidPayload::End`.
+// Type ids surfaced by `wasmparser::Validator` always resolve, so the
+// underlying `Index` impl can't panic on us — these wrappers just
+// isolate the one place clippy would otherwise flag.
+#[allow(clippy::indexing_slicing)]
+fn fallback_func_type<'a>(
+    r: &'a wasmparser::types::TypesRef<'a>,
+    id: wasmparser::component_types::ComponentFuncTypeId,
+) -> &'a wasmparser::component_types::ComponentFuncType {
+    &r[id]
+}
+
+#[allow(clippy::indexing_slicing)]
+fn fallback_instance_type<'a>(
+    r: &'a wasmparser::types::TypesRef<'a>,
+    id: wasmparser::component_types::ComponentInstanceTypeId,
+) -> &'a wasmparser::component_types::ComponentInstanceType {
+    &r[id]
+}
+
+#[allow(clippy::indexing_slicing)]
+fn fallback_defined_type<'a>(
+    r: &'a wasmparser::types::TypesRef<'a>,
+    id: wasmparser::component_types::ComponentDefinedTypeId,
+) -> &'a wasmparser::component_types::ComponentDefinedType {
+    &r[id]
+}
+
+fn fallback_build_func_decl(
+    r: &wasmparser::types::TypesRef<'_>,
+    name: &str,
+    func_ty: &wasmparser::component_types::ComponentFuncType,
+    doc: Option<String>,
+) -> Option<FuncDecl> {
+    let mut params = Vec::with_capacity(func_ty.params.len());
+    for (pname, pty) in &func_ty.params {
+        params.push(ParamDecl {
+            name: pname.to_string(),
+            ty: fallback_cval_to_wit(r, pty)?,
+        });
+    }
+    let results = match &func_ty.result {
+        Some(ty) => vec![ResultDecl {
+            ty: fallback_cval_to_wit(r, ty)?,
+        }],
+        None => Vec::new(),
+    };
+    Some(FuncDecl {
+        name: name.to_string(),
+        doc,
+        params,
+        results,
+    })
+}
+
+fn fallback_iface_short_name(export_name: &str) -> String {
+    // "local:time-server/time"   → "time"
+    // "wasi:io/streams@0.2.0"   → "streams"
+    let after_slash = export_name.rsplit('/').next().unwrap_or(export_name);
+    after_slash
+        .split('@')
+        .next()
+        .unwrap_or(after_slash)
+        .to_string()
+}
+
+/// Parse `package-docs` JSON into `{ iface_short_name -> { func_name -> doc } }`.
+/// The empty string `""` keys the top-level (free) functions. Unknown JSON shapes
+/// are silently ignored — docs are a best-effort enhancement, never required.
+fn fallback_parse_package_docs(raw: Option<&[u8]>) -> PackageDocs {
+    let mut out: PackageDocs = std::collections::HashMap::new();
+    let Some(bytes) = raw else { return out };
+    let Ok(json) = serde_json::from_slice::<serde_json::Value>(bytes) else {
+        return out;
+    };
+    if let Some(top_funcs) = json.get("funcs").and_then(|v| v.as_object()) {
+        let entry = out.entry(String::new()).or_default();
+        collect_doc_strings(top_funcs, entry);
+    }
+    if let Some(ifaces) = json.get("interfaces").and_then(|v| v.as_object()) {
+        for (iname, iobj) in ifaces {
+            let Some(funcs) = iobj.get("funcs").and_then(|v| v.as_object()) else {
+                continue;
+            };
+            let entry = out.entry(iname.clone()).or_default();
+            collect_doc_strings(funcs, entry);
+        }
+    }
+    out
+}
+
+fn collect_doc_strings(
+    funcs: &serde_json::Map<String, serde_json::Value>,
+    out: &mut std::collections::HashMap<String, String>,
+) {
+    for (fname, fobj) in funcs {
+        if let Some(doc) = fobj.get("docs").and_then(|d| d.as_str()) {
+            out.insert(fname.clone(), doc.to_string());
+        }
+    }
+}
+
+/// Stream the bytes through the validator, collecting the type table,
+/// the root export names, and the `package-docs` custom section. Returns
+/// `None` if the binary isn't a valid component.
+fn fallback_validate(bytes: &[u8]) -> Option<FallbackParts> {
+    use wasmparser::{Encoding, Parser, Payload, ValidPayload, Validator, WasmFeatures};
+
     let mut validator = Validator::new_with_features(WasmFeatures::all());
     let mut depth: u32 = 0;
     let mut root_exports: Vec<String> = Vec::new();
@@ -442,9 +449,85 @@ fn fallback_library_surface(bytes: &[u8]) -> Option<LibrarySurface> {
         }
     }
 
-    let types = types?;
+    Some(FallbackParts {
+        types: types?,
+        root_exports,
+        package_docs,
+    })
+}
+
+/// Build an instance `LibraryItem` from a root-level instance export.
+/// Returns `None` for the componentize-py/js `exports` bootstrap
+/// interface (calling its `init` panics) and for instances whose
+/// functions are all unsupported.
+fn fallback_instance_item(
+    r: &wasmparser::types::TypesRef<'_>,
+    export_name: &str,
+    iid: wasmparser::component_types::ComponentInstanceTypeId,
+    docs: &PackageDocs,
+) -> Option<LibraryItem> {
+    use wasmparser::component_types::ComponentEntityType;
+
+    let short = fallback_iface_short_name(export_name);
+    // Skip "exports" — componentize-py/js bootstrap interface.
+    // Calling its `init` panics because the interpreter is already
+    // running. Matches the primary path's skip logic.
+    if short == "exports" {
+        return None;
+    }
+    let iface_ty = fallback_instance_type(r, iid);
+    let iface_docs = docs.get(&short);
+    let mut funcs = Vec::new();
+    for (fname, fitem) in &iface_ty.exports {
+        let ComponentEntityType::Func(fid) = fitem.ty else {
+            continue;
+        };
+        let fname_s = fname.as_str().to_string();
+        let doc = iface_docs.and_then(|m| m.get(&fname_s)).cloned();
+        if let Some(decl) = fallback_build_func_decl(r, &fname_s, fallback_func_type(r, fid), doc) {
+            funcs.push(decl);
+        }
+    }
+    if funcs.is_empty() {
+        return None;
+    }
+    Some(LibraryItem::Interface {
+        name: short,
+        export_name: export_name.to_string(),
+        doc: None,
+        funcs,
+    })
+}
+
+/// Best-effort extraction for components that lack a `component-type` custom
+/// section (e.g. components built with older `wit-bindgen` toolchains).
+///
+/// Streams the binary through [`wasmparser::Validator`] to obtain the
+/// fully-typed [`wasmparser::types::Types`] table, then resolves each
+/// root-level export via
+/// [`TypesRef::component_item_for_export`](wasmparser::types::TypesRef::component_item_for_export).
+/// Free functions become [`LibraryItem::Func`]; instance exports become
+/// [`LibraryItem::Interface`] entries containing one [`FuncDecl`] per
+/// exported function. The full WIT type vocabulary is supported
+/// (records, variants, lists, options, results, tuples, enums, flags),
+/// not just the primitive subset.
+///
+/// Individual functions that reference unsupported types (resources,
+/// futures, streams, maps, fixed-length lists, error-context) are
+/// silently dropped — that's consistent with the `Option<LibrarySurface>`
+/// contract of the fallback path. When extraction fails entirely or
+/// yields nothing, returns `None` so the original `wit_parser::decode`
+/// error can propagate.
+fn fallback_library_surface(bytes: &[u8]) -> Option<LibrarySurface> {
+    use wasmparser::component_types::ComponentEntityType;
+
+    let FallbackParts {
+        types,
+        root_exports,
+        package_docs,
+    } = fallback_validate(bytes)?;
     let r = types.as_ref();
-    let docs = parse_package_docs(package_docs.as_deref());
+    let docs = fallback_parse_package_docs(package_docs.as_deref());
 
     let mut items = Vec::new();
     for export_name in &root_exports {
@@ -454,38 +537,15 @@ fn fallback_library_surface(bytes: &[u8]) -> Option<LibrarySurface> {
         match item.ty {
             ComponentEntityType::Func(fid) => {
                 let doc = docs.get("").and_then(|m| m.get(export_name)).cloned();
-                if let Some(decl) = build_func_decl(&r, export_name, func_type(&r, fid), doc) {
+                if let Some(decl) =
+                    fallback_build_func_decl(&r, export_name, fallback_func_type(&r, fid), doc)
+                {
                     items.push(LibraryItem::Func(decl));
                 }
             }
             ComponentEntityType::Instance(iid) => {
-                let short = iface_short_name(export_name);
-                // Skip "exports" — componentize-py/js bootstrap interface.
-                // Calling its `init` panics because the interpreter is already
-                // running. Matches the primary path's skip logic.
-                if short == "exports" {
-                    continue;
-                }
-                let iface_ty = instance_type(&r, iid);
-                let iface_docs = docs.get(&short);
-                let mut funcs = Vec::new();
-                for (fname, fitem) in &iface_ty.exports {
-                    let ComponentEntityType::Func(fid) = fitem.ty else {
-                        continue;
-                    };
-                    let fname_s = fname.as_str().to_string();
-                    let doc = iface_docs.and_then(|m| m.get(&fname_s)).cloned();
-                    if let Some(decl) = build_func_decl(&r, &fname_s, func_type(&r, fid), doc) {
-                        funcs.push(decl);
-                    }
-                }
-                if !funcs.is_empty() {
-                    items.push(LibraryItem::Interface {
-                        name: short,
-                        export_name: export_name.clone(),
-                        doc: None,
-                        funcs,
-                    });
+                if let Some(item) = fallback_instance_item(&r, export_name, iid, &docs) {
+                    items.push(item);
                 }
             }
             _ => {}
