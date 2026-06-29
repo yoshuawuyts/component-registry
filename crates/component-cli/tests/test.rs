@@ -849,6 +849,129 @@ fn test_run_missing_file() {
 }
 
 // =============================================================================
+// Local run tests (`component run` with no input / own package name)
+// =============================================================================
+
+/// A `wasm.toml` whose `[package]` is the wordmark component, built at the
+/// default artifact path `build/wordmark.wasm`.
+const LOCAL_COMPONENT_MANIFEST: &str = r#"[package]
+name = "test:wordmark"
+version = "0.1.0"
+registry = "ghcr.io/test/wordmark"
+kind = "component"
+file = "build/wordmark.wasm"
+"#;
+
+/// Run the CLI inside `dir` and capture the full raw output.
+fn run_cli_raw_in(dir: &std::path::Path, args: &[&str]) -> std::process::Output {
+    Command::new(env!("CARGO_BIN_EXE_component"))
+        .args(args)
+        .current_dir(dir)
+        .env("NO_COLOR", "1")
+        .output()
+        .expect("Failed to execute command")
+}
+
+/// Create a temp project whose `wasm.toml` is `manifest`. When
+/// `with_artifact` is set, the wordmark fixture is copied to
+/// `build/wordmark.wasm` so the local `[package]` has a built artifact.
+fn local_run_project(manifest: &str, with_artifact: bool) -> TempDir {
+    let dir = TempDir::new().expect("tempdir");
+    std::fs::write(dir.path().join("wasm.toml"), manifest).expect("write wasm.toml");
+    if with_artifact {
+        let build = dir.path().join("build");
+        std::fs::create_dir_all(&build).expect("create build dir");
+        std::fs::copy(
+            library_fixture("library_wordmark.wasm"),
+            build.join("wordmark.wasm"),
+        )
+        .expect("copy fixture");
+    }
+    dir
+}
+
+/// `component run <own-package-name>` runs the project's built artifact,
+/// offline, forwarding guest args to the component's WIT-derived CLI.
+// r[verify run.local-package.by-name]
+#[test]
+fn test_run_local_package_by_name() {
+    let project = local_run_project(LOCAL_COMPONENT_MANIFEST, true);
+    let out = run_cli_raw_in(
+        project.path(),
+        &["--offline", "run", "test:wordmark", "to-word", "# hi"],
+    );
+    assert!(
+        out.status.success(),
+        "local run by name failed: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert_eq!(out.stdout, b"DOCX:# hi");
+}
+
+/// Bare `component run` (no input) resolves and loads the project's own
+/// `[package]` artifact, exposing its WIT exports as a sub-CLI.
+// r[verify run.local-package.bare]
+#[test]
+fn test_run_local_package_bare() {
+    let project = local_run_project(LOCAL_COMPONENT_MANIFEST, true);
+    let out = run_cli_raw_in(project.path(), &["--offline", "run"]);
+    // With no function selected, the dynamic sub-CLI lists the component's
+    // exports; seeing `to-word` proves the local artifact was loaded.
+    let combined = format!(
+        "{}{}",
+        String::from_utf8_lossy(&out.stdout),
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(
+        combined.contains("to-word"),
+        "bare local run did not load the local component: {combined}"
+    );
+}
+
+/// Bare `component run` with no built artifact reports a helpful error.
+// r[verify run.local-package.missing-artifact]
+#[test]
+fn test_run_local_package_missing_artifact() {
+    let project = local_run_project(LOCAL_COMPONENT_MANIFEST, false);
+    let stderr = run_cli_error(&["--offline", "run"], Some(project.path()));
+    assert!(
+        stderr.contains("build/wordmark.wasm") && stderr.contains("test:wordmark"),
+        "unexpected error: {stderr}"
+    );
+}
+
+/// A local `[package]` of `kind = "interface"` cannot be run.
+// r[verify run.local-package.interface]
+#[test]
+fn test_run_local_package_interface_rejected() {
+    let manifest = r#"[package]
+name = "test:iface"
+version = "0.1.0"
+registry = "ghcr.io/test/iface"
+kind = "interface"
+wit = "wit"
+"#;
+    let project = local_run_project(manifest, false);
+    let stderr = run_cli_error(&["--offline", "run"], Some(project.path()));
+    assert!(
+        stderr.contains("interface") && stderr.contains("test:iface"),
+        "unexpected error: {stderr}"
+    );
+}
+
+/// Bare `component run` with no `wasm.toml` / no `[package]` errors helpfully.
+// r[verify run.local-package.none]
+#[test]
+fn test_run_local_package_absent() {
+    let project = TempDir::new().expect("tempdir");
+    let stderr = run_cli_error(&["--offline", "run"], Some(project.path()));
+    assert!(
+        stderr.contains("no local") || stderr.contains("[package]"),
+        "unexpected error: {stderr}"
+    );
+}
+
+// =============================================================================
 // Library-style component tests
 // =============================================================================
 

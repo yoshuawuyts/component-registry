@@ -33,8 +33,13 @@ use wit2cli::{
 pub(crate) struct Opts {
     /// Local file path, OCI reference, or manifest key (scope:component)
     /// for a Wasm Component.
+    ///
+    /// Optional: when omitted, `component run` executes the project's own
+    /// component as described by the `[package]` section of `wasm.toml`
+    /// (like `cargo run` runs the current crate). Passing the manifest's
+    /// own `[package].name` resolves to that same local artifact.
     #[arg(value_name = "INPUT")]
-    input: String,
+    input: Option<String>,
 
     /// Pass an environment variable to the guest (repeatable).
     #[arg(long = "env", value_name = "KEY=VAL", num_args = 1)]
@@ -87,71 +92,36 @@ pub(crate) struct Opts {
 impl Opts {
     /// Execute the `run` command.
     pub(crate) async fn run(self, offline: bool) -> miette::Result<()> {
-        let input = self.input.as_str();
+        // 1. Resolve input. An explicit, existing local file path wins
+        //    first; then the project's own `[package]` (local run); then
+        //    manifest keys / global cache / OCI references.
+        let input = self.input.as_deref();
+        let local_path = input.map(PathBuf::from);
+        let is_local = local_path.as_ref().is_some_and(|p| p.exists());
 
-        // 1. Resolve input — local files take priority, then manifest keys,
-        //    then OCI references.
-        let local_path = PathBuf::from(input);
-        let is_local = local_path.exists();
-
-        // Manifest keys use `scope:component` syntax; an optional `@version`
-        // suffix (e.g. `yoshuawuyts:wordmark@2.0.6`) is part of the input
-        // grammar but is not part of the key stored in `wasm.toml`. Strip the
-        // version when consulting the manifest/lockfile, but pass the original
-        // input — which still carries the version — to install/global-cache
-        // resolution so the requested version is honored.
-        let manifest_key = strip_at_version(input);
-
-        // Try manifest key lookup (scope:component syntax).
-        let mut manifest_path = if is_local {
-            None
-        } else {
-            resolve_manifest_key(manifest_key)?
-        };
-
-        // For inputs that look like manifest keys (`scope:component`) but are
-        // not yet installed in the local project, auto-install into a local
-        // manifest + lockfile by default. The `--global` flag bypasses local
-        // installation and runs from the global cache instead.
-        let global_bytes =
-            if !is_local && manifest_path.is_none() && looks_like_manifest_key(manifest_key) {
-                if self.global {
-                    Some(load_from_global_cache(input, offline).await?)
-                } else {
-                    auto_install(input, offline).await?;
-                    // Re-resolve the manifest key now that the install has
-                    // populated `wasm.toml`, `wasm.lock.toml`, and the
-                    // vendored Wasm file.
-                    manifest_path = resolve_manifest_key(manifest_key)?;
-                    None
-                }
-            } else {
-                None
-            };
-
-        // Only try OCI when the input is not a local file and not a manifest key.
-        let reference = if is_local || manifest_path.is_some() || global_bytes.is_some() {
-            None
-        } else {
-            crate::util::parse_reference(input).ok()
-        };
-
-        // 2. Get Wasm bytes.
-        let bytes = if let Some(bytes) = global_bytes {
-            bytes
-        } else if let Some(ref vendored) = manifest_path {
-            tokio::fs::read(vendored)
+        // 2. Get Wasm bytes (and an OCI reference, when one applies, for
+        //    per-component permission resolution).
+        let (bytes, reference) = if is_local {
+            let path = local_path.expect("is_local implies an input path");
+            let bytes = tokio::fs::read(&path)
                 .await
                 .into_diagnostic()
-                .wrap_err_with(|| format!("failed to read {}", vendored.display()))?
+                .wrap_err_with(|| format!("failed to read {}", path.display()))?;
+            (bytes, None)
+        } else if let Some(path) = resolve_local_package(input)? {
+            // Bare `component run`, or `component run <own-package-name>`:
+            // run the artifact built from this project's `[package]`.
+            // r[impl run.local-package]
+            let bytes = tokio::fs::read(&path)
+                .await
+                .into_diagnostic()
+                .wrap_err_with(|| format!("failed to read {}", path.display()))?;
+            (bytes, None)
         } else {
-            match reference {
-                Some(ref oci_ref) => fetch_oci_bytes(oci_ref, offline).await?,
-                None => tokio::fs::read(&local_path)
-                    .await
-                    .into_diagnostic()
-                    .wrap_err_with(|| format!("failed to read {}", local_path.display()))?,
-            }
+            // `resolve_local_package(None)` errors when there is no local
+            // package, so reaching this arm always implies an explicit input.
+            let input = input.expect("remote resolution requires an explicit input");
+            self.resolve_remote_bytes(input, offline).await?
         };
 
         // 3. Validate — must be a Wasm Component.
@@ -195,6 +165,79 @@ impl Opts {
         Ok(())
     }
 
+    /// Resolve Wasm bytes for an explicit `input` via the remote paths:
+    /// vendored manifest key, `--global` cache, auto-install, or OCI.
+    ///
+    /// Returns the component bytes together with the OCI [`Reference`] when
+    /// one applies — the reference is consumed by per-component permission
+    /// resolution. Local files and local-package runs are handled by the
+    /// caller before this method is reached.
+    ///
+    /// [`Reference`]: component_package_manager::Reference
+    async fn resolve_remote_bytes(
+        &self,
+        input: &str,
+        offline: bool,
+    ) -> miette::Result<(Vec<u8>, Option<component_package_manager::Reference>)> {
+        // Manifest keys use `scope:component` syntax; an optional `@version`
+        // suffix (e.g. `yoshuawuyts:wordmark@2.0.6`) is part of the input
+        // grammar but is not part of the key stored in `wasm.toml`. Strip the
+        // version when consulting the manifest/lockfile, but pass the original
+        // input — which still carries the version — to install/global-cache
+        // resolution so the requested version is honored.
+        let manifest_key = strip_at_version(input);
+
+        // Try manifest key lookup (scope:component syntax).
+        let mut manifest_path = resolve_manifest_key(manifest_key)?;
+
+        // For inputs that look like manifest keys (`scope:component`) but are
+        // not yet installed in the local project, auto-install into a local
+        // manifest + lockfile by default. The `--global` flag bypasses local
+        // installation and runs from the global cache instead.
+        let global_bytes = if manifest_path.is_none() && looks_like_manifest_key(manifest_key) {
+            if self.global {
+                Some(load_from_global_cache(input, offline).await?)
+            } else {
+                auto_install(input, offline).await?;
+                // Re-resolve the manifest key now that the install has
+                // populated `wasm.toml`, `wasm.lock.toml`, and the
+                // vendored Wasm file.
+                manifest_path = resolve_manifest_key(manifest_key)?;
+                None
+            }
+        } else {
+            None
+        };
+
+        // Only try OCI when the input is not a manifest key.
+        let reference = if manifest_path.is_some() || global_bytes.is_some() {
+            None
+        } else {
+            crate::util::parse_reference(input).ok()
+        };
+
+        let bytes = if let Some(bytes) = global_bytes {
+            bytes
+        } else if let Some(ref vendored) = manifest_path {
+            tokio::fs::read(vendored)
+                .await
+                .into_diagnostic()
+                .wrap_err_with(|| format!("failed to read {}", vendored.display()))?
+        } else if let Some(ref oci_ref) = reference {
+            fetch_oci_bytes(oci_ref, offline).await?
+        } else {
+            // Not a local file, manifest key, or OCI reference: fall back to a
+            // read so the user gets a clear "failed to read" error.
+            let path = PathBuf::from(input);
+            tokio::fs::read(&path)
+                .await
+                .into_diagnostic()
+                .wrap_err_with(|| format!("failed to read {}", path.display()))?
+        };
+
+        Ok((bytes, reference))
+    }
+
     /// Build a [`RunPermissions`] from CLI flags (only the explicitly
     /// provided flags are `Some`).
     fn cli_permissions(&self) -> RunPermissions {
@@ -231,6 +274,102 @@ impl Opts {
     ) -> component_manifest::ResolvedPermissions {
         let cli = self.cli_permissions();
         component_package_manager::permissions::resolve_permissions(reference, cli)
+    }
+}
+
+/// Resolve the project's own component artifact for a "local run".
+///
+/// `cargo run` runs the current crate; `component run` mirrors this by
+/// running the component described by the `[package]` section of the
+/// project's `wasm.toml`. This triggers when:
+///
+/// * `input` is `None` — the bare `component run` form, or
+/// * `input` equals the manifest's `[package].name` (an optional matching
+///   `@version` suffix is allowed) — `component run <own-package-name>`.
+///
+/// Reads `wasm.toml` from the current directory and, on a trigger, returns
+/// the path to the built artifact ([`Package::artifact_path`], default
+/// `build/<name>.wasm`).
+///
+/// # Errors
+///
+/// * [`RunError::NoLocalPackage`] — bare `component run` with no `wasm.toml`
+///   or no `[package]` section.
+/// * [`RunError::LocalPackageNotComponent`] — the `[package]` is an interface.
+/// * [`RunError::LocalArtifactMissing`] — the artifact has not been built yet.
+///
+/// Returns `Ok(None)` when an explicit `input` does not name the local
+/// package, so resolution falls through to the remote paths.
+// r[impl run.local-package]
+fn resolve_local_package(input: Option<&str>) -> miette::Result<Option<PathBuf>> {
+    let manifest_str = match std::fs::read_to_string("wasm.toml") {
+        Ok(s) => s,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return no_local_package(input),
+        // For a bare run, surface other read errors; an explicit input falls
+        // through to remote resolution (mirroring `resolve_manifest_key`).
+        Err(e) => {
+            return match input {
+                None => Err(e)
+                    .into_diagnostic()
+                    .wrap_err("failed to read wasm.toml"),
+                Some(_) => Ok(None),
+            };
+        }
+    };
+
+    let manifest = match toml::from_str::<component_manifest::Manifest>(&manifest_str) {
+        Ok(manifest) => manifest,
+        Err(e) => {
+            return match input {
+                None => Err(e)
+                    .into_diagnostic()
+                    .wrap_err("failed to parse wasm.toml"),
+                Some(_) => Ok(None),
+            };
+        }
+    };
+
+    let Some(package) = manifest.package else {
+        return no_local_package(input);
+    };
+
+    // For an explicit input, only resolve locally when it names this package.
+    // A matching `@version` suffix is honored; a non-matching version falls
+    // through to remote resolution so a different published version can run.
+    if let Some(name) = input {
+        if strip_at_version(name) != package.name {
+            return Ok(None);
+        }
+        if let Some((_, version)) = name.split_once('@')
+            && version != package.version
+        {
+            return Ok(None);
+        }
+    }
+
+    if package.kind != component_manifest::PackageKind::Component {
+        return Err(RunError::LocalPackageNotComponent { name: package.name }.into());
+    }
+
+    let artifact = package.artifact_path();
+    if !artifact.exists() {
+        return Err(RunError::LocalArtifactMissing {
+            path: artifact.display().to_string(),
+            name: package.name,
+        }
+        .into());
+    }
+
+    Ok(Some(artifact))
+}
+
+/// Outcome when no local `[package]` is available: a bare `component run`
+/// fails with [`RunError::NoLocalPackage`]; an explicit input falls through
+/// to remote resolution.
+fn no_local_package(input: Option<&str>) -> miette::Result<Option<PathBuf>> {
+    match input {
+        None => Err(RunError::NoLocalPackage.into()),
+        Some(_) => Ok(None),
     }
 }
 
