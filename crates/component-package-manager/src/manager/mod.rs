@@ -13,6 +13,7 @@ mod models;
 use crate::config::Config;
 use crate::oci::{Client, ImageEntry, InsertResult};
 use crate::progress::ProgressEvent;
+use crate::publish::oci_tag;
 use crate::storage::{FetchTaskKind, KnownPackage, KnownPackageParams, StateInfo, Store};
 use crate::types::WitPackage;
 use component_meta_registry_types::PackageKind;
@@ -587,7 +588,10 @@ impl Manager {
             .await?
         {
             let tag = self.resolve_tag_for_dep(dep, &registry, &repository).await;
-            let ref_str = format!("{registry}/{repository}:{tag}");
+            // Map SemVer build metadata (`0.1.0+meta`) onto a valid OCI tag
+            // (`0.1.0_meta`) — the inverse of what `publish` does — so a `+`
+            // dependency resolves to the tag the registry actually stores.
+            let ref_str = format!("{registry}/{repository}:{}", oci_tag(&tag));
             return Ok(Some(ref_str.parse()?));
         }
 
@@ -611,7 +615,8 @@ impl Manager {
                     "latest".to_string()
                 }
             };
-            let ref_str = format!("{}/{}:{}", known.registry, known.repository, tag);
+            // Same `+`→`_` tag mapping as the exact-lookup path above.
+            let ref_str = format!("{}/{}:{}", known.registry, known.repository, oci_tag(&tag));
             return Ok(Some(ref_str.parse()?));
         }
 

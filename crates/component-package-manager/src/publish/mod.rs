@@ -160,17 +160,31 @@ pub fn build_annotations(pkg: &Package, created: DateTime<Utc>) -> BTreeMap<Stri
     a
 }
 
+/// Map a `[package].version` (SemVer) onto a valid OCI tag.
+///
+/// OCI tags must match `[a-zA-Z0-9_][a-zA-Z0-9._-]{0,127}`, so the `+` that introduces
+/// SemVer build metadata (e.g. `0.1.0+2026-01-14`) is illegal in a tag. Following Helm's
+/// convention for pushing charts to OCI registries, we replace `+` with `_`
+/// (`0.1.0+2026-01-14` → `0.1.0_2026-01-14`). The unmodified SemVer — build metadata and
+/// all — is still recorded in the `org.opencontainers.image.version` annotation, so no
+/// information is lost.
+#[must_use]
+pub fn oci_tag(version: &str) -> String {
+    version.replace('+', "_")
+}
+
 /// Resolve the OCI reference for a given `[package]` section.
 ///
 /// The reference is built from `[package].registry` and
-/// `[package].version` as `<registry>:<version>` — `registry` is the full
-/// OCI location (host + path, no tag), e.g. `ghcr.io/yoshuawuyts/fetch`.
+/// `[package].version` as `<registry>:<tag>` — `registry` is the full
+/// OCI location (host + path, no tag), e.g. `ghcr.io/yoshuawuyts/fetch`,
+/// and `tag` is the version mapped to a valid OCI tag by [`oci_tag`].
 ///
 /// # Errors
 ///
 /// Returns an error when the resulting reference cannot be parsed.
 pub fn resolve_reference(pkg: &Package) -> Result<Reference> {
-    let s = format!("{}:{}", pkg.registry, pkg.version);
+    let s = format!("{}:{}", pkg.registry, oci_tag(&pkg.version));
     s.parse::<Reference>()
         .with_context(|| format!("failed to parse OCI reference `{s}`"))
 }
@@ -307,6 +321,27 @@ mod tests {
         let mut pkg = sample_pkg();
         pkg.registry = "not a valid ref".into();
         assert!(resolve_reference(&pkg).is_err());
+    }
+
+    // r[verify publish.reference.build-metadata]
+    #[test]
+    fn build_metadata_version_maps_plus_to_underscore_in_tag() {
+        let mut pkg = sample_pkg();
+        pkg.version = "0.1.0+2026-01-14".into();
+
+        // `+` is illegal in an OCI tag, so it is mapped to `_` (Helm's convention).
+        let r = resolve_reference(&pkg).expect("build metadata should yield a valid reference");
+        assert_eq!(r.repository(), "yoshuawuyts/fetch");
+        assert_eq!(r.tag(), Some("0.1.0_2026-01-14"));
+
+        // The annotation keeps the full, unmodified SemVer — including build metadata.
+        let annot = build_annotations(&pkg, Utc::now());
+        assert_eq!(
+            annot
+                .get("org.opencontainers.image.version")
+                .map(String::as_str),
+            Some("0.1.0+2026-01-14"),
+        );
     }
 
     // r[verify publish.require-package.missing]

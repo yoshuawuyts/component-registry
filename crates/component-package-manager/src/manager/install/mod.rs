@@ -83,7 +83,10 @@ pub async fn resolve_wit_name(input: &str, manager: &Manager) -> anyhow::Result<
 ///
 /// Both the compact string format (`"ghcr.io/webassembly/wasi-logging:1.0.0"`) and
 /// the explicit table format (`registry`/`namespace`/`package`:`version`) are
-/// supported. Returns an error if the resulting reference string cannot be parsed
+/// supported. The explicit form's `version` is mapped through
+/// [`crate::publish::oci_tag`] so SemVer build metadata (e.g. `0.1.0+2026-01-14`)
+/// becomes a valid OCI tag (`0.1.0_2026-01-14`), matching how `publish` tags the
+/// artifact. Returns an error if the resulting reference string cannot be parsed
 /// as a valid OCI reference.
 pub fn reference_from_dependency(
     dep: &component_manifest::Dependency,
@@ -96,7 +99,10 @@ pub fn reference_from_dependency(
             package,
             version,
             ..
-        } => format!("{registry}/{namespace}/{package}:{version}"),
+        } => format!(
+            "{registry}/{namespace}/{package}:{}",
+            crate::publish::oci_tag(version)
+        ),
     };
     crate::parse_reference(&s).map_err(|e| InstallError::InvalidReference { reason: e }.into())
 }
@@ -372,5 +378,25 @@ mod tests {
     #[test]
     fn looks_like_wit_name_rejects_multiple_at() {
         assert!(!looks_like_wit_name("wasi:http@0.2@extra"));
+    }
+
+    #[test]
+    fn reference_from_explicit_dependency_maps_build_metadata() {
+        // The manifest's explicit table form carries a SemVer `version`; build
+        // metadata (`+`) is illegal in an OCI tag, so it must be mapped to `_`
+        // — the inverse of what `publish` does — so the dependency resolves to
+        // the tag the registry actually stores.
+        let dep = component_manifest::Dependency::Explicit {
+            registry: "ghcr.io".into(),
+            namespace: "yoshuawuyts".into(),
+            package: "fetch".into(),
+            version: "0.1.0+2026-01-14".into(),
+            permissions: None,
+        };
+        let r =
+            reference_from_dependency(&dep).expect("build metadata should yield a valid reference");
+        assert_eq!(r.registry(), "ghcr.io");
+        assert_eq!(r.repository(), "yoshuawuyts/fetch");
+        assert_eq!(r.tag(), Some("0.1.0_2026-01-14"));
     }
 }
