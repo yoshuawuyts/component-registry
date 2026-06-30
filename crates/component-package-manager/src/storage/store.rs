@@ -3713,6 +3713,60 @@ mod smoke_tests {
     }
 
     #[tokio::test]
+    async fn find_oci_reference_matches_build_metadata_version() {
+        // `publish` stores the artifact under an OCI tag with `+` mapped to `_`,
+        // but the WIT package decl keeps the full SemVer (build metadata and all).
+        // The resolver matches a `0.1.0+meta` dependency against the SemVer
+        // recorded in `wit_package`, then maps it to the `_` tag when pulling —
+        // so the lookup here must succeed on the unmodified `+` version.
+        let store = Store::open_in_memory().await.unwrap();
+        let repo_id =
+            upsert_oci_repository_full(&store.db, "ghcr.io", "yoshuawuyts/fetch", None, None, None)
+                .await
+                .unwrap();
+        let digest = "sha256:deadbeef";
+        let (manifest_id, _) = upsert_oci_manifest(
+            &store.db,
+            repo_id,
+            digest,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            &HashMap::new(),
+        )
+        .await
+        .unwrap();
+        // The registry stores the build-metadata release under the `_` tag …
+        upsert_oci_tag(&store.db, repo_id, "0.1.0_2026-01-14", digest)
+            .await
+            .unwrap();
+        // … while the WIT package decl retains the full `+` SemVer.
+        upsert_wit_package(
+            &store.db,
+            "yoshuawuyts:fetch",
+            Some("0.1.0+2026-01-14"),
+            None,
+            None,
+            Some(manifest_id),
+            None,
+        )
+        .await
+        .unwrap();
+
+        let found = store
+            .find_oci_reference_by_wit_name("yoshuawuyts:fetch", Some("0.1.0+2026-01-14"))
+            .await
+            .unwrap();
+        assert_eq!(
+            found,
+            Some(("ghcr.io".to_string(), "yoshuawuyts/fetch".to_string())),
+        );
+    }
+
+    #[tokio::test]
     async fn fetch_queue_pull_complete_roundtrip() {
         let store = Store::open_in_memory().await.unwrap();
         store
