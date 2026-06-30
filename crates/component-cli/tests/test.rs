@@ -915,16 +915,20 @@ fn test_run_local_package_by_name() {
 fn test_run_local_package_bare() {
     let project = local_run_project(LOCAL_COMPONENT_MANIFEST, true);
     let out = run_cli_raw_in(project.path(), &["--offline", "run"]);
-    // With no function selected, the dynamic sub-CLI lists the component's
-    // exports; seeing `to-word` proves the local artifact was loaded.
-    let combined = format!(
-        "{}{}",
-        String::from_utf8_lossy(&out.stdout),
-        String::from_utf8_lossy(&out.stderr)
+    // Bare run selects no function, so the dynamic clap CLI exits with its
+    // usage error (code 2) and lists the component's exports on stderr.
+    // Pinning both the exit code and the usage banner ensures the test only
+    // passes when the local artifact was actually loaded and introspected,
+    // not when some unrelated failure happens to mention `to-word`.
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert_eq!(
+        out.status.code(),
+        Some(2),
+        "bare local run should exit with clap's usage code 2; stderr: {stderr}"
     );
     assert!(
-        combined.contains("to-word"),
-        "bare local run did not load the local component: {combined}"
+        stderr.contains("Usage: component run") && stderr.contains("to-word"),
+        "bare local run did not print the local component's dynamic usage: {stderr}"
     );
 }
 
@@ -965,9 +969,11 @@ wit = "wit"
 fn test_run_local_package_absent() {
     let project = TempDir::new().expect("tempdir");
     let stderr = run_cli_error(&["--offline", "run"], Some(project.path()));
+    // Assert on the specific `RunError::NoLocalPackage` Display message so the
+    // test fails if a different error is surfaced instead.
     assert!(
-        stderr.contains("no local") || stderr.contains("[package]"),
-        "unexpected error: {stderr}"
+        stderr.contains("no local `[package]` to run"),
+        "expected the NoLocalPackage error message, got: {stderr}"
     );
 }
 

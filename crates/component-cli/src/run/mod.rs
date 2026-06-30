@@ -194,10 +194,10 @@ impl Opts {
         // not yet installed in the local project, auto-install into a local
         // manifest + lockfile by default. The `--global` flag bypasses local
         // installation and runs from the global cache instead.
-        let global_bytes = if manifest_path.is_none() && looks_like_manifest_key(manifest_key) {
-            if self.global {
-                Some(load_from_global_cache(input, offline).await?)
-            } else {
+        let needs_remote_key = manifest_path.is_none() && looks_like_manifest_key(manifest_key);
+        let global_bytes = match (needs_remote_key, self.global) {
+            (true, true) => Some(load_from_global_cache(input, offline).await?),
+            (true, false) => {
                 auto_install(input, offline).await?;
                 // Re-resolve the manifest key now that the install has
                 // populated `wasm.toml`, `wasm.lock.toml`, and the
@@ -205,8 +205,7 @@ impl Opts {
                 manifest_path = resolve_manifest_key(manifest_key)?;
                 None
             }
-        } else {
-            None
+            (false, _) => None,
         };
 
         // Only try OCI when the input is not a manifest key.
@@ -216,23 +215,22 @@ impl Opts {
             crate::util::parse_reference(input).ok()
         };
 
-        let bytes = if let Some(bytes) = global_bytes {
-            bytes
-        } else if let Some(ref vendored) = manifest_path {
-            tokio::fs::read(vendored)
+        let bytes = match (global_bytes, &manifest_path, &reference) {
+            (Some(bytes), _, _) => bytes,
+            (None, Some(vendored), _) => tokio::fs::read(vendored)
                 .await
                 .into_diagnostic()
-                .wrap_err_with(|| format!("failed to read {}", vendored.display()))?
-        } else if let Some(ref oci_ref) = reference {
-            fetch_oci_bytes(oci_ref, offline).await?
-        } else {
-            // Not a local file, manifest key, or OCI reference: fall back to a
-            // read so the user gets a clear "failed to read" error.
-            let path = PathBuf::from(input);
-            tokio::fs::read(&path)
-                .await
-                .into_diagnostic()
-                .wrap_err_with(|| format!("failed to read {}", path.display()))?
+                .wrap_err_with(|| format!("failed to read {}", vendored.display()))?,
+            (None, None, Some(oci_ref)) => fetch_oci_bytes(oci_ref, offline).await?,
+            (None, None, None) => {
+                // Not a local file, manifest key, or OCI reference: fall back to
+                // a read so the user gets a clear "failed to read" error.
+                let path = PathBuf::from(input);
+                tokio::fs::read(&path)
+                    .await
+                    .into_diagnostic()
+                    .wrap_err_with(|| format!("failed to read {}", path.display()))?
+            }
         };
 
         Ok((bytes, reference))

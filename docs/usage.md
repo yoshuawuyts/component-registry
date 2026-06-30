@@ -280,7 +280,7 @@ This operation:
 ## Running the Local Component
 
 Just as `cargo run` runs the crate in the current directory, `component
-run` with **no `<INPUT>`** runs the component your project builds — the
+run` with **no `[INPUT]`** runs the component your project builds — the
 one described by the `[package]` section of `wasm.toml`:
 
 ```bash
@@ -317,7 +317,7 @@ resolution described below.
 - **HTTP components** (export `wasi:http/incoming-handler`) are
   served on a local TCP port — use `--listen` to set the address.
 - **CLI components** (export `wasi:cli/run`) are executed as
-  programs; trailing arguments after `<INPUT>` become the guest's
+  programs; trailing arguments after `[INPUT]` become the guest's
   `argv`.
 - **Library-style components** — anything that exports plain
   functions or interfaces but does not target either of the worlds
@@ -381,7 +381,7 @@ Resources and futures/streams are not supported.
 
 All host-side flags (`--global`, `--env`, `--dir`, `--inherit-env`,
 `--inherit-network`, `--no-stdio`, `--listen`) must come **before**
-the `<INPUT>` argument; everything after `<INPUT>` is forwarded to
+the `[INPUT]` argument; everything after `[INPUT]` is forwarded to
 the guest:
 
 ```bash
