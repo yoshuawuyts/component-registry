@@ -4,11 +4,13 @@ expression: output
 ---
 Execute a Wasm Component
 
-Usage: component run [OPTIONS] <INPUT> [GUEST_ARGS]...
+Usage: component run [OPTIONS] [INPUT] [GUEST_ARGS]...
 
 Arguments:
-  <INPUT>
-          Local file path, OCI reference, or manifest key (scope:component) for a Wasm Component
+  [INPUT]
+          Local file path, OCI reference, or manifest key (scope:component) for a Wasm Component.
+          
+          Optional: when omitted, `component run` executes the project's own component as described by the `[package]` section of `wasm.toml` (like `cargo run` runs the current crate). Passing the manifest's own `[package].name` resolves to that same local artifact.
 
   [GUEST_ARGS]...
           Trailing arguments forwarded to the guest. For `wasi:cli/command` components these become `argv`; for library-style components they are parsed by a dynamically generated sub-CLI built from the component's WIT exports.

@@ -277,6 +277,39 @@ This operation:
 2. Remove unused packages manually or with future commands
 3. Run `component self clean` to reclaim space
 
+## Running the Local Component
+
+Just as `cargo run` runs the crate in the current directory, `component
+run` with **no `[INPUT]`** runs the component your project builds — the
+one described by the `[package]` section of `wasm.toml`:
+
+```bash
+component run
+```
+
+This reads `wasm.toml`, requires a `[package]` with `kind =
+"component"`, and executes the built artifact at `[package].file`
+(default `build/<name>.wasm`). There is no separate build step:
+compile your source to Wasm with your language toolchain first, then
+`component run` executes the result. If the artifact is missing,
+`component run` tells you to build it; if the `[package]` is an
+interface (`kind = "interface"`), it cannot be run.
+
+You can also name the local package explicitly using its
+`[package].name`; this is the way to **forward guest arguments** to a
+local component, since everything after the name is passed through:
+
+```bash
+# Given [package] name = "acme:wordmark":
+component run acme:wordmark to-word "# hi" > file.docx
+```
+
+Passing the package name resolves to the local artifact (it does *not*
+hit the network), taking precedence over installing a same-named
+package from a registry. Requesting a different version
+(`acme:wordmark@9.9.9`) falls through to the normal registry
+resolution described below.
+
 ## Running Library-style Components
 
 `component run` can execute three kinds of WebAssembly components:
@@ -284,7 +317,7 @@ This operation:
 - **HTTP components** (export `wasi:http/incoming-handler`) are
   served on a local TCP port — use `--listen` to set the address.
 - **CLI components** (export `wasi:cli/run`) are executed as
-  programs; trailing arguments after `<INPUT>` become the guest's
+  programs; trailing arguments after `[INPUT]` become the guest's
   `argv`.
 - **Library-style components** — anything that exports plain
   functions or interfaces but does not target either of the worlds
@@ -348,7 +381,7 @@ Resources and futures/streams are not supported.
 
 All host-side flags (`--global`, `--env`, `--dir`, `--inherit-env`,
 `--inherit-network`, `--no-stdio`, `--listen`) must come **before**
-the `<INPUT>` argument; everything after `<INPUT>` is forwarded to
+the `[INPUT]` argument; everything after `[INPUT]` is forwarded to
 the guest:
 
 ```bash

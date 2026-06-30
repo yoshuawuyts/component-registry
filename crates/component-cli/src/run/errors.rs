@@ -81,6 +81,39 @@ pub(crate) enum RunError {
         /// The manifest key that was looked up.
         name: String,
     },
+
+    /// `component run` was invoked with no input but the project has no
+    /// runnable `[package]` (missing `wasm.toml` or missing `[package]`).
+    #[diagnostic(
+        code(component::run::no_local_package),
+        help(
+            "add a `[package]` with `kind = \"component\"` to `wasm.toml`, or pass an explicit \
+             file path / OCI reference / dependency key to run"
+        )
+    )]
+    NoLocalPackage,
+
+    /// The local `[package]` describes an interface, which cannot be run.
+    #[diagnostic(
+        code(component::run::local_package_not_component),
+        help("`component run` can only run components; '{name}' has `kind = \"interface\"`")
+    )]
+    LocalPackageNotComponent {
+        /// The `[package].name` that was resolved.
+        name: String,
+    },
+
+    /// The local `[package]` artifact has not been built yet.
+    #[diagnostic(
+        code(component::run::local_artifact_missing),
+        help("'{path}' not found; build '{name}' with your language toolchain first")
+    )]
+    LocalArtifactMissing {
+        /// The expected artifact path.
+        path: String,
+        /// The `[package].name` that was resolved.
+        name: String,
+    },
 }
 
 impl std::fmt::Display for RunError {
@@ -109,6 +142,15 @@ impl std::fmt::Display for RunError {
             }
             RunError::NotInGlobalCache { name } => {
                 write!(f, "component '{name}' is not present in the global cache")
+            }
+            RunError::NoLocalPackage => {
+                write!(f, "no local `[package]` to run")
+            }
+            RunError::LocalPackageNotComponent { name } => {
+                write!(f, "local package '{name}' is an interface, not a component")
+            }
+            RunError::LocalArtifactMissing { path, name } => {
+                write!(f, "artifact '{path}' not found for local package '{name}'")
             }
         }
     }
@@ -141,6 +183,14 @@ mod tests {
             Box::new(RunError::HttpAcceptFailed {
                 reason: "test".to_string(),
             }),
+            Box::new(RunError::NoLocalPackage),
+            Box::new(RunError::LocalPackageNotComponent {
+                name: "test".to_string(),
+            }),
+            Box::new(RunError::LocalArtifactMissing {
+                path: "test".to_string(),
+                name: "test".to_string(),
+            }),
         ];
 
         let expected_codes = [
@@ -150,6 +200,9 @@ mod tests {
             "component::run::vendored_file_missing",
             "component::run::http_bind_failed",
             "component::run::http_accept_failed",
+            "component::run::no_local_package",
+            "component::run::local_package_not_component",
+            "component::run::local_artifact_missing",
         ];
 
         for (variant, expected_code) in variants.iter().zip(expected_codes.iter()) {
