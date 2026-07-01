@@ -757,6 +757,29 @@ mod tests {
         format!("http://{addr}")
     }
 
+    /// Build a client with a short connect timeout so a single connection
+    /// attempt to an unreachable address is bounded on every platform.
+    ///
+    /// The default 2s production connect timeout is correct in production but
+    /// makes timing-based tests non-portable: on some platforms (notably
+    /// Windows CI) a connect to a closed loopback port is not refused
+    /// promptly and instead waits out the full connect timeout, so a single
+    /// attempt alone can exceed a sub-second assertion. reqwest enforces the
+    /// connect timeout with its own timer regardless of OS refuse behavior, so
+    /// a short value gives a reliable upper bound on one attempt.
+    #[cfg(not(all(target_os = "wasi", target_env = "p2")))]
+    fn client_with_short_connect_timeout(base_url: impl Into<String>) -> RegistryClient {
+        let base_url = base_url.into();
+        RegistryClient {
+            base_url: base_url.trim_end_matches('/').to_string(),
+            client: reqwest::Client::builder()
+                .connect_timeout(std::time::Duration::from_millis(100))
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+                .expect("build reqwest client with short connect timeout"),
+        }
+    }
+
     #[cfg(not(all(target_os = "wasi", target_env = "p2")))]
     #[tokio::test]
     async fn fetch_optional_returns_none_on_404() {
@@ -799,19 +822,26 @@ mod tests {
     #[tokio::test]
     async fn fetch_packages_fails_fast_when_registry_unreachable() {
         // Bind then immediately drop the listener to obtain an address that
-        // nothing is listening on, so a connect attempt is refused at once.
+        // nothing is listening on, so the connect attempt fails (refused, or
+        // timed out at the short connect timeout on platforms that don't
+        // refuse loopback connects promptly).
         let listener = TcpListener::bind("127.0.0.1:0").expect("bind test listener");
         let addr = listener.local_addr().expect("get listener addr");
         drop(listener);
 
-        let client = RegistryClient::new(format!("http://{addr}"));
+        // A short connect timeout bounds a *single* attempt to ~100ms on every
+        // platform, so the assertion below cleanly separates the fail-fast path
+        // (one attempt) from the retry path (three attempts plus backoff).
+        let client = client_with_short_connect_timeout(format!("http://{addr}"));
         let start = std::time::Instant::now();
         let result = client.fetch_packages(None, 10).await;
         let elapsed = start.elapsed();
 
         assert!(result.is_err(), "unreachable registry should error");
-        // Three retries would sleep at least 250ms + 500ms = 750ms. Failing
-        // fast on connection errors must skip those backoff sleeps entirely.
+        // Three retries would sleep at least 250ms + 500ms = 750ms on top of
+        // the connection attempts. Failing fast on connection errors must skip
+        // those backoff sleeps entirely, so a single ~100ms attempt stays well
+        // under this bound while a retrying implementation would blow past it.
         assert!(
             elapsed < std::time::Duration::from_millis(500),
             "fetch should fail fast without retrying, took {elapsed:?}"
