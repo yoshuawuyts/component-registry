@@ -133,7 +133,17 @@ impl RegistryClient {
             #[cfg(all(target_os = "wasi", target_env = "p2"))]
             client: wstd::http::Client::new(),
             #[cfg(not(all(target_os = "wasi", target_env = "p2")))]
-            client: reqwest::Client::new(),
+            client: reqwest::Client::builder()
+                // Bound the connect phase so an unreachable meta-registry
+                // fails fast instead of hanging the (blocking) sync step that
+                // runs on the `component install` hot path.
+                .connect_timeout(std::time::Duration::from_secs(2))
+                // Backstop the whole request against a black-holed host.
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+                // A builder failure (e.g. TLS backend init) is unexpected;
+                // fall back to the default client rather than panicking.
+                .unwrap_or_else(|_| reqwest::Client::new()),
         }
     }
 
@@ -505,6 +515,20 @@ impl RegistryClient {
 
 // --- ETag-based sync (native only) -------------------------------------------
 
+/// Outcome of a single [`RegistryClient::try_fetch`] attempt, used to decide
+/// whether a retry is worthwhile.
+#[cfg(feature = "client")]
+enum FetchAttemptError {
+    /// The registry could not be reached — a connection error or a
+    /// connect/request timeout. Retrying within a single command is very
+    /// unlikely to help, so the caller fails fast and treats the sync as a
+    /// best-effort miss rather than making the user wait through the backoff.
+    Unreachable(anyhow::Error),
+    /// A transient server-side failure (e.g. a 5xx), an unexpected status, or
+    /// a malformed response. Worth retrying with backoff.
+    Retryable(anyhow::Error),
+}
+
 #[cfg(feature = "client")]
 impl RegistryClient {
     /// Fetch all packages from the meta-registry with ETag support.
@@ -559,7 +583,10 @@ impl RegistryClient {
         for duration in &backoff {
             match self.try_fetch(&url, etag).await {
                 Ok(result) => return Ok(result),
-                Err(e) => {
+                // An unreachable registry won't recover within one command's
+                // backoff window; fail fast so the sync doesn't stall install.
+                Err(FetchAttemptError::Unreachable(e)) => return Err(e),
+                Err(FetchAttemptError::Retryable(e)) => {
                     last_err = Some(e);
                     if let Some(d) = duration {
                         tokio::time::sleep(d).await;
@@ -574,16 +601,27 @@ impl RegistryClient {
     }
 
     /// Single attempt to fetch packages with ETag support.
-    async fn try_fetch(&self, url: &str, etag: Option<&str>) -> anyhow::Result<FetchResult> {
+    async fn try_fetch(
+        &self,
+        url: &str,
+        etag: Option<&str>,
+    ) -> Result<FetchResult, FetchAttemptError> {
         let mut req = self.client.get(url);
         if let Some(etag_val) = etag {
             req = req.header(reqwest::header::IF_NONE_MATCH, etag_val);
         }
 
-        let resp = req
-            .send()
-            .await
-            .map_err(|e| anyhow::anyhow!("could not reach registry at {}: {e}", self.base_url))?;
+        let resp = req.send().await.map_err(|e| {
+            let err = anyhow::anyhow!("could not reach registry at {}: {e}", self.base_url);
+            // Connection failures and timeouts mean the registry is effectively
+            // unreachable right now; anything else (already connected) may be a
+            // transient hiccup worth retrying.
+            if e.is_connect() || e.is_timeout() {
+                FetchAttemptError::Unreachable(err)
+            } else {
+                FetchAttemptError::Retryable(err)
+            }
+        })?;
 
         let status = resp.status();
         if status == reqwest::StatusCode::NOT_MODIFIED {
@@ -591,17 +629,17 @@ impl RegistryClient {
         }
 
         if status.is_server_error() {
-            anyhow::bail!(
+            return Err(FetchAttemptError::Retryable(anyhow::anyhow!(
                 "registry at {} returned server error: {status}",
                 self.base_url
-            );
+            )));
         }
 
         if !status.is_success() {
-            anyhow::bail!(
+            return Err(FetchAttemptError::Retryable(anyhow::anyhow!(
                 "registry at {} returned unexpected status: {status}",
                 self.base_url
-            );
+            )));
         }
 
         let new_etag = resp
@@ -610,10 +648,12 @@ impl RegistryClient {
             .and_then(|v| v.to_str().ok())
             .map(String::from);
 
-        let packages: Vec<KnownPackage> = resp
-            .json()
-            .await
-            .map_err(|e| anyhow::anyhow!("failed to parse response from {}: {e}", self.base_url))?;
+        let packages: Vec<KnownPackage> = resp.json().await.map_err(|e| {
+            FetchAttemptError::Retryable(anyhow::anyhow!(
+                "failed to parse response from {}: {e}",
+                self.base_url
+            ))
+        })?;
 
         Ok(FetchResult::Updated {
             packages,
@@ -749,6 +789,32 @@ mod tests {
         assert!(
             msg.contains("boom"),
             "error should include response body for debugging"
+        );
+    }
+
+    /// An unreachable registry must fail fast rather than burning through the
+    /// exponential-backoff retries — otherwise every `component install` pays
+    /// the full backoff (~750ms of sleeps) on the blocking sync step.
+    #[cfg(not(all(target_os = "wasi", target_env = "p2")))]
+    #[tokio::test]
+    async fn fetch_packages_fails_fast_when_registry_unreachable() {
+        // Bind then immediately drop the listener to obtain an address that
+        // nothing is listening on, so a connect attempt is refused at once.
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind test listener");
+        let addr = listener.local_addr().expect("get listener addr");
+        drop(listener);
+
+        let client = RegistryClient::new(format!("http://{addr}"));
+        let start = std::time::Instant::now();
+        let result = client.fetch_packages(None, 10).await;
+        let elapsed = start.elapsed();
+
+        assert!(result.is_err(), "unreachable registry should error");
+        // Three retries would sleep at least 250ms + 500ms = 750ms. Failing
+        // fast on connection errors must skip those backoff sleeps entirely.
+        assert!(
+            elapsed < std::time::Duration::from_millis(500),
+            "fetch should fail fast without retrying, took {elapsed:?}"
         );
     }
 }
