@@ -307,6 +307,8 @@ so the same `AZURE_ENV_NAME` can be reused immediately.
   cert and re-bind with `HTTP`:
 
   ```sh
+  RG="$(azd env get-value AZURE_RESOURCE_GROUP)"
+  ENVNAME="$(azd env get-value AZURE_CONTAINER_APPS_ENVIRONMENT_NAME)"
   az containerapp env certificate list -g "$RG" -n "$ENVNAME" \
     --query "[].{name:name, state:properties.provisioningState}" -o table
   az containerapp env certificate delete -g "$RG" -n "$ENVNAME" \
