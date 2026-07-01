@@ -16,6 +16,7 @@
 // of statement position by clippy in this file; the patterns are intentional.
 #![allow(clippy::items_after_statements)]
 
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
@@ -200,6 +201,39 @@ async fn run_postgres_migrations_with_advisory_lock(
     Ok(())
 }
 
+/// Rewrite `?` positional placeholders into the backend's native form.
+///
+/// Our raw SQL is written once with SQLite/MySQL-style `?` placeholders and
+/// dispatched to whichever backend the store is bound to. PostgreSQL instead
+/// uses numbered `$1`, `$2`, … placeholders and rejects a bare `?` with a
+/// `syntax error at or near "…"`, so for Postgres we translate each `?` into
+/// the matching `$N` (in left-to-right order). `?` characters inside
+/// single-quoted string literals are left untouched. On SQLite (and MySQL) the
+/// SQL is returned borrowed and unchanged.
+fn bind_placeholders(backend: DbBackend, sql: &str) -> Cow<'_, str> {
+    if !matches!(backend, DbBackend::Postgres) {
+        return Cow::Borrowed(sql);
+    }
+    let mut out = String::with_capacity(sql.len() + 8);
+    let mut index = 0u32;
+    let mut in_string_literal = false;
+    for ch in sql.chars() {
+        match ch {
+            '\'' => {
+                in_string_literal = !in_string_literal;
+                out.push(ch);
+            }
+            '?' if !in_string_literal => {
+                index += 1;
+                out.push('$');
+                out.push_str(&index.to_string());
+            }
+            other => out.push(other),
+        }
+    }
+    Cow::Owned(out)
+}
+
 /// Parse the OCI repository's `kind` text column into a [`PackageKind`].
 fn parse_kind(s: Option<&str>) -> Option<component_meta_registry_types::PackageKind> {
     use component_meta_registry_types::PackageKind;
@@ -331,8 +365,9 @@ impl Store {
             JOIN wit_package wp ON wpd.dependent_id = wp.id \
             WHERE wp.oci_manifest_id = ? \
             ORDER BY wpd.declared_package";
+        let backend = self.db.get_database_backend();
         let stmt =
-            Statement::from_sql_and_values(self.db.get_database_backend(), sql, [m.id.into()]);
+            Statement::from_sql_and_values(backend, bind_placeholders(backend, sql), [m.id.into()]);
         #[derive(FromQueryResult)]
         struct DepRow {
             declared_package: String,
@@ -732,7 +767,7 @@ impl Store {
         let backend = self.db.get_database_backend();
         let stmt = Statement::from_sql_and_values(
             backend,
-            &sql,
+            bind_placeholders(backend, &sql),
             [
                 interface.into(),
                 i64::from(limit).into(),
@@ -1380,9 +1415,10 @@ async fn resolve_import_foreign_keys(
         ) \
         WHERE wit_world_id IN (SELECT id FROM wit_world WHERE wit_package_id = ?) \
           AND resolved_package_id IS NULL";
+    let backend = db.get_database_backend();
     db.execute_raw(Statement::from_sql_and_values(
-        db.get_database_backend(),
-        sql,
+        backend,
+        bind_placeholders(backend, sql),
         [wit_package_id.into()],
     ))
     .await?;
@@ -1403,9 +1439,10 @@ async fn resolve_export_foreign_keys(
         ) \
         WHERE wit_world_id IN (SELECT id FROM wit_world WHERE wit_package_id = ?) \
           AND resolved_package_id IS NULL";
+    let backend = db.get_database_backend();
     db.execute_raw(Statement::from_sql_and_values(
-        db.get_database_backend(),
-        sql,
+        backend,
+        bind_placeholders(backend, sql),
         [wit_package_id.into()],
     ))
     .await?;
@@ -1426,9 +1463,10 @@ async fn resolve_dependency_foreign_keys(
         ) \
         WHERE dependent_id = ? \
           AND resolved_package_id IS NULL";
+    let backend = db.get_database_backend();
     db.execute_raw(Statement::from_sql_and_values(
-        db.get_database_backend(),
-        sql,
+        backend,
+        bind_placeholders(backend, sql),
         [wit_package_id.into()],
     ))
     .await?;
@@ -1453,9 +1491,10 @@ async fn resolve_component_target_foreign_keys(
             SELECT id FROM wasm_component WHERE oci_manifest_id = ? \
         ) \
         AND wit_world_id IS NULL";
+    let backend = db.get_database_backend();
     db.execute_raw(Statement::from_sql_and_values(
-        db.get_database_backend(),
-        sql,
+        backend,
+        bind_placeholders(backend, sql),
         [manifest_id.into()],
     ))
     .await?;
@@ -3282,9 +3321,10 @@ impl Store {
         struct IdRow {
             id: i64,
         }
+        let backend = self.db.get_database_backend();
         let row = IdRow::find_by_statement(Statement::from_sql_and_values(
-            self.db.get_database_backend(),
-            sql,
+            backend,
+            bind_placeholders(backend, sql),
             [registry.into(), repository.into(), tag.into()],
         ))
         .one(&self.db)
@@ -3498,9 +3538,10 @@ impl Store {
                 ) \
               ) \
             ORDER BY wpd.declared_package";
+        let backend = self.db.get_database_backend();
         let stmt = Statement::from_sql_and_values(
-            self.db.get_database_backend(),
-            sql,
+            backend,
+            bind_placeholders(backend, sql),
             [
                 registry.into(),
                 repository.into(),
@@ -3542,9 +3583,10 @@ impl Store {
                 LIMIT 1 \
             ) \
             ORDER BY wpd.declared_package";
+        let backend = self.db.get_database_backend();
         let stmt = Statement::from_sql_and_values(
-            self.db.get_database_backend(),
-            sql,
+            backend,
+            bind_placeholders(backend, sql),
             [package_name.into(), version.unwrap_or("").into()],
         );
         #[derive(FromQueryResult)]
@@ -4066,6 +4108,118 @@ mod smoke_tests {
             .await
             .expect("open Postgres store");
         assert_commit_sha_filter(&store, "postgres.test.local", "regression/commit-sha").await;
+    }
+
+    #[test]
+    fn bind_placeholders_translates_only_for_postgres() {
+        // SQLite and MySQL keep `?` verbatim.
+        assert_eq!(
+            bind_placeholders(DbBackend::Sqlite, "WHERE a = ? AND b = ?"),
+            "WHERE a = ? AND b = ?"
+        );
+        assert_eq!(
+            bind_placeholders(DbBackend::MySql, "WHERE a = ?"),
+            "WHERE a = ?"
+        );
+        // Postgres gets positional `$1`, `$2`, … in left-to-right `?` order.
+        assert_eq!(
+            bind_placeholders(DbBackend::Postgres, "WHERE a = ? AND b = ? OR c = ?"),
+            "WHERE a = $1 AND b = $2 OR c = $3"
+        );
+        // `?` inside a single-quoted string literal must be left untouched.
+        assert_eq!(
+            bind_placeholders(DbBackend::Postgres, "SELECT '? kept' WHERE y = ?"),
+            "SELECT '? kept' WHERE y = $1"
+        );
+    }
+
+    /// Seed a repo + manifest + wit_package + one dependency, then run the raw
+    /// dependency queries against whatever backend `store` is bound to.
+    ///
+    /// Regression guard for the Postgres placeholder-dialect bug: these queries
+    /// used SQLite-style `?` placeholders dispatched to both backends via
+    /// `Statement::from_sql_and_values(self.db.get_database_backend(), …)`. On
+    /// Postgres the `?` reached the server verbatim and raised
+    /// `syntax error at or near "AND"`, which aborted every package discovery
+    /// (`index_package` calls `get_package_dependencies` for each package), so
+    /// the database stayed empty and the frontend showed no packages. SQLite
+    /// accepts `?`, which is why it went unnoticed locally.
+    async fn assert_package_dependencies_query(store: &Store, registry: &str, repository: &str) {
+        let digest = "sha256:deadbeef";
+        let repo_id =
+            upsert_oci_repository_full(store.db(), registry, repository, None, None, None)
+                .await
+                .expect("insert oci_repository");
+        let (manifest_id, _) = upsert_oci_manifest(
+            store.db(),
+            repo_id,
+            digest,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            &HashMap::new(),
+        )
+        .await
+        .expect("insert oci_manifest");
+        let wit_id = upsert_wit_package(
+            store.db(),
+            "example:greeter",
+            Some("1.0.0"),
+            None,
+            None,
+            Some(manifest_id),
+            None,
+        )
+        .await
+        .expect("insert wit_package");
+        insert_wit_package_dependency(store.db(), wit_id, "wasi:io", Some("0.2.0"))
+            .await
+            .expect("insert wit_package_dependency");
+
+        // The core of the regression: each raw `?`-placeholder query must parse
+        // and run on this backend. On Postgres they used to fail here. Cover
+        // both the 4-placeholder repo lookup and the 2-placeholder by-name
+        // variant (which also exercises `COALESCE(?, '')`).
+        let deps = store
+            .get_package_dependencies(registry, repository)
+            .await
+            .expect("get_package_dependencies must run on this backend");
+        assert_eq!(deps.len(), 1, "expected exactly one dependency");
+        assert_eq!(deps[0].package, "wasi:io");
+        assert_eq!(deps[0].version.as_deref(), Some("0.2.0"));
+
+        let by_name = store
+            .get_package_dependencies_by_name("example:greeter", Some("1.0.0"))
+            .await
+            .expect("get_package_dependencies_by_name must run on this backend");
+        assert_eq!(by_name.len(), 1);
+        assert_eq!(by_name[0].package, "wasi:io");
+        assert_eq!(by_name[0].version.as_deref(), Some("0.2.0"));
+    }
+
+    #[tokio::test]
+    async fn package_dependencies_query_runs_sqlite() {
+        let store = Store::open_in_memory().await.expect("open in-memory store");
+        assert_package_dependencies_query(&store, "sqlite.test.local", "regression/deps").await;
+    }
+
+    #[tokio::test]
+    async fn package_dependencies_query_runs_postgres() {
+        let Ok(url) = std::env::var("COMPONENT_DATABASE_URL") else {
+            return;
+        };
+        let lower = url.to_ascii_lowercase();
+        if !(lower.starts_with("postgres:") || lower.starts_with("postgresql:")) {
+            return;
+        }
+        let data_dir = tempfile::tempdir().expect("create temp dir");
+        let store = Store::open_at(data_dir.path().to_path_buf())
+            .await
+            .expect("open Postgres store");
+        assert_package_dependencies_query(&store, "postgres.test.local", "regression/deps").await;
     }
 }
 
