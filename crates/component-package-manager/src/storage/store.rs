@@ -4143,6 +4143,18 @@ mod smoke_tests {
             bind_placeholders(DbBackend::Postgres, "SELECT '? kept' WHERE y = ?"),
             "SELECT '? kept' WHERE y = $1"
         );
+        // An escaped quote (`''`) inside a literal must not prematurely close the
+        // string: a `?` following such a literal is still a real placeholder.
+        assert_eq!(
+            bind_placeholders(DbBackend::Postgres, "SELECT 'it''s ok' WHERE y = ?"),
+            "SELECT 'it''s ok' WHERE y = $1"
+        );
+        // A `?` inside a literal that also contains escaped quotes stays literal,
+        // while the trailing placeholder is still translated.
+        assert_eq!(
+            bind_placeholders(DbBackend::Postgres, "SELECT 'a ''?'' b' WHERE y = ?"),
+            "SELECT 'a ''?'' b' WHERE y = $1"
+        );
     }
 
     /// Seed a repo + manifest + wit_package + one dependency, then run the raw
